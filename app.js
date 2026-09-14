@@ -20,6 +20,8 @@
     filter: document.getElementById('filter'),
     empty: document.getElementById('empty'),
     emptyReset: document.getElementById('empty-reset'),
+    emptyTitle: document.getElementById('empty-title'),
+    emptyBody: document.getElementById('empty-body'),
     resultCount: document.getElementById('result-count'),
     recheck: document.getElementById('recheck'),
     checkNote: document.getElementById('check-note'),
@@ -326,6 +328,38 @@
       });
   }
 
+  /**
+   * Empty-state copy has to explain the right reason. "Nothing matches" is
+   * wrong when the cause is a scope filter rather than a search word.
+   */
+  function emptyCopy() {
+    if (query) {
+      return {
+        title: 'Nothing matches "' + query + '"',
+        body: 'Try a different word, or reset the filter to see every dashboard.'
+      };
+    }
+    if (scope === 'pending') {
+      return {
+        title: 'Everything is deployed',
+        body:
+          'All ' +
+          dashboards.length +
+          ' dashboards have a live link. Switch back to All to browse them.'
+      };
+    }
+    if (scope === 'live') {
+      return {
+        title: 'No dashboard is confirmed reachable',
+        body: 'The checks did not complete. Try Re-check links, or open one from All.'
+      };
+    }
+    return {
+      title: 'Nothing to show',
+      body: 'No dashboards are configured yet. Add one to data/dashboards.js.'
+    };
+  }
+
   function render() {
     var visible = dashboards.filter(matches);
     el.grid.innerHTML = visible.map(cardMarkup).join('');
@@ -335,10 +369,18 @@
     el.empty.hidden = visible.length !== 0;
     el.grid.hidden = visible.length === 0;
 
+    if (!visible.length) {
+      var copy = emptyCopy();
+      el.emptyTitle.textContent = copy.title;
+      el.emptyBody.textContent = copy.body;
+    }
+
+    // Kept neutral and always accurate: the empty state below carries the
+    // explanation, so this line never has to guess at the reason.
     if (!total) {
       el.resultCount.textContent = 'No dashboards configured yet.';
     } else if (!visible.length) {
-      el.resultCount.textContent = 'Nothing matches the current filter.';
+      el.resultCount.textContent = 'Showing 0 of ' + total + ' dashboards';
     } else if (visible.length === total) {
       el.resultCount.textContent =
         'Showing all ' + total + ' dashboard' + (total === 1 ? '' : 's');

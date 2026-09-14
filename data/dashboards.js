@@ -59,11 +59,10 @@ window.DASHBOARDS = [
     tagline: "India's weekly macro and forex data",
     description:
       'RBI Weekly Statistical Supplement figures with crude estimates, FII flows and external-debt rankings.',
-    url: null,
+    url: 'https://rbiweeklydashboard.netlify.app/',
     repo: 'https://github.com/parth-soni-10/RBI-Weekly-Data-Dashboard',
     tags: ['Scrapers', 'World Bank', 'Functions'],
-    verified: null,
-    note: 'Deployment not linked yet. The repository is ready to deploy.'
+    verified: '2026-09-14'
   },
   {
     id: 'csnl-module-picker',
@@ -72,10 +71,9 @@ window.DASHBOARDS = [
     tagline: 'Clash-free UCD timetables',
     description:
       "Builds a clash-free timetable from UCD's live module timetables, with assessment weights and exam options.",
-    url: null,
+    url: 'https://ucdcsnlmodulepicker.netlify.app/',
     repo: 'https://github.com/parth-soni-10/UCD-CSNL-Module_Picker',
     tags: ['UCD', 'Timetabling', 'Live data'],
-    verified: null,
-    note: 'Deployment not linked yet. The repository is ready to deploy.'
+    verified: '2026-09-14'
   }
 ];
