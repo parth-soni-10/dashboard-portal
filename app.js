@@ -22,15 +22,11 @@
     emptyReset: document.getElementById('empty-reset'),
     emptyTitle: document.getElementById('empty-title'),
     emptyBody: document.getElementById('empty-body'),
-    resultCount: document.getElementById('result-count'),
+    meta: document.getElementById('meta'),
+    footnote: document.getElementById('footnote'),
+    footnoteText: document.getElementById('footnote-text'),
     recheck: document.getElementById('recheck'),
-    checkNote: document.getElementById('check-note'),
-    themeToggle: document.getElementById('theme-toggle'),
-    statTotal: document.getElementById('stat-total'),
-    statLive: document.getElementById('stat-live'),
-    statPending: document.getElementById('stat-pending'),
-    statChecked: document.getElementById('stat-checked'),
-    footerCount: document.getElementById('footer-count')
+    themeToggle: document.getElementById('theme-toggle')
   };
 
   /* ------------------------------------------------------------- helpers -- */
@@ -44,36 +40,17 @@
       .replace(/'/g, '&#39;');
   }
 
-  function formatDate(iso) {
-    if (!iso) return '';
-    var parts = String(iso).split('-');
-    if (parts.length !== 3) return iso;
-    var months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-    var month = months[parseInt(parts[1], 10) - 1];
-    if (!month) return iso;
-    return parseInt(parts[2], 10) + ' ' + month + ' ' + parts[0];
-  }
-
   function hostOf(url) {
     if (!url) return '';
     try {
       return new URL(url).host;
     } catch (e) {
-      return url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+      return String(url).replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     }
+  }
+
+  function plural(n, one, many) {
+    return n + ' ' + (n === 1 ? one : many);
   }
 
   /* --------------------------------------------------------------- icons -- */
@@ -82,7 +59,7 @@
     var nodes = (scope || document).querySelectorAll('[data-icon]');
     for (var i = 0; i < nodes.length; i++) {
       var node = nodes[i];
-      var size = node.classList.contains('empty-ico') ? 18 : 15;
+      var size = node.classList.contains('empty-ico') ? 17 : 15;
       node.innerHTML = icon(node.dataset.icon, size);
     }
   }
@@ -90,8 +67,8 @@
   function fillThemeGlyphs() {
     var sun = document.querySelector('.theme-glyph-sun');
     var moon = document.querySelector('.theme-glyph-moon');
-    if (sun) sun.innerHTML = icon('sun', 17);
-    if (moon) moon.innerHTML = icon('moon', 17);
+    if (sun) sun.innerHTML = icon('sun', 16);
+    if (moon) moon.innerHTML = icon('moon', 16);
   }
 
   /* ------------------------------------------------------- link checking -- */
@@ -194,8 +171,7 @@
 
   function statusOf(item) {
     if (!item.url) return 'pending';
-    if (probeState[item.id]) return probeState[item.id];
-    return 'checking';
+    return probeState[item.id] || 'checking';
   }
 
   function statusMarkup(state) {
@@ -215,85 +191,58 @@
 
   function cardMarkup(item) {
     var state = statusOf(item);
-    var pending = !item.url;
     var live = !!item.url;
-
-    var tags = (item.tags || [])
-      .map(function (tag) {
-        return '<li class="tag">' + esc(tag) + '</li>';
-      })
-      .join('');
+    var host = hostOf(item.url);
 
     var name = live
       ? '<a class="card-link" href="' +
         esc(item.url) +
-        '" target="_blank" rel="noopener">' +
+        '" target="_blank" rel="noopener" title="' +
+        esc(item.description) +
+        '">' +
         esc(item.name) +
         '</a>'
       : esc(item.name);
 
-    var primary = live
-      ? '<a class="btn btn-primary" href="' +
-        esc(item.url) +
-        '" target="_blank" rel="noopener">Open dashboard' +
-        icon('arrow-up-right', 15) +
+    var tags = (item.tags || []).join(' / ');
+
+    var repo = item.repo
+      ? '<a class="icon-btn" href="' +
+        esc(item.repo) +
+        '" target="_blank" rel="noopener" title="View source on GitHub" aria-label="' +
+        esc(item.name) +
+        ' source on GitHub">' +
+        icon('github', 16) +
         '</a>'
       : '';
 
-    var secondary = item.repo
-      ? '<a class="btn" href="' +
-        esc(item.repo) +
-        '" target="_blank" rel="noopener" aria-label="' +
-        esc(item.name) +
-        ' source on GitHub">' +
-        icon('github', 15) +
-        'Source</a>'
-      : '';
-
-    var metaLeft = live
-      ? '<span class="card-verified">' +
-        icon('calendar-days', 13) +
-        'Verified ' +
-        esc(formatDate(item.verified) || 'recently') +
-        '</span>'
-      : '<span class="card-verified">' +
-        icon('triangle-alert', 13) +
-        'Awaiting deploy URL' +
-        '</span>';
-
-    var note = pending && item.note ? '<p class="card-note">' + esc(item.note) + '</p>' : '';
-
     return (
       '<li class="card' +
-      (pending ? ' is-pending' : '') +
+      (live ? '' : ' is-pending') +
       '" data-id="' +
       esc(item.id) +
+      '" data-tone="' +
+      esc(item.tone || 'green') +
       '">' +
       '<div class="card-top">' +
-      '<span class="card-mark" aria-hidden="true">' +
+      '<span class="tile" aria-hidden="true">' +
       esc(item.mark || item.name.slice(0, 2)) +
       '</span>' +
       statusMarkup(state) +
       '</div>' +
-      '<div class="card-headline">' +
       '<h3 class="card-name">' +
       name +
       '</h3>' +
-      '<p class="card-tagline">' +
-      esc(item.tagline) +
-      '</p>' +
-      '</div>' +
       '<p class="card-desc">' +
       esc(item.description) +
       '</p>' +
-      (tags ? '<ul class="card-tags">' + tags + '</ul>' : '') +
-      note +
+      (tags ? '<p class="card-tags">' + esc(tags) + '</p>' : '') +
       '<div class="card-foot">' +
-      metaLeft +
-      '<div class="card-actions">' +
-      primary +
-      secondary +
-      '</div>' +
+      '<span class="card-host">' +
+      esc(host || 'No deploy URL recorded') +
+      '</span>' +
+      repo +
+      (live ? '<span class="card-go" aria-hidden="true">' + icon('arrow-up-right', 16) + '</span>' : '') +
       '</div>' +
       '</li>'
     );
@@ -310,6 +259,7 @@
 
   var scope = 'all';
   var query = '';
+  var checkedAt = '';
 
   function matches(item) {
     if (scope === 'live' && !item.url) return false;
@@ -326,6 +276,26 @@
       .every(function (term) {
         return haystack.indexOf(term) !== -1;
       });
+  }
+
+  function filtering() {
+    return !!query || scope !== 'all';
+  }
+
+  function withUrl() {
+    return dashboards.filter(function (d) {
+      return !!d.url;
+    });
+  }
+
+  function settled() {
+    return (
+      withUrl().length > 0 &&
+      withUrl().every(function (d) {
+        var state = statusOf(d);
+        return state === 'live' || state === 'unverified';
+      })
+    );
   }
 
   /**
@@ -351,7 +321,7 @@
     if (scope === 'live') {
       return {
         title: 'No dashboard is confirmed reachable',
-        body: 'The checks did not complete. Try Re-check links, or open one from All.'
+        body: 'The checks did not complete. Try re-checking the links, or browse All.'
       };
     }
     return {
@@ -360,12 +330,47 @@
     };
   }
 
+  /* --------------------------------------------------------------- the meta line
+   * One line of chrome that carries either the filter count or the health
+   * summary, never both, so it always fits on a single row. */
+  function renderMeta() {
+    var total = dashboards.length;
+    if (!total) {
+      el.meta.textContent = 'No dashboards configured yet.';
+      return;
+    }
+
+    if (filtering()) {
+      var shown = dashboards.filter(matches).length;
+      el.meta.innerHTML =
+        'Showing <strong>' + shown + '</strong> of <strong>' + total + '</strong> dashboards';
+      return;
+    }
+
+    if (!settled()) {
+      el.meta.innerHTML = '<strong>' + total + '</strong> dashboards, checking links';
+      return;
+    }
+
+    var checked = withUrl();
+    var reachable = checked.filter(function (d) {
+      return statusOf(d) === 'live';
+    }).length;
+    var unverified = checked.length - reachable;
+
+    var parts = ['<strong>' + total + '</strong> dashboards', '<strong>' + reachable + '</strong> reachable'];
+    parts.push('checked <strong>' + esc(checkedAt || 'just now') + '</strong>');
+    el.meta.innerHTML = parts.join(', ');
+    if (unverified) el.meta.dataset.unverified = String(unverified);
+  }
+
   function render() {
     var visible = dashboards.filter(matches);
+    var total = dashboards.length;
+
     el.grid.innerHTML = visible.map(cardMarkup).join('');
     hydrateIcons(el.grid);
 
-    var total = dashboards.length;
     el.empty.hidden = visible.length !== 0;
     el.grid.hidden = visible.length === 0;
 
@@ -375,56 +380,44 @@
       el.emptyBody.textContent = copy.body;
     }
 
-    // Kept neutral and always accurate: the empty state below carries the
-    // explanation, so this line never has to guess at the reason.
-    if (!total) {
-      el.resultCount.textContent = 'No dashboards configured yet.';
-    } else if (!visible.length) {
-      el.resultCount.textContent = 'Showing 0 of ' + total + ' dashboards';
-    } else if (visible.length === total) {
-      el.resultCount.textContent =
-        'Showing all ' + total + ' dashboard' + (total === 1 ? '' : 's');
-    } else {
-      el.resultCount.textContent =
-        'Showing ' + visible.length + ' of ' + total + ' dashboards';
-    }
-  }
-
-  function updateSummary() {
-    var checked = dashboards.filter(function (d) {
-      return !!d.url;
-    });
-    var reachable = checked.filter(function (d) {
-      return statusOf(d) === 'live';
-    }).length;
-
-    el.statTotal.textContent = dashboards.length;
-    el.statPending.textContent = dashboards.length - checked.length;
-
-    // "2 / 3" only once every link has an answer, so the figure is never
-    // mid-flight when it is read.
-    var settled = checked.every(function (d) {
-      var state = statusOf(d);
-      return state === 'live' || state === 'unverified';
-    });
-    el.statLive.textContent = !checked.length
-      ? '0'
-      : settled
-        ? reachable + ' / ' + checked.length
-        : '- / ' + checked.length;
-
-    el.footerCount.textContent =
-      dashboards.length + ' dashboard' + (dashboards.length === 1 ? '' : 's') + ' tracked';
+    renderMeta();
   }
 
   /* ------------------------------------------------------------ link check -- */
 
-  function checkAll(force) {
-    var targets = dashboards.filter(function (d) {
-      return !!d.url;
+  function updateFootnote() {
+    var unverified = withUrl().filter(function (d) {
+      return statusOf(d) === 'unverified';
     });
+    el.footnote.hidden = unverified.length === 0;
+
+    if (!unverified.length) {
+      el.footnoteText.textContent = '';
+      return;
+    }
+
+    var names = unverified.map(function (d) {
+      return esc(d.name);
+    });
+
+    el.footnoteText.innerHTML =
+      (unverified.length === 1
+        ? '<strong>' + names[0] + '</strong> blocks'
+        : '<strong>' + names.join('</strong>, <strong>') + '</strong> block') +
+      ' cross-site checks, so its badge cannot be confirmed from this browser. Open the dashboard to check by hand.';
+  }
+
+  function finishCheck() {
+    writeCache(probeState);
+    checkedAt = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    updateFootnote();
+    renderMeta();
+  }
+
+  function checkAll(force) {
+    var targets = withUrl();
     if (!targets.length) {
-      el.statChecked.textContent = 'Nothing to check';
+      renderMeta();
       return;
     }
 
@@ -440,14 +433,13 @@
       refreshStatus(item.id, 'checking');
       toProbe++;
     });
-    updateSummary();
 
     if (!toProbe) {
       finishCheck();
       return;
     }
 
-    el.statChecked.textContent = 'Checking';
+    renderMeta();
     var done = 0;
     targets.forEach(function (item) {
       if (probeState[item.id] !== 'checking') return;
@@ -455,38 +447,9 @@
         probeState[item.id] = state;
         refreshStatus(item.id, state);
         done++;
-        updateSummary();
         if (done === toProbe) finishCheck();
       });
     });
-  }
-
-  function finishCheck() {
-    writeCache(probeState);
-
-    var checked = dashboards.filter(function (d) {
-      return !!d.url;
-    });
-    var reachable = checked.filter(function (d) {
-      return statusOf(d) === 'live';
-    }).length;
-    var unverified = checked.length - reachable;
-    var time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-    el.statChecked.textContent = checked.length ? time : 'Nothing to check';
-
-    // Surface the caveat only when a check actually came back inconclusive.
-    if (el.checkNote) {
-      el.checkNote.hidden = !unverified;
-      el.checkNote.textContent = unverified
-        ? unverified === 1
-          ? 'One dashboard blocks cross-site checks, so its badge cannot be confirmed from this browser.'
-          : unverified +
-            ' dashboards block cross-site checks, so their badges cannot be confirmed from this browser.'
-        : '';
-    }
-
-    updateSummary();
   }
 
   /* --------------------------------------------------------------- events -- */
@@ -520,7 +483,7 @@
     });
   });
 
-  function resetFilters() {
+  el.emptyReset.addEventListener('click', function () {
     scope = 'all';
     query = '';
     el.filter.value = '';
@@ -529,9 +492,7 @@
     });
     render();
     el.filter.focus();
-  }
-
-  el.emptyReset.addEventListener('click', resetFilters);
+  });
 
   el.recheck.addEventListener('click', function () {
     try {
@@ -581,7 +542,7 @@
     el.themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
 
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#101216' : '#f4f5f7');
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#0e1114' : '#f3f4f6');
   }
 
   el.themeToggle.addEventListener('click', function () {
@@ -605,7 +566,6 @@
   fillThemeGlyphs();
   applyTheme(root.dataset.theme === 'light' ? 'light' : 'dark', false);
   render();
-  updateSummary();
   checkAll(false);
 
   // Keep the summary honest when the tab is left open for a long time: an

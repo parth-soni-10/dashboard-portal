@@ -6,6 +6,8 @@
  *   id          stable slug, used for the anchor and localStorage keys
  *   name        display name
  *   mark        one or two characters shown in the card monogram
+ *   tone        identity colour, drawn from that project's own palette.
+ *               One of: gold, emerald, green, slate, blue (see styles.css)
  *   tagline     short line under the name (aim for under 45 characters)
  *   description one sentence, plain language, under 130 characters
  *   url         live Netlify URL, or null when it has not been deployed yet
@@ -20,6 +22,7 @@ window.DASHBOARDS = [
     id: 'content-tracker',
     name: 'Content Tracker',
     mark: 'CT',
+    tone: 'gold',
     tagline: 'Media and viewing analytics',
     description:
       '342+ titles logged in a Google Sheet, turned into yearly comparisons, genre breakdowns and recommendations.',
@@ -32,6 +35,7 @@ window.DASHBOARDS = [
     id: 'irish-visa-tracker',
     name: 'Irish Visa Tracker',
     mark: 'IV',
+    tone: 'emerald',
     tagline: 'Embassy of Ireland, New Delhi decisions',
     description:
       'Daily decision and approval counts, plus community wait times reported by the people still waiting.',
@@ -44,6 +48,7 @@ window.DASHBOARDS = [
     id: 'cents',
     name: 'cents.',
     mark: '¢',
+    tone: 'green',
     tagline: 'Personal expense tracker',
     description:
       'Offline-first spending log with budgets, history and charts, optionally synced through a private store.',
@@ -56,6 +61,7 @@ window.DASHBOARDS = [
     id: 'rbi-weekly',
     name: 'RBI Weekly Dashboard',
     mark: 'RB',
+    tone: 'slate',
     tagline: "India's weekly macro and forex data",
     description:
       'RBI Weekly Statistical Supplement figures with crude estimates, FII flows and external-debt rankings.',
@@ -68,6 +74,7 @@ window.DASHBOARDS = [
     id: 'csnl-module-picker',
     name: 'CSNL Module Picker',
     mark: 'MP',
+    tone: 'blue',
     tagline: 'Clash-free UCD timetables',
     description:
       "Builds a clash-free timetable from UCD's live module timetables, with assessment weights and exam options.",

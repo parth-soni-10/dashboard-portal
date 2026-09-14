@@ -1,19 +1,24 @@
 /* ---------------------------------------------------------------------------
  * Dashboard Portal
  *
- * Design language is lifted from the sibling dashboards so this reads as part
- * of the same family: self-hosted Geist + Geist Mono, a single emerald accent,
- * hairline borders instead of heavy shadows, a faint accent glow behind the
- * top of the page, and tabular numerals on every figure.
+ * Two token layers, deliberately separated:
+ *
+ *   1. Scale tokens come from Open Props (MIT, argyleink) - spacing, radii,
+ *      shadows, font sizes, easings. Vendored in vendor/open-props.min.css and
+ *      loaded before this file. Do not hand-roll replacements for these ramps.
+ *   2. Colour tokens are hand-tuned here and contrast-verified, because the
+ *      house palette (one emerald accent, light and dark) has to stay exactly
+ *      consistent with the sibling dashboards.
  *
  * Locked decisions:
- *   Shape        cards 12px, controls 8px, status pills fully round (indicators,
- *                not controls). Nothing else gets a radius.
- *   Colour       one accent (emerald) for the whole page. Amber and red appear
- *                only as real availability states, never as decoration.
- *   Theme        light and dark are both first class, driven by [data-theme].
- *   Motion       transform and opacity only, 150-220ms, all of it optional
- *                under prefers-reduced-motion.
+ *   Shape    cards 16px (--radius-3), controls 8px (radius-3 halved), status
+ *            pills fully round. Nothing else gets a radius.
+ *   Colour   one accent for every interactive element. Each card additionally
+ *            carries its own identity tone, drawn from that dashboard's real
+ *            palette, used ONLY on its monogram tile and hover border.
+ *   Theme    light and dark are both first class, driven by [data-theme].
+ *   Motion   transform and opacity only, all of it optional under
+ *            prefers-reduced-motion.
  * ------------------------------------------------------------------------ */
 
 @font-face {
@@ -35,79 +40,119 @@
 /* --------------------------------------------------------------- tokens -- */
 
 :root {
-  --bg: #f4f5f7;
+  --bg: #f3f4f6;
   --surface: #ffffff;
-  --surface-sunken: #f8f9fb;
-  --surface-hover: #f1f2f5;
-  --border: #e3e5ea;
+  --surface-sunken: #f7f8fa;
+  --surface-hover: #f4f5f7;
+  --border: #e4e6eb;
   --border-strong: #c9cdd5;
   --text: #14161a;
-  --text-mid: #4b515b;
-  /* #6e7580 only reached 4.26:1 on the page background. This clears AA
-     (4.5:1) against every surface it sits on, including the sunken tag chips. */
-  --text-soft: #666d77;
+  --text-mid: #454b55;
+  --text-soft: #5f666f;
 
   --accent: #0f7a4f;
   --accent-hover: #0b5f3e;
   --accent-soft: #e7f3ed;
-  --accent-ring: rgba(15, 122, 79, 0.3);
+  --accent-ring: rgba(15, 122, 79, 0.28);
 
   --ok: #0f7a4f;
   --ok-soft: #e7f3ed;
-  --warn: #a15c07;
-  --warn-soft: #fdf3e3;
-  --danger: #b3261e;
-  --danger-soft: #fdeceb;
+  --warn: #8f5405;
+  --warn-soft: #fcf1e0;
 
-  --glow: rgba(15, 122, 79, 0.1);
-  --shadow-card: 0 1px 2px rgba(20, 22, 26, 0.05), 0 8px 24px -12px rgba(20, 22, 26, 0.16);
+  --shadow-color: 220 12% 24%;
+  --shadow-strength: 5%;
 
   --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --r-card: 12px;
-  --r-control: 8px;
+  --r-card: var(--radius-3);
+  --r-control: calc(var(--radius-3) / 2);
   --r-pill: 999px;
 
-  --space-2xs: 4px;
-  --space-xs: 8px;
-  --space-sm: 12px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 48px;
+  --shadow-card: var(--shadow-2);
+  --shadow-lift: var(--shadow-3);
 
-  --maxw: 1120px;
-  --nav-h: 66px;
+  --ease: var(--ease-3);
+  --dur: 180ms;
 
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --maxw: 1140px;
+  --nav-h: 60px;
 }
 
 :root[data-theme='dark'] {
-  --bg: #101216;
-  --surface: #171a20;
-  --surface-sunken: #14171c;
-  --surface-hover: #1d2129;
-  --border: #262b33;
-  --border-strong: #3a4150;
-  --text: #e8eaf0;
-  --text-mid: #aab2bf;
-  --text-soft: #8d95a3;
+  --bg: #0e1114;
+  --surface: #16191e;
+  --surface-sunken: #13161a;
+  --surface-hover: #1c2026;
+  --border: #252a31;
+  --border-strong: #3a414c;
+  --text: #e9ebf0;
+  --text-mid: #a9b1bd;
+  --text-soft: #8b93a1;
 
   --accent: #34d399;
   --accent-hover: #6ee7b7;
   --accent-soft: rgba(52, 211, 153, 0.13);
-  --accent-ring: rgba(52, 211, 153, 0.34);
+  --accent-ring: rgba(52, 211, 153, 0.32);
 
   --ok: #34d399;
-  --ok-soft: rgba(52, 211, 153, 0.14);
+  --ok-soft: rgba(52, 211, 153, 0.13);
   --warn: #fbbf24;
-  --warn-soft: rgba(251, 191, 36, 0.14);
-  --danger: #f87171;
-  --danger-soft: rgba(248, 113, 113, 0.14);
+  --warn-soft: rgba(251, 191, 36, 0.13);
 
-  --glow: rgba(52, 211, 153, 0.09);
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32), 0 10px 28px -14px rgba(0, 0, 0, 0.6);
+  --shadow-color: 220 40% 2%;
+  --shadow-strength: 22%;
+}
+
+/* Per-dashboard identity tones. Every value is a real token taken from that
+   project's own palette, so a card's colour matches the product it opens:
+     gold     Content Tracker     (its --gold accent)
+     emerald  Irish Visa Tracker  (its --green)
+     green    cents.              (its --accent)
+     slate    RBI Weekly          (its --secondary)
+     blue     CSNL Module Picker  (its --accent)
+   --tone is the raw brand colour (tile tint, hover border).
+   --tone-ink is the same hue darkened or lightened to clear AA on the tile. */
+[data-tone='gold'] {
+  --tone: #c98a3d;
+  --tone-ink: #7f5219;
+}
+
+[data-tone='emerald'] {
+  --tone: #059669;
+  --tone-ink: #04654a;
+}
+
+[data-tone='green'] {
+  --tone: #157a4a;
+  --tone-ink: #10603a;
+}
+
+[data-tone='slate'] {
+  --tone: #334155;
+  --tone-ink: #334155;
+}
+
+[data-tone='blue'] {
+  --tone: #1d4ed8;
+  --tone-ink: #1c46bf;
+}
+
+:root[data-theme='dark'] [data-tone='gold'] {
+  --tone-ink: #e0a95f;
+}
+:root[data-theme='dark'] [data-tone='emerald'] {
+  --tone-ink: #34d399;
+}
+:root[data-theme='dark'] [data-tone='green'] {
+  --tone-ink: #4ade80;
+}
+:root[data-theme='dark'] [data-tone='slate'] {
+  --tone-ink: #a7b3c4;
+}
+:root[data-theme='dark'] [data-tone='blue'] {
+  --tone-ink: #7fa8ff;
 }
 
 /* ---------------------------------------------------------------- reset -- */
@@ -126,12 +171,10 @@ body {
   margin: 0;
   min-height: 100dvh;
   background-color: var(--bg);
-  background-image: radial-gradient(circle at 82% -6%, var(--glow), transparent 34rem);
-  background-repeat: no-repeat;
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: var(--font-size-1);
+  line-height: var(--font-lineheight-3);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -152,12 +195,6 @@ ul {
   list-style: none;
 }
 
-/* `display: flex`/`grid` below would otherwise beat the user-agent's
-   `[hidden] { display: none }`, leaving "hidden" elements visible. */
-[hidden] {
-  display: none !important;
-}
-
 a {
   color: inherit;
 }
@@ -166,6 +203,12 @@ button {
   font: inherit;
   color: inherit;
   cursor: pointer;
+}
+
+/* `display: flex`/`grid` below would otherwise beat the user-agent's
+   `[hidden] { display: none }`, leaving "hidden" elements visible. */
+[hidden] {
+  display: none !important;
 }
 
 .ico {
@@ -185,30 +228,29 @@ button {
   border: 0;
 }
 
-/* Visible focus everywhere, on both themes. */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: var(--border-size-2) solid var(--accent);
   outline-offset: 2px;
-  border-radius: var(--space-2xs);
+  border-radius: var(--radius-1);
 }
 
 .skip-link {
   position: absolute;
-  left: var(--space-md);
-  top: -60px;
+  left: var(--size-3);
+  top: -4rem;
   z-index: 10;
-  padding: 10px 14px;
+  padding: var(--size-2) var(--size-4);
   border-radius: var(--r-control);
   background: var(--accent);
   color: #fff;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-6);
   text-decoration: none;
-  transition: top 160ms var(--ease-out);
+  transition: top var(--dur) var(--ease);
 }
 
 .skip-link:focus {
-  top: var(--space-md);
+  top: var(--size-3);
 }
 
 /* --------------------------------------------------------------- topbar -- */
@@ -218,81 +260,68 @@ button {
   top: 0;
   z-index: 5;
   height: var(--nav-h);
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--border-size-1) solid var(--border);
 }
 
 .topbar-inner {
   max-width: var(--maxw);
   height: 100%;
   margin: 0 auto;
-  padding: 0 var(--space-lg);
+  padding: 0 var(--size-5);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
+  gap: var(--size-3);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: var(--size-2);
   min-width: 0;
 }
 
 .brand-mark {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-control);
+  background: var(--accent-soft);
+  border: var(--border-size-1) solid color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-6);
+}
+
+.brand-text h1 {
+  font-size: var(--font-size-2);
+  font-weight: var(--font-weight-6);
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+.topbar-spacer {
+  flex: 1 1 auto;
+}
+
+.icon-btn {
   flex: none;
   width: 34px;
   height: 34px;
   display: grid;
   place-items: center;
   border-radius: var(--r-control);
-  background: var(--accent-soft);
-  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.brand-text {
-  min-width: 0;
-}
-
-.brand-text h1 {
-  font-size: 15px;
-  font-weight: 650;
-  letter-spacing: -0.2px;
-}
-
-.brand-text p {
-  font-size: 12.5px;
-  color: var(--text-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.icon-btn {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-control);
-  border: 1px solid var(--border);
+  border: var(--border-size-1) solid var(--border);
   background: var(--surface);
   color: var(--text-mid);
-  transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out),
-    background-color 160ms var(--ease-out), transform 120ms var(--ease-out);
+  text-decoration: none;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    background-color var(--dur) var(--ease), transform 120ms var(--ease);
 }
 
 .icon-btn:hover {
@@ -321,149 +350,29 @@ button {
 .shell {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: var(--space-xl) var(--space-lg) var(--space-2xl);
-}
-
-.summary {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-lg);
-  flex-wrap: wrap;
-  padding-bottom: var(--space-lg);
-  border-bottom: 1px solid var(--border);
-}
-
-.summary-stats {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-xl);
-  flex-wrap: wrap;
-}
-
-.stat dt {
-  font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-}
-
-.stat dd {
-  margin: 2px 0 0;
-}
-
-.stat-value {
-  font-family: var(--font-mono);
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.4px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.15;
-}
-
-.stat-value-quiet {
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--text-mid);
-}
-
-/* --------------------------------------------------------------- button -- */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: var(--r-control);
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 13.5px;
-  font-weight: 550;
-  text-decoration: none;
-  white-space: nowrap; /* CTA labels never wrap */
-  transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out),
-    color 160ms var(--ease-out), transform 120ms var(--ease-out);
-}
-
-.btn:hover {
-  background: var(--surface-hover);
-  border-color: var(--text-soft);
-}
-
-.btn:active {
-  transform: translateY(1px);
-}
-
-.btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #ffffff;
-}
-
-:root[data-theme='dark'] .btn-primary {
-  color: #08231a;
-}
-
-.btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-}
-
-.btn-quiet {
-  border-color: var(--border);
-  background: transparent;
-  color: var(--text-mid);
-}
-
-.btn-quiet:hover {
-  color: var(--text);
-  background: var(--surface-hover);
-  border-color: var(--border-strong);
-}
-
-.btn[disabled],
-.btn[aria-disabled='true'] {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-ico {
-  display: grid;
-  place-items: center;
-  color: currentColor;
+  padding: var(--size-5) var(--size-5) var(--size-8);
 }
 
 /* -------------------------------------------------------------- toolbar -- */
 
 .toolbar {
-  padding: var(--space-lg) 0 var(--space-md);
-}
-
-.toolbar-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
+  gap: var(--size-2);
   flex-wrap: wrap;
 }
 
 .field {
   position: relative;
-  flex: 1 1 300px;
-  max-width: 420px;
+  flex: 1 1 260px;
+  min-width: 0;
   display: flex;
   align-items: center;
 }
 
 .field-ico {
   position: absolute;
-  left: 12px;
+  left: var(--size-3);
   display: grid;
   place-items: center;
   color: var(--text-soft);
@@ -472,15 +381,15 @@ button {
 
 .field-input {
   width: 100%;
-  height: 40px;
-  padding: 0 40px 0 36px;
+  height: 38px;
+  padding: 0 var(--size-7) 0 38px;
   border-radius: var(--r-control);
-  border: 1px solid var(--border);
+  border: var(--border-size-1) solid var(--border);
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
-  font-size: 13.5px;
-  transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+  font-size: var(--font-size-1);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
 .field-input::placeholder {
@@ -495,151 +404,128 @@ button {
 
 .field-hint {
   position: absolute;
-  right: 10px;
+  right: var(--size-2);
   padding: 2px 6px;
-  border-radius: 5px;
-  border: 1px solid var(--border);
+  border-radius: var(--radius-2);
+  border: var(--border-size-1) solid var(--border);
   background: var(--surface-sunken);
   color: var(--text-soft);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-0);
   pointer-events: none;
 }
 
 .chips {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  flex-wrap: wrap;
+  gap: var(--size-1);
 }
 
 .chip {
-  height: 34px;
-  padding: 0 13px;
+  height: 32px;
+  padding: 0 var(--size-3);
   border-radius: var(--r-control);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: var(--border-size-1) solid transparent;
+  background: transparent;
   color: var(--text-mid);
-  font-size: 13px;
-  font-weight: 500;
-  transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out),
-    color 160ms var(--ease-out), transform 120ms var(--ease-out);
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-5);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
 }
 
 .chip:hover {
   color: var(--text);
-  border-color: var(--border-strong);
-}
-
-.chip:active {
-  transform: translateY(1px);
+  background: var(--surface-hover);
 }
 
 .chip.is-on {
   background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
   color: var(--accent);
 }
 
-.result-count {
-  margin-top: var(--space-sm);
-  font-size: 12.5px;
+/* The one line of chrome. Carries either the filter count or the health
+   summary, never both, so it always fits on a single row. */
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--size-1);
+  min-height: 20px;
+  margin-top: var(--size-3);
+  padding-bottom: var(--size-4);
+  border-bottom: var(--border-size-1) solid var(--border);
   color: var(--text-soft);
-  min-height: 18px; /* reserve space, no layout shift when it updates */
+  font-size: var(--font-size-0);
 }
 
-.check-note {
-  margin-top: var(--space-xs);
-  max-width: 72ch;
-  padding: 9px 11px;
-  border-radius: var(--r-control);
-  border: 1px solid var(--border);
-  background: var(--surface-sunken);
-  color: var(--text-soft);
-  font-size: 12.5px;
+.meta strong {
+  color: var(--text-mid);
+  font-weight: var(--font-weight-5);
+  font-variant-numeric: tabular-nums;
 }
 
-.section-heading {
-  font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-  padding-bottom: var(--space-sm);
-}
-
-/* ----------------------------------------------------------------- grid -- */
+/* ---------------------------------------------------------------- cards -- */
 
 .grid {
   display: grid;
-  /* 330px minimum: wide enough that the two card actions always sit on one
-     line at three columns, and min(330px, 100%) keeps the track from ever
-     exceeding a narrow viewport. Floor() therefore drops to two columns on a
-     laptop rather than squeezing the buttons. */
-  grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: var(--size-3);
+  padding-top: var(--size-4);
 }
 
 .card {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  min-width: 0; /* let the track shrink instead of forcing a horizontal scroll */
-  padding: var(--space-lg);
+  gap: var(--size-2);
+  min-width: 0;
+  padding: var(--size-4);
   border-radius: var(--r-card);
-  border: 1px solid var(--border);
+  border: var(--border-size-1) solid var(--border);
   background: var(--surface);
-  transition: border-color 180ms var(--ease-out), transform 180ms var(--ease-out),
-    box-shadow 180ms var(--ease-out);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
 .card:hover {
-  border-color: var(--border-strong);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-card);
+  border-color: color-mix(in srgb, var(--tone, var(--accent)) 40%, var(--border));
+  box-shadow: var(--shadow-lift);
 }
 
 .card:focus-within {
   border-color: var(--accent);
 }
 
-/* An undeployed dashboard is a real, designed state, not a broken card. */
-.card.is-pending {
-  border-style: dashed;
-  background: var(--surface-sunken);
-}
-
 .card-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
+  gap: var(--size-2);
 }
 
-.card-mark {
+.tile {
   flex: none;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border-radius: var(--r-control);
-  background: var(--accent-soft);
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  color: var(--accent);
+  background: color-mix(in srgb, var(--tone, var(--accent)) 14%, transparent);
+  color: var(--tone-ink, var(--accent));
   font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.card-headline {
-  min-width: 0;
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-6);
 }
 
 .card-name {
-  font-size: 15.5px;
-  font-weight: 650;
+  min-width: 0;
+  font-size: var(--font-size-2);
+  font-weight: var(--font-weight-6);
   letter-spacing: -0.2px;
+  line-height: var(--font-lineheight-1);
 }
 
 .card-name a {
@@ -652,8 +538,8 @@ button {
 }
 
 /* Stretched link: the whole card opens the dashboard, but only the title is
-   the anchor, so the repo link stays independently clickable and keyboard
-   order stays sane. */
+   the anchor, so the repo button stays independently clickable and focus order
+   stays sane. */
 .card-link::after {
   content: '';
   position: absolute;
@@ -661,79 +547,73 @@ button {
   border-radius: var(--r-card);
 }
 
-.card-actions .btn {
+.card-foot .icon-btn,
+.card-go {
   position: relative;
   z-index: 1;
 }
 
-.card-tagline {
-  margin-top: 2px;
-  font-size: 12.5px;
-  color: var(--text-soft);
-}
-
 .card-desc {
-  font-size: 13.5px;
+  margin-top: var(--size-1);
   color: var(--text-mid);
-  max-width: 60ch;
+  font-size: var(--font-size-0);
+  line-height: var(--font-lineheight-3);
+  max-width: 52ch;
+  /* Cards stay scannable; the full sentence is still in the DOM and in the
+     link's title attribute for anyone who needs it. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tag {
-  padding: 3px 9px;
-  border-radius: var(--r-control);
-  border: 1px solid var(--border);
-  background: var(--surface-sunken);
   color: var(--text-soft);
   font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-/* Shown only while a dashboard has no deploy URL, so the card reads as
-   deliberately unlinked rather than broken. */
-.card-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  padding: 9px 11px;
-  border-radius: var(--r-control);
-  background: var(--warn-soft);
-  border: 1px solid color-mix(in srgb, var(--warn) 26%, transparent);
-  color: var(--warn);
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-size: var(--font-size-00);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .card-foot {
+  /* auto, so footers line up across a row when one card is taller than its
+     neighbours, and the slack lands between the tags and the rule. */
   margin-top: auto;
-  padding-top: var(--space-sm);
+  padding-top: var(--size-3);
+  border-top: var(--border-size-1) solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  border-top: 1px solid var(--border);
+  gap: var(--size-2);
 }
 
-.card-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap; /* a safety net, so buttons never overflow the card */
-  gap: var(--space-xs);
-}
-
-.card-verified {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
+.card-host {
+  flex: 1 1 auto;
+  min-width: 0;
   color: var(--text-soft);
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-00);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-go {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--text-soft);
+  /* Sits above the stretched link so it can animate on hover, but must not
+     swallow the click that the stretched link is there to catch. */
+  pointer-events: none;
+  transition: color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.card:hover .card-go {
+  color: var(--accent);
+  transform: translate(2px, -2px);
 }
 
 /* --------------------------------------------------------------- status -- */
@@ -742,20 +622,20 @@ button {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px 4px 8px;
+  gap: var(--size-1);
+  padding: 3px var(--size-2) 3px 6px;
   border-radius: var(--r-pill);
-  border: 1px solid var(--border);
   background: var(--surface-sunken);
+  border: var(--border-size-1) solid var(--border);
   color: var(--text-soft);
-  font-size: 11.5px;
-  font-weight: 550;
+  font-size: var(--font-size-00);
+  font-weight: var(--font-weight-5);
   white-space: nowrap;
 }
 
 .status-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: currentColor;
   flex: none;
@@ -788,16 +668,37 @@ button {
   }
 }
 
-/* ---------------------------------------------------------------- empty -- */
+/* ---------------------------------------------------------------- notes -- */
+
+/* Quiet footer note, not a callout box: the caveat matters, but it should not
+   compete with the dashboards for attention. */
+.footnote {
+  margin-top: var(--size-5);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-2);
+  color: var(--text-soft);
+  font-size: var(--font-size-0);
+  max-width: 76ch;
+}
+
+.footnote .ico {
+  margin-top: 2px;
+}
+
+.footnote a {
+  color: var(--text-mid);
+}
 
 .empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-2xl) var(--space-lg);
+  gap: var(--size-2);
+  margin-top: var(--size-4);
+  padding: var(--size-8) var(--size-5);
   border-radius: var(--r-card);
-  border: 1px dashed var(--border-strong);
+  border: var(--border-size-1) dashed var(--border-strong);
   background: var(--surface-sunken);
   text-align: center;
 }
@@ -805,48 +706,67 @@ button {
 .empty-ico {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  margin-bottom: var(--space-2xs);
+  width: 36px;
+  height: 36px;
   border-radius: var(--r-control);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: var(--border-size-1) solid var(--border);
   color: var(--text-soft);
 }
 
 .empty-title {
-  font-size: 14.5px;
-  font-weight: 600;
+  font-size: var(--font-size-2);
+  font-weight: var(--font-weight-6);
 }
 
 .empty-body {
-  font-size: 13px;
   color: var(--text-soft);
-  max-width: 40ch;
+  font-size: var(--font-size-0);
+  max-width: 42ch;
 }
 
-.empty .btn {
-  margin-top: var(--space-sm);
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--size-1);
+  margin-top: var(--size-1);
+  min-height: 36px;
+  padding: 0 var(--size-4);
+  border-radius: var(--r-control);
+  border: var(--border-size-1) solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-5);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--text-soft);
 }
 
 /* --------------------------------------------------------------- footer -- */
 
 .footer {
-  border-top: 1px solid var(--border);
-  margin-top: var(--space-2xl);
+  border-top: var(--border-size-1) solid var(--border);
+  margin-top: var(--size-8);
 }
 
 .footer-inner {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: var(--space-lg);
+  padding: var(--size-5);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
+  gap: var(--size-4);
   flex-wrap: wrap;
-  font-size: 12.5px;
   color: var(--text-soft);
+  font-size: var(--font-size-0);
 }
 
 .footer-inner a {
@@ -864,30 +784,30 @@ button {
 
 @media (prefers-reduced-motion: no-preference) {
   .card {
-    animation: card-in 320ms var(--ease-out) both;
+    animation: card-in 300ms var(--ease-spring-1, var(--ease)) both;
   }
 
   /* A short cascade so the grid arrives as a group rather than all at once. */
   .card:nth-child(2) {
-    animation-delay: 40ms;
+    animation-delay: 45ms;
   }
   .card:nth-child(3) {
-    animation-delay: 80ms;
+    animation-delay: 90ms;
   }
   .card:nth-child(4) {
-    animation-delay: 120ms;
+    animation-delay: 135ms;
   }
   .card:nth-child(5) {
-    animation-delay: 160ms;
+    animation-delay: 180ms;
   }
   .card:nth-child(6) {
-    animation-delay: 200ms;
+    animation-delay: 225ms;
   }
 
   @keyframes card-in {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(8px);
     }
     to {
       opacity: 1;
@@ -908,59 +828,32 @@ button {
   .card:hover {
     transform: none;
   }
+
+  .card:hover .card-go {
+    transform: none;
+  }
 }
 
 /* ---------------------------------------------------------- responsive -- */
 
-@media (max-width: 860px) {
+@media (max-width: 720px) {
   .shell {
-    padding: var(--space-lg) var(--space-md) var(--space-xl);
-  }
-
-  .summary-stats {
-    gap: var(--space-lg);
+    padding: var(--size-4) var(--size-3) var(--size-7);
   }
 
   .topbar-inner {
-    padding: 0 var(--space-md);
-  }
-}
-
-@media (max-width: 640px) {
-  .brand-text p {
-    display: none; /* the heading alone identifies the page on a phone */
+    padding: 0 var(--size-3);
   }
 
-  /* minmax(0, 1fr) rather than 1fr: the auto minimum would let a wide
-     non-wrapping row of buttons push the track past the viewport. */
   .grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .summary {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .summary-stats {
-    gap: var(--space-md) var(--space-lg);
-    width: 100%;
-  }
-
-  .stat-value {
-    font-size: 22px;
-  }
-
-  .toolbar-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .field {
-    max-width: none;
-    flex-basis: auto;
+    flex: 1 1 100%;
   }
 
+  /* Chips scroll sideways rather than stacking into a second row. */
   .chips {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -973,26 +866,10 @@ button {
   }
 
   .card {
-    padding: var(--space-md);
-  }
-
-  .card-foot {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-sm);
-  }
-
-  .card-actions {
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-
-  .card-actions .btn {
-    flex: 1 1 auto;
-    min-width: 0;
+    padding: var(--size-3);
   }
 
   .empty {
-    padding: var(--space-xl) var(--space-md);
+    padding: var(--size-6) var(--size-3);
   }
 }
