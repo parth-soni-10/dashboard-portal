@@ -1,0 +1,32 @@
+# Response headers.
+#
+# These live here rather than in netlify.toml on purpose: Netlify only reads
+# netlify.toml for a repository-connected deploy. A drag-and-drop or API/zip
+# deploy ignores it entirely, which would silently ship the site with no CSP
+# at all. `_headers` is honoured in every deploy mode, so it is the single
+# source of truth and netlify.toml keeps only the build config.
+#
+# Syntax is the same path-matching Netlify uses in netlify.toml.
+
+# Fonts are content-addressed by filename and change rarely, so they can be
+# cached hard. Everything else stays revalidated so a redeploy is never masked
+# by a stale cached copy.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+# Security headers.
+#   * X-Frame-Options + frame-ancestors 'none' - the portal is never iframed.
+#   * script-src 'self' - no inline script anywhere in the page, which is also
+#     why the theme bootstrap lives in theme-init.js instead of a <script> tag.
+#     This blocks Netlify's injected free-plan badge, which is intended.
+#   * connect-src allows *.netlify.app because the reachability check pings the
+#     deployed dashboards. If a dashboard ever moves to a custom domain, add
+#     that origin here or its card will read "Could not verify".
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://*.netlify.app; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'
