@@ -1,0 +1,998 @@
+/* ---------------------------------------------------------------------------
+ * Dashboard Portal
+ *
+ * Design language is lifted from the sibling dashboards so this reads as part
+ * of the same family: self-hosted Geist + Geist Mono, a single emerald accent,
+ * hairline borders instead of heavy shadows, a faint accent glow behind the
+ * top of the page, and tabular numerals on every figure.
+ *
+ * Locked decisions:
+ *   Shape        cards 12px, controls 8px, status pills fully round (indicators,
+ *                not controls). Nothing else gets a radius.
+ *   Colour       one accent (emerald) for the whole page. Amber and red appear
+ *                only as real availability states, never as decoration.
+ *   Theme        light and dark are both first class, driven by [data-theme].
+ *   Motion       transform and opacity only, 150-220ms, all of it optional
+ *                under prefers-reduced-motion.
+ * ------------------------------------------------------------------------ */
+
+@font-face {
+  font-family: 'Geist';
+  src: url('fonts/geist-sans.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('fonts/geist-mono.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --------------------------------------------------------------- tokens -- */
+
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-sunken: #f8f9fb;
+  --surface-hover: #f1f2f5;
+  --border: #e3e5ea;
+  --border-strong: #c9cdd5;
+  --text: #14161a;
+  --text-mid: #4b515b;
+  /* #6e7580 only reached 4.26:1 on the page background. This clears AA
+     (4.5:1) against every surface it sits on, including the sunken tag chips. */
+  --text-soft: #666d77;
+
+  --accent: #0f7a4f;
+  --accent-hover: #0b5f3e;
+  --accent-soft: #e7f3ed;
+  --accent-ring: rgba(15, 122, 79, 0.3);
+
+  --ok: #0f7a4f;
+  --ok-soft: #e7f3ed;
+  --warn: #a15c07;
+  --warn-soft: #fdf3e3;
+  --danger: #b3261e;
+  --danger-soft: #fdeceb;
+
+  --glow: rgba(15, 122, 79, 0.1);
+  --shadow-card: 0 1px 2px rgba(20, 22, 26, 0.05), 0 8px 24px -12px rgba(20, 22, 26, 0.16);
+
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --r-card: 12px;
+  --r-control: 8px;
+  --r-pill: 999px;
+
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  --maxw: 1120px;
+  --nav-h: 66px;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root[data-theme='dark'] {
+  --bg: #101216;
+  --surface: #171a20;
+  --surface-sunken: #14171c;
+  --surface-hover: #1d2129;
+  --border: #262b33;
+  --border-strong: #3a4150;
+  --text: #e8eaf0;
+  --text-mid: #aab2bf;
+  --text-soft: #8d95a3;
+
+  --accent: #34d399;
+  --accent-hover: #6ee7b7;
+  --accent-soft: rgba(52, 211, 153, 0.13);
+  --accent-ring: rgba(52, 211, 153, 0.34);
+
+  --ok: #34d399;
+  --ok-soft: rgba(52, 211, 153, 0.14);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.14);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.14);
+
+  --glow: rgba(52, 211, 153, 0.09);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32), 0 10px 28px -14px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------------------------------------------------------------- reset -- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background-color: var(--bg);
+  background-image: radial-gradient(circle at 82% -6%, var(--glow), transparent 34rem);
+  background-repeat: no-repeat;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+figure {
+  margin: 0;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* `display: flex`/`grid` below would otherwise beat the user-agent's
+   `[hidden] { display: none }`, leaving "hidden" elements visible. */
+[hidden] {
+  display: none !important;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ico {
+  flex: none;
+  display: block;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Visible focus everywhere, on both themes. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--space-2xs);
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space-md);
+  top: -60px;
+  z-index: 10;
+  padding: 10px 14px;
+  border-radius: var(--r-control);
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 160ms var(--ease-out);
+}
+
+.skip-link:focus {
+  top: var(--space-md);
+}
+
+/* --------------------------------------------------------------- topbar -- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: var(--nav-h);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar-inner {
+  max-width: var(--maxw);
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.brand-mark {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-control);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.brand-text {
+  min-width: 0;
+}
+
+.brand-text h1 {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.2px;
+}
+
+.brand-text p {
+  font-size: 12.5px;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-mid);
+  transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out), transform 120ms var(--ease-out);
+}
+
+.icon-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.icon-btn:active {
+  transform: scale(0.96);
+}
+
+/* One glyph per theme, no JS needed to swap them. */
+.theme-glyph {
+  display: none;
+}
+
+:root[data-theme='dark'] .theme-glyph-moon,
+:root[data-theme='light'] .theme-glyph-sun {
+  display: grid;
+  place-items: center;
+}
+
+/* ---------------------------------------------------------------- shell -- */
+
+.shell {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg) var(--space-2xl);
+}
+
+.summary {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-stats {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xl);
+  flex-wrap: wrap;
+}
+
+.stat dt {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.stat dd {
+  margin: 2px 0 0;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.stat-value-quiet {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-mid);
+}
+
+/* --------------------------------------------------------------- button -- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap; /* CTA labels never wrap */
+  transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out),
+    color 160ms var(--ease-out), transform 120ms var(--ease-out);
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--text-soft);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .btn-primary {
+  color: #08231a;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-quiet {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text-mid);
+}
+
+.btn-quiet:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+.btn[disabled],
+.btn[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-ico {
+  display: grid;
+  place-items: center;
+  color: currentColor;
+}
+
+/* -------------------------------------------------------------- toolbar -- */
+
+.toolbar {
+  padding: var(--space-lg) 0 var(--space-md);
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.field {
+  position: relative;
+  flex: 1 1 300px;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+}
+
+.field-ico {
+  position: absolute;
+  left: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--text-soft);
+  pointer-events: none;
+}
+
+.field-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 40px 0 36px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.field-input::placeholder {
+  color: var(--text-soft);
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.field-hint {
+  position: absolute;
+  right: 10px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.chips {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.chip {
+  height: 34px;
+  padding: 0 13px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-mid);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out),
+    color 160ms var(--ease-out), transform 120ms var(--ease-out);
+}
+
+.chip:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.chip:active {
+  transform: translateY(1px);
+}
+
+.chip.is-on {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+}
+
+.result-count {
+  margin-top: var(--space-sm);
+  font-size: 12.5px;
+  color: var(--text-soft);
+  min-height: 18px; /* reserve space, no layout shift when it updates */
+}
+
+.check-note {
+  margin-top: var(--space-xs);
+  max-width: 72ch;
+  padding: 9px 11px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 12.5px;
+}
+
+.section-heading {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  padding-bottom: var(--space-sm);
+}
+
+/* ----------------------------------------------------------------- grid -- */
+
+.grid {
+  display: grid;
+  /* 330px minimum: wide enough that the two card actions always sit on one
+     line at three columns, and min(330px, 100%) keeps the track from ever
+     exceeding a narrow viewport. Floor() therefore drops to two columns on a
+     laptop rather than squeezing the buttons. */
+  grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));
+  gap: var(--space-md);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0; /* let the track shrink instead of forcing a horizontal scroll */
+  padding: var(--space-lg);
+  border-radius: var(--r-card);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: border-color 180ms var(--ease-out), transform 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out);
+}
+
+.card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.card:focus-within {
+  border-color: var(--accent);
+}
+
+/* An undeployed dashboard is a real, designed state, not a broken card. */
+.card.is-pending {
+  border-style: dashed;
+  background: var(--surface-sunken);
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.card-mark {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-control);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.card-headline {
+  min-width: 0;
+}
+
+.card-name {
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.2px;
+}
+
+.card-name a {
+  text-decoration: none;
+}
+
+.card-name a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Stretched link: the whole card opens the dashboard, but only the title is
+   the anchor, so the repo link stays independently clickable and keyboard
+   order stays sane. */
+.card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-card);
+}
+
+.card-actions .btn {
+  position: relative;
+  z-index: 1;
+}
+
+.card-tagline {
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--text-soft);
+}
+
+.card-desc {
+  font-size: 13.5px;
+  color: var(--text-mid);
+  max-width: 60ch;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 3px 9px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Shown only while a dashboard has no deploy URL, so the card reads as
+   deliberately unlinked rather than broken. */
+.card-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 9px 11px;
+  border-radius: var(--r-control);
+  background: var(--warn-soft);
+  border: 1px solid color-mix(in srgb, var(--warn) 26%, transparent);
+  color: var(--warn);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.card-foot {
+  margin-top: auto;
+  padding-top: var(--space-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  border-top: 1px solid var(--border);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap; /* a safety net, so buttons never overflow the card */
+  gap: var(--space-xs);
+}
+
+.card-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------- status -- */
+
+.status {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 11.5px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.status-live {
+  border-color: color-mix(in srgb, var(--ok) 34%, transparent);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+/* Amber, not red: an unanswered check is not proof the dashboard is down. */
+.status-warn {
+  border-color: color-mix(in srgb, var(--warn) 34%, transparent);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.status-checking .status-dot {
+  animation: pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ---------------------------------------------------------------- empty -- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-2xl) var(--space-lg);
+  border-radius: var(--r-card);
+  border: 1px dashed var(--border-strong);
+  background: var(--surface-sunken);
+  text-align: center;
+}
+
+.empty-ico {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: var(--space-2xs);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+}
+
+.empty-title {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.empty-body {
+  font-size: 13px;
+  color: var(--text-soft);
+  max-width: 40ch;
+}
+
+.empty .btn {
+  margin-top: var(--space-sm);
+}
+
+/* --------------------------------------------------------------- footer -- */
+
+.footer {
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-2xl);
+}
+
+.footer-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--text-soft);
+}
+
+.footer-inner a {
+  color: var(--text-mid);
+  text-decoration: none;
+}
+
+.footer-inner a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* -------------------------------------------------------------- motion -- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    animation: card-in 320ms var(--ease-out) both;
+  }
+
+  /* A short cascade so the grid arrives as a group rather than all at once. */
+  .card:nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .card:nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .card:nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .card:nth-child(5) {
+    animation-delay: 160ms;
+  }
+  .card:nth-child(6) {
+    animation-delay: 200ms;
+  }
+
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------- responsive -- */
+
+@media (max-width: 860px) {
+  .shell {
+    padding: var(--space-lg) var(--space-md) var(--space-xl);
+  }
+
+  .summary-stats {
+    gap: var(--space-lg);
+  }
+
+  .topbar-inner {
+    padding: 0 var(--space-md);
+  }
+}
+
+@media (max-width: 640px) {
+  .brand-text p {
+    display: none; /* the heading alone identifies the page on a phone */
+  }
+
+  /* minmax(0, 1fr) rather than 1fr: the auto minimum would let a wide
+     non-wrapping row of buttons push the track past the viewport. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .summary-stats {
+    gap: var(--space-md) var(--space-lg);
+    width: 100%;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .toolbar-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .field {
+    max-width: none;
+    flex-basis: auto;
+  }
+
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+
+  .chip {
+    flex: none;
+  }
+
+  .card {
+    padding: var(--space-md);
+  }
+
+  .card-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+
+  .card-actions {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .card-actions .btn {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .empty {
+    padding: var(--space-xl) var(--space-md);
+  }
+}

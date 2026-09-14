@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard Portal</title>
+    <meta
+      name="description"
+      content="One page for every deployed dashboard: media analytics, visa decisions, expenses, RBI data and UCD timetables."
+    />
+    <meta name="theme-color" content="#101216" />
+    <meta name="color-scheme" content="dark light" />
+
+    <!-- Runs before first paint so the stored theme applies without a flash. -->
+    <script src="theme-init.js"></script>
+
+    <link
+      rel="preload"
+      href="fonts/geist-sans.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#dashboards">Skip to dashboards</a>
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">DP</div>
+          <div class="brand-text">
+            <h1>Dashboard Portal</h1>
+            <p>Every deployed dashboard, verified and in one place</p>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button
+            id="theme-toggle"
+            class="icon-btn"
+            type="button"
+            title="Switch to light mode"
+            aria-label="Switch to light mode"
+            aria-pressed="false"
+          >
+            <span class="theme-glyph theme-glyph-sun" aria-hidden="true"></span>
+            <span class="theme-glyph theme-glyph-moon" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="summary" aria-labelledby="summary-heading">
+        <h2 id="summary-heading" class="sr-only">Portal summary</h2>
+        <dl class="summary-stats">
+          <div class="stat">
+            <dt>Dashboards</dt>
+            <dd id="stat-total" class="stat-value">-</dd>
+          </div>
+          <div class="stat">
+            <dt>Reachable</dt>
+            <dd id="stat-live" class="stat-value">-</dd>
+          </div>
+          <div class="stat">
+            <dt>Awaiting deploy</dt>
+            <dd id="stat-pending" class="stat-value">-</dd>
+          </div>
+          <div class="stat stat-wide">
+            <dt>Last checked</dt>
+            <dd id="stat-checked" class="stat-value stat-value-quiet">Checking</dd>
+          </div>
+        </dl>
+        <button id="recheck" class="btn btn-quiet" type="button">
+          <span class="btn-ico" data-icon="refresh-cw" aria-hidden="true"></span>
+          Re-check links
+        </button>
+      </section>
+
+      <section class="toolbar" aria-label="Filter dashboards">
+        <div class="toolbar-row">
+          <div class="field">
+            <label class="sr-only" for="filter">Filter dashboards</label>
+            <span class="field-ico" data-icon="search" aria-hidden="true"></span>
+            <input
+              id="filter"
+              class="field-input"
+              type="search"
+              placeholder="Filter by name, tag or description"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <kbd class="field-hint" aria-hidden="true">/</kbd>
+          </div>
+
+          <div class="chips" role="group" aria-label="Filter by availability">
+            <button class="chip is-on" type="button" data-scope="all">All</button>
+            <button class="chip" type="button" data-scope="live">Reachable</button>
+            <button class="chip" type="button" data-scope="pending">Awaiting deploy</button>
+          </div>
+        </div>
+
+        <p id="result-count" class="result-count" aria-live="polite"></p>
+
+        <p id="check-note" class="check-note" hidden></p>
+      </section>
+
+      <section aria-labelledby="dashboards">
+        <h2 id="dashboards" class="section-heading">Dashboards</h2>
+
+        <ul id="grid" class="grid">
+          <!-- Cards are rendered from data/dashboards.js -->
+        </ul>
+
+        <p id="empty" class="empty" hidden>
+          <span class="empty-ico" data-icon="search" aria-hidden="true"></span>
+          <span class="empty-title">Nothing matches that filter</span>
+          <span class="empty-body">Try a different word, or reset the filter to see every dashboard.</span>
+          <button id="empty-reset" class="btn btn-quiet" type="button">Reset filter</button>
+        </p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p class="footer-inner">
+        <span id="footer-count">Built for personal use</span>
+        <a href="https://parth-portfolio-wb.netlify.app/" rel="noopener">Portfolio</a>
+        <a href="https://github.com/parth-soni-10/dashboard-portal" rel="noopener">Source</a>
+      </p>
+    </footer>
+
+    <script src="data/dashboards.js"></script>
+    <script src="icons.js"></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>
