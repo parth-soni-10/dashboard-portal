@@ -99,11 +99,14 @@
           <button class="chip is-on" type="button" data-scope="all" aria-pressed="true">
             All
           </button>
-          <button class="chip" type="button" data-scope="live" aria-pressed="false">
-            Reachable
+          <!-- "Deployed", not "Reachable": this filter is about whether an
+               entry has a usable link, which is not the same question as
+               whether the probe could confirm it. -->
+          <button class="chip" type="button" data-scope="deployed" aria-pressed="false">
+            Deployed
           </button>
-          <button class="chip" type="button" data-scope="pending" aria-pressed="false">
-            Awaiting deploy
+          <button class="chip" type="button" data-scope="unlinked" aria-pressed="false">
+            Not linked
           </button>
         </div>
       </div>

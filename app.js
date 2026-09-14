@@ -62,6 +62,30 @@
     return host.replace(/\.netlify\.app$/, '');
   }
 
+  /**
+   * Return the entry's URL only when it is a usable absolute http(s) address.
+   *
+   * This is not defensive padding. The manifest is edited by hand, and a typo
+   * like `example.com` is a *relative* URL: rendered as-is it becomes a link to
+   * nowhere, and — far worse — the reachability probe resolves it against this
+   * page's own origin, gets a perfectly good response, and paints the row
+   * green. A false "Reachable" is the single most misleading thing this page
+   * could show, so an unusable URL is refused up front and reported as such.
+   */
+  function deployUrl(item) {
+    if (!item || !item.url) return '';
+    try {
+      var parsed = new URL(item.url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? item.url : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function hasDeploy(item) {
+    return !!deployUrl(item);
+  }
+
   /* --------------------------------------------------------------- icons -- */
 
   function hydrateIcons(scope) {
@@ -191,11 +215,17 @@
       cls: '',
       text: 'Not deployed',
       hint: 'No deploy URL has been recorded for this dashboard yet.'
+    },
+    broken: {
+      cls: 'status-warn',
+      text: 'Bad link',
+      hint: 'The url in data/dashboards.js is not a valid absolute http(s) address, so it was neither linked nor checked.'
     }
   };
 
   function statusOf(item) {
     if (!item.url) return 'pending';
+    if (!deployUrl(item)) return 'broken';
     return probeState[item.id] || 'checking';
   }
 
@@ -224,7 +254,7 @@
     // Only meaningful once there is a URL to have checked. A dashboard with no
     // deploy link cannot have been hand-checked, and claiming otherwise would
     // contradict the "Not deployed" label sitting next to it.
-    var seen = item && item.url && item.verified ? formatVerified(item.verified) : '';
+    var seen = item && hasDeploy(item) && item.verified ? formatVerified(item.verified) : '';
     if (seen) hint += ' Last hand-checked ' + seen + '.';
     return (
       '<span class="status ' +
@@ -241,13 +271,22 @@
 
   function rowMarkup(item, index) {
     var state = statusOf(item);
-    var live = !!item.url;
-    var host = hostOf(item.url);
+    var href = deployUrl(item);
+    var live = !!href;
+    var host = hostOf(href);
     var tagList = item.tags || [];
+
+    // A rejected url is shown raw, so the typo that caused it is visible rather
+    // than being reported as "no deploy URL recorded".
+    var hostText = href
+      ? shortHost(host)
+      : item.url
+        ? String(item.url)
+        : 'No deploy URL recorded';
 
     var name = live
       ? '<a href="' +
-        esc(item.url) +
+        esc(href) +
         // No title here: it would only repeat the description that is already
         // visible, and some screen readers announce a title in place of the
         // link text.
@@ -293,10 +332,10 @@
       '<div class="row-foot">' +
       // The tooltip holds the full host, which is the only reason to have one:
       // the visible text has had the netlify.app suffix stripped.
-      '<span class="row-host"' +
-      (host ? ' title="' + esc(host) + '"' : '') +
-      '>' +
-      esc(host ? shortHost(host) : 'No deploy URL recorded') +
+      '<span class="row-host" title="' +
+      esc(host || String(item.url || '')) +
+      '">' +
+      esc(hostText) +
       '</span>' +
       repo +
       (live ? '<span class="row-go" aria-hidden="true">' + icon('arrow-up-right', 15) + '</span>' : '') +
@@ -341,8 +380,8 @@
   var checkedAt = '';
 
   function matches(item) {
-    if (scope === 'live' && !item.url) return false;
-    if (scope === 'pending' && item.url) return false;
+    if (scope === 'deployed' && !hasDeploy(item)) return false;
+    if (scope === 'unlinked' && hasDeploy(item)) return false;
 
     if (!query) return true;
     var haystack = [item.name, item.description, (item.tags || []).join(' ')]
@@ -361,10 +400,9 @@
     return !!query || scope !== 'all';
   }
 
+  /** Only entries that actually have a checkable address. */
   function withUrl() {
-    return dashboards.filter(function (d) {
-      return !!d.url;
-    });
+    return dashboards.filter(hasDeploy);
   }
 
   /**
@@ -379,7 +417,9 @@
       targets.length > 0 &&
       targets.every(function (d) {
         var state = statusOf(d);
-        return state === 'live' || state === 'unverified' || state === 'offline';
+        return (
+          state === 'live' || state === 'unverified' || state === 'offline' || state === 'broken'
+        );
       })
     );
   }
@@ -408,19 +448,19 @@
         body: 'Try a different word, or reset the filter to see every dashboard.'
       };
     }
-    if (scope === 'pending') {
+    if (scope === 'unlinked') {
       return {
-        title: 'Everything is deployed',
+        title: 'Everything is linked',
         body:
           'All ' +
           dashboards.length +
-          ' dashboards have a live link. Switch back to All to browse them.'
+          ' dashboards have a usable link. Switch back to All to browse them.'
       };
     }
-    if (scope === 'live') {
+    if (scope === 'deployed') {
       return {
-        title: 'No dashboard is confirmed reachable',
-        body: 'The checks did not complete. Try re-checking the links, or browse All.'
+        title: 'Nothing has a usable link',
+        body: 'Add a valid url to an entry in data/dashboards.js.'
       };
     }
     return {
@@ -450,7 +490,9 @@
     // "checking links" forever would be a lie, because there is nothing to check.
     var checked = withUrl();
     if (!checked.length) {
-      el.meta.innerHTML = '<strong>' + total + '</strong> dashboards, none deployed yet';
+      // Covers both "no url recorded" and "every url rejected": neither has
+      // anything that could be linked or checked.
+      el.meta.innerHTML = '<strong>' + total + '</strong> dashboards, none linked yet';
       return;
     }
 
@@ -510,10 +552,14 @@
     var offline = withUrl().filter(function (d) {
       return statusOf(d) === 'offline';
     });
+    // Broken entries are not in withUrl(), because they are never checked.
+    var broken = dashboards.filter(function (d) {
+      return statusOf(d) === 'broken';
+    });
 
-    el.footnote.hidden = unverified.length === 0 && offline.length === 0;
+    el.footnote.hidden = unverified.length === 0 && offline.length === 0 && broken.length === 0;
 
-    if (!unverified.length && !offline.length) {
+    if (!unverified.length && !offline.length && !broken.length) {
       el.footnoteText.textContent = '';
       return;
     }
@@ -523,6 +569,21 @@
       el.footnoteText.innerHTML =
         'This device reports no network connection, so the links could not be checked. ' +
         'They may be perfectly healthy.';
+      return;
+    }
+
+    // A rejected url needs a code change, so say exactly which entry is wrong.
+    if (broken.length) {
+      el.footnoteText.innerHTML =
+        'Invalid url in <strong>' +
+        broken
+          .map(function (d) {
+            return esc(d.name);
+          })
+          .join('</strong>, <strong>') +
+        '</strong>. Only absolute http(s) addresses can be linked and checked, so ' +
+        (broken.length === 1 ? 'this entry was' : 'these entries were') +
+        ' skipped.';
       return;
     }
 

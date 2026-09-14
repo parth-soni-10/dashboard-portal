@@ -30,6 +30,14 @@ deployment that does not exist cannot have been checked.
 
 `tone` is optional; omit it and the row falls back to the house accent.
 
+`url` must be an **absolute** `http://` or `https://` address, and it is
+enforced rather than assumed. A typo like `example.com` is a *relative* URL,
+which would render as a link to nowhere and — far worse — would be probed
+against this page's own origin, come back successful, and paint the row green.
+An unusable value is therefore refused: the row shows no link, reports
+"Bad link", prints the offending value where the hostname goes so the typo is
+visible, and the footnote names the entry to fix.
+
 A `null` URL is a real state, not a bug. The row dims, reads "Not deployed",
 shows "No deploy URL recorded" where the hostname would be, and offers only the
 repository link, so there is never a call to action that leads nowhere.
@@ -95,7 +103,7 @@ own light/dark pair. Nothing here is invented.
 |---|---|---|---|---|
 | `forest` | Content Tracker | `#245c42` | `#7cc4a0` | `--green` |
 | `emerald` | Irish Visa Tracker | `#166534` | `#6ee7b7` | `--green-text` |
-| `amber` | RBI Weekly | `#8a5205` | `#e9b949` | `--brand` (dark-first in that project) |
+| `amber` | RBI Weekly | `#8a5205` | `#e9b949` | `--brand` (RBI declares dark first) |
 | `cobalt` | CSNL Module Picker | `#1d4ed8` | `#60a5fa` | `--accent` |
 
 `emerald` and `amber` deliberately use their project's *text* token rather than
@@ -109,9 +117,15 @@ interactive element stays on the single house accent.
 |---|---|---|
 | Reachable | Green | This browser completed a request to the dashboard. |
 | Could not verify | Amber | The check did not complete. Not a claim that the site is down. |
+| Bad link | Amber | The `url` is not an absolute http(s) address. Neither linked nor checked. |
 | Offline | Grey | The device reports no network connection. |
 | Not deployed | Grey | No `url` recorded yet. |
 | Checking | Grey | A check is in flight. |
+
+The other filter is **Deployed** / **Not linked**, deliberately not "Reachable":
+those chips answer whether an entry has a *usable link*, which is a different
+question from whether the probe could confirm it. An entry with a URL that could
+not be verified is still Deployed.
 
 The wording is deliberately hedged, because a cross-origin check cannot tell the
 difference between a dead host and a host that refuses to be checked.
@@ -183,6 +197,10 @@ into CI. It catches the failure modes that a read-through misses:
 - an inline `<script>` or `style=""`, which the CSP would block
 - a `dataset.*` attribute assigned but never read
 - a manifest field that `app.js` never renders
+- a duplicate element id, or a duplicate manifest id
+- `target="_blank"` without `rel="noopener"`, a form control with no label, an
+  anchor with no href, a missing `lang`
+- a manifest field interpolated into markup without going through `esc()`
 - a colour literal in JS that appears nowhere in `styles.css` (this is what
   caught the `theme-color` meta drifting away from the real token)
 
@@ -240,6 +258,13 @@ netlify.toml                  Publish config only
   changes announce through `aria-live`, the row focus ring is inset (`:focus-within`
   on the row, since the anchor is a stretched-link overlay and an outline on it
   would trace the wrong box), and `/` focuses the filter from anywhere.
+- **Long tokens wrap, they do not vanish.** `.row-title`, `.row-desc`,
+  `.footnote` and `.empty-body` set `overflow-wrap: anywhere`, because the
+  manifest is hand-written and a description can hold a long unbroken URL. The
+  registry's `overflow: hidden` would otherwise clip it silently — no scrollbar,
+  no ellipsis, content just gone. `anywhere` rather than `break-word` so the
+  grid track's min-content size shrinks too, which is what lets the column
+  actually narrow.
 - **Contrast:** every text element clears WCAG AA 4.5:1 in both themes,
   including the tone numerals and the status pills, verified by compositing the
   translucent tints rather than eyeballing. The tightest pair is the light-mode
@@ -270,10 +295,13 @@ Any static server works, since there is no build step:
 python -m http.server 8000
 ```
 
-One gotcha while editing: `http.server` sets `Last-Modified` with one-second
-granularity and sends no `Cache-Control`, so Chrome applies heuristic caching and
-can serve a subresource you changed in the same second, leaving you testing a
-stale `data/dashboards.js`. Hard-reload, or touch the file and wait a second.
+One gotcha while editing, and it is worth taking seriously: `http.server` sends
+no `Cache-Control`, so Chrome applies heuristic caching to every subresource and
+will happily keep serving a `styles.css` you have already changed — even after a
+touch and a reload. This is not theoretical; it was masking a CSS fix during
+development and made a working rule look broken. If a change to `styles.css`
+does not appear, check `getComputedStyle`, then serve on a different port to get
+a fresh origin rather than assuming the rule is wrong.
 
 There is also a `<noscript>` block. The list is built in the browser, so with
 scripting off the page would otherwise be blank with no explanation.

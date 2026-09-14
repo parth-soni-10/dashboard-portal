@@ -26,6 +26,12 @@
  *      nothing consumes is worse than no field: it looks supported.
  *   9. Every colour literal in JS exists in styles.css. This is what catches a
  *      hardcoded theme-color drifting away from the real token.
+ *  10. No duplicate element ids, and no duplicate manifest ids (a duplicate id
+ *      makes the status lookup and the filter silently wrong).
+ *  11. Every target="_blank" carries rel="noopener", every form control has a
+ *      label, and every <a> has an href.
+ *  12. A manifest entry can never inject markup: every field app.js renders is
+ *      passed through esc(), and esc() is present at all.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -48,6 +54,10 @@ const js = [app, icons, themeInit].join('\n');
 const allSource = [html, app, icons, themeInit, manifest].join('\n');
 const problems = [];
 const note = (check, detail) => problems.push({ check, detail });
+const attr = (source, re) => {
+  const m = source.match(re);
+  return m ? m[1] : null;
+};
 
 /* -- 1. Dead CSS selectors ------------------------------------------------- */
 
@@ -158,6 +168,54 @@ for (const m of htmlNoComments.matchAll(/<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g)
 }
 if (stack.length) note('unbalanced-html', `unclosed: ${stack.join(', ')}`);
 
+/* -- 10. Duplicate ids ---------------------------------------------------- */
+
+const idList = [...html.matchAll(/\sid=["']([\w-]+)["']/g)].map((m) => m[1]);
+const idCounts = new Map();
+for (const id of idList) idCounts.set(id, (idCounts.get(id) || 0) + 1);
+for (const [id, n] of idCounts) {
+  if (n > 1) note('duplicate-id', `id="${id}" appears ${n} times in index.html`);
+}
+
+const manifestIds = [...manifest.matchAll(/\bid:\s*'([^']+)'/g)].map((m) => m[1]);
+const manifestIdCounts = new Map();
+for (const id of manifestIds) manifestIdCounts.set(id, (manifestIdCounts.get(id) || 0) + 1);
+for (const [id, n] of manifestIdCounts) {
+  if (n > 1) note('duplicate-manifest-id', `'${id}' is used by ${n} entries`);
+}
+
+/* -- 11. Link and control hygiene ----------------------------------------- */
+
+for (const tag of htmlNoComments.matchAll(/<a\b[^>]*>/gi)) {
+  const t = tag[0];
+  const href = attr(t, /\shref=["']([^"']*)["']/i);
+  if (!href || href === '#') note('dead-link', `anchor without a usable href: ${t.slice(0, 70)}`);
+  if (/\starget=["']_blank["']/i.test(t) && !/\srel=["'][^"']*noopener/i.test(t)) {
+    note('unsafe-blank', `target="_blank" without rel="noopener": ${t.slice(0, 70)}`);
+  }
+}
+const labelFor = new Set([...htmlNoComments.matchAll(/<label\b[^>]*\sfor=["']([\w-]+)["']/gi)].map((m) => m[1]));
+for (const tag of htmlNoComments.matchAll(/<input\b[^>]*>/gi)) {
+  const t = tag[0];
+  if (/\stype=["'](hidden|submit|button)["']/i.test(t)) continue;
+  const id = attr(t, /\sid=["']([\w-]+)["']/i);
+  const hasAria = /\saria-label(ledby)?=/i.test(t);
+  if (!hasAria && (!id || !labelFor.has(id))) {
+    note('unlabelled-control', `input has no label or aria-label: ${t.slice(0, 70)}`);
+  }
+}
+if (!/\slang=["'][a-z-]+["']/i.test(htmlNoComments)) note('no-lang', '<html> has no lang attribute');
+
+/* -- 12. Escaping --------------------------------------------------------- */
+
+if (!/function esc\(/.test(app)) note('no-esc', 'app.js has no esc() helper, so manifest text is not sanitised');
+// Every field interpolated into markup must go through esc(). This checks the
+// ones that are: a bare `item.name` inside a string concatenation would not be.
+for (const field of ['name', 'description', 'id', 'tone', 'url', 'repo']) {
+  const bare = new RegExp(`\\+\\s*item\\.${field}\\s*\\+`);
+  if (bare.test(app)) note('unescaped-field', `item.${field} is concatenated without esc()`);
+}
+
 /* -- 6. CSP safety -------------------------------------------------------- */
 
 if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(htmlNoComments)) {
@@ -219,6 +277,7 @@ if (!problems.length) {
   console.log(`  ${defined.size} custom properties defined`);
   console.log(`  ${glyphsDefined.size} icon glyphs, all used`);
   console.log(`  ${manifestKeys.size} manifest fields, all rendered`);
+  console.log(`  ${manifestIds.length} manifest entries, ids unique`);
   process.exit(0);
 }
 

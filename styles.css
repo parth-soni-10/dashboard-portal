@@ -604,6 +604,17 @@ body {
   min-width: 0;
 }
 
+/* `overflow-wrap: anywhere` on both text blocks, because the manifest is
+   hand-written and a description can contain a long unbroken token (a URL, a
+   hash). Without it the token exceeded the row and was silently clipped by the
+   registry's `overflow: hidden` — no scrollbar, no ellipsis, content simply
+   gone. `anywhere` rather than `break-word` so it also reduces the grid track's
+   min-content size, which is what lets the column actually shrink. */
+.row-title,
+.row-desc {
+  overflow-wrap: anywhere;
+}
+
 .row-title {
   margin: 0;
   font-family: var(--font-display);
@@ -774,6 +785,8 @@ body {
   max-width: 76ch;
   color: var(--text-soft);
   font-size: 12.5px;
+  /* It echoes manifest names and urls, so it can contain a long token too. */
+  overflow-wrap: anywhere;
 }
 
 .footnote .ico {
@@ -814,6 +827,7 @@ body {
   max-width: 42ch;
   color: var(--text-soft);
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .btn {
