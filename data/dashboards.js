@@ -7,7 +7,7 @@
  *   name        display name
  *   mark        one or two characters shown in the card monogram
  *   tone        identity colour, drawn from that project's own palette.
- *               One of: gold, emerald, green, slate, blue (see styles.css)
+ *               One of: gold, emerald, slate, blue (see styles.css)
  *   tagline     short line under the name (aim for under 45 characters)
  *   description one sentence, plain language, under 130 characters
  *   url         live Netlify URL, or null when it has not been deployed yet
@@ -42,19 +42,6 @@ window.DASHBOARDS = [
     url: 'https://irishvisaupdatetracker.netlify.app/',
     repo: 'https://github.com/parth-soni-10/Irish-Visa-Tracker',
     tags: ['Python', 'GitHub Actions', 'Scraping'],
-    verified: '2026-09-14'
-  },
-  {
-    id: 'cents',
-    name: 'cents.',
-    mark: '¢',
-    tone: 'green',
-    tagline: 'Personal expense tracker',
-    description:
-      'Offline-first spending log with budgets, history and charts, optionally synced through a private store.',
-    url: 'https://cents-app.netlify.app/',
-    repo: 'https://github.com/parth-soni-10/Expense-Tracker',
-    tags: ['PWA', 'Offline', 'Functions'],
     verified: '2026-09-14'
   },
   {

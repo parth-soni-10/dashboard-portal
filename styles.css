@@ -109,7 +109,6 @@
    project's own palette, so a card's colour matches the product it opens:
      gold     Content Tracker     (its --gold accent)
      emerald  Irish Visa Tracker  (its --green)
-     green    cents.              (its --accent)
      slate    RBI Weekly          (its --secondary)
      blue     CSNL Module Picker  (its --accent)
    --tone is the raw brand colour (tile tint, hover border).
@@ -122,11 +121,6 @@
 [data-tone='emerald'] {
   --tone: #059669;
   --tone-ink: #04654a;
-}
-
-[data-tone='green'] {
-  --tone: #157a4a;
-  --tone-ink: #10603a;
 }
 
 [data-tone='slate'] {
@@ -144,9 +138,6 @@
 }
 :root[data-theme='dark'] [data-tone='emerald'] {
   --tone-ink: #34d399;
-}
-:root[data-theme='dark'] [data-tone='green'] {
-  --tone-ink: #4ade80;
 }
 :root[data-theme='dark'] [data-tone='slate'] {
   --tone-ink: #a7b3c4;

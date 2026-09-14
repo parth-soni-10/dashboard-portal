@@ -79,9 +79,10 @@
    * Cross-origin reads are blocked without CORS headers, so this sends a
    * no-cors request: the body is opaque, but the promise resolves when the
    * host answers. A rejection means this browser could not complete the
-   * request, which is NOT the same as the dashboard being down. Several of
-   * these sites ship `Cross-Origin-Resource-Policy: same-origin` (Expense
-   * Tracker does), and that blocks cross-site checks by design.
+   * request, which is NOT the same as the dashboard being down. A host that
+   * ships `Cross-Origin-Resource-Policy: same-origin` refuses cross-site
+   * checks by design and will always reject, so a rejection must never be
+   * reported as an outage.
    *
    * So the failure state is reported as "Could not verify" rather than
    * "Unreachable". Overstating a blocked probe as an outage would be worse
@@ -221,8 +222,8 @@
       (live ? '' : ' is-pending') +
       '" data-id="' +
       esc(item.id) +
-      '" data-tone="' +
-      esc(item.tone || 'green') +
+      // An entry without a tone simply falls back to the house accent below.
+      (item.tone ? '" data-tone="' + esc(item.tone) : '') +
       '">' +
       '<div class="card-top">' +
       '<span class="tile" aria-hidden="true">' +

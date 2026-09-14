@@ -14,7 +14,7 @@ and Netlify redeploys it. Nothing else needs touching.
   id: 'rbi-weekly',            // stable slug, also the sessionStorage key
   name: 'RBI Weekly Dashboard',
   mark: 'RB',                  // one or two characters for the card monogram
-  tone: 'slate',               // identity colour: gold, emerald, green, slate, blue
+  tone: 'slate',               // identity colour: gold, emerald, slate, blue
   tagline: "India's weekly macro and forex data",
   description: 'One sentence, plain language, under 130 characters.',
   url: 'https://example.netlify.app/',   // null until it is deployed
@@ -73,12 +73,14 @@ The badge is deliberately hedged, because a cross-origin check cannot tell the
 difference between a dead host and a host that refuses to be checked.
 
 Reads happen with `fetch(url, { mode: 'no-cors' })`: the response body is
-opaque, but the promise still resolves when the host answers. Expense Tracker
-ships `Cross-Origin-Resource-Policy: same-origin` in its own `netlify.toml`,
-which blocks the request outright, so its card permanently reads "Could not
+opaque, but the promise still resolves when the host answers. A dashboard that
+ships `Cross-Origin-Resource-Policy: same-origin` in its own `netlify.toml`
+refuses cross-site checks outright, so its card would sit on "Could not
 verify" while the site is perfectly healthy. Calling that "Unreachable" would
 be a lie, hence the softer wording, and a footnote under the grid names the
-offending dashboard instead of leaving you guessing.
+offending dashboard instead of leaving you guessing. No dashboard listed today
+triggers it, but the Expense Tracker repo sets that header, so a future entry
+can.
 
 Results are cached in `sessionStorage` for five minutes so the page never
 hammers five hosts on every keystroke. The refresh button in the header clears
@@ -135,8 +137,8 @@ deliberately spends far less space on chrome than a dashboard would.
   rings, the active chip. Each card additionally carries its own identity tone
   on its monogram tile and hover border only. Those tones are real values from
   each project's own palette (Content Tracker's gold, Irish Visa's emerald,
-  cents.' green, RBI's slate, Module Picker's blue), so a card's colour matches
-  the product it opens rather than being decoration.
+  RBI's slate, Module Picker's blue), so a card's colour matches the product it
+  opens rather than being decoration.
 - **Contrast:** every text element clears WCAG AA 4.5:1 in both themes,
   including the monogram tiles on their tinted backgrounds. Verified by
   compositing the translucent tints, not by eyeballing. Do not lighten the

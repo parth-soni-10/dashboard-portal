@@ -8,9 +8,9 @@
   publish = "."
 
 # Explicit Content-Type + no-cache on every asset, matching the other
-# dashboards. `charset=utf-8` matters here because the page copy contains
-# non-ASCII characters (the cents. mark); a silent Latin-1 fallback would
-# corrupt them.
+# dashboards. `charset=utf-8` is pinned defensively: the page is plain ASCII
+# today, but a silent Latin-1 fallback would corrupt the first non-ASCII
+# character anyone adds to the copy.
 
 [[headers]]
   for = "/*.js"
