@@ -107,6 +107,15 @@
     }, PROBE_TIMEOUT);
 
     return fetch(url, {
+      // HEAD, not GET. A no-cors response is opaque, so its body can never be
+      // read: a GET invites a transfer of the whole page of every dashboard
+      // (one of them is 212 KB) for information that is discarded regardless.
+      // HEAD asks the only question this check asks — did the host answer?
+      //
+      // Either verb leaves a companion net::ERR_ABORTED in devtools. That is
+      // Chrome discarding the opaque response and is not a failure: the 200
+      // arrives first and the badge still resolves to Reachable.
+      method: 'HEAD',
       mode: 'no-cors',
       cache: 'no-store',
       redirect: 'follow',
@@ -128,7 +137,13 @@
     try {
       var raw = sessionStorage.getItem('hub-probe');
       var parsed = raw ? JSON.parse(raw) : null;
-      if (parsed && parsed.at && Date.now() - parsed.at < PROBE_TTL) return parsed.results || {};
+      if (!parsed || !parsed.at || Date.now() - parsed.at >= PROBE_TTL) return null;
+      var results = parsed.results || {};
+      // An empty cache means every probe came back transient, so there is
+      // nothing worth reusing. Reporting it as a hit would strand the badges
+      // on their stale state for the rest of the TTL.
+      if (!Object.keys(results).length) return null;
+      return results;
     } catch (e) {
       /* ignore a corrupt cache */
     }
@@ -184,13 +199,38 @@
     return probeState[item.id] || 'checking';
   }
 
-  function statusMarkup(state) {
+  /** 2026-09-14 -> "14 Sept 2026", so the manifest's provenance line reads. */
+  function formatVerified(iso) {
+    var when = new Date(String(iso) + 'T00:00:00Z');
+    if (isNaN(when.getTime())) return '';
+    return when.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC'
+    });
+  }
+
+  /**
+   * The pill's tooltip carries the hand-checked date. An automatic probe cannot
+   * be trusted as the only evidence — a dashboard that blocks cross-site
+   * checks can never confirm itself — so the date the link was last opened by
+   * hand is the honest fallback, and this is where it belongs: available on
+   * hover and to a screen reader without adding a line of chrome.
+   */
+  function statusMarkup(state, item) {
     var copy = STATUS_COPY[state] || STATUS_COPY.checking;
+    var hint = copy.hint || '';
+    // Only meaningful once there is a URL to have checked. A dashboard with no
+    // deploy link cannot have been hand-checked, and claiming otherwise would
+    // contradict the "Not deployed" label sitting next to it.
+    var seen = item && item.url && item.verified ? formatVerified(item.verified) : '';
+    if (seen) hint += ' Last hand-checked ' + seen + '.';
     return (
       '<span class="status ' +
       copy.cls +
       '" title="' +
-      esc(copy.hint || '') +
+      esc(hint) +
       '"><span class="status-dot" aria-hidden="true"></span>' +
       esc(copy.text) +
       '</span>'
@@ -208,9 +248,10 @@
     var name = live
       ? '<a href="' +
         esc(item.url) +
-        '" target="_blank" rel="noopener" title="' +
-        esc(item.description) +
-        '">' +
+        // No title here: it would only repeat the description that is already
+        // visible, and some screen readers announce a title in place of the
+        // link text.
+        '" target="_blank" rel="noopener">' +
         esc(item.name) +
         '</a>'
       : esc(item.name);
@@ -248,11 +289,13 @@
       '</p>' +
       '</div>' +
       '<div class="row-meta">' +
-      statusMarkup(state) +
+      statusMarkup(state, item) +
       '<div class="row-foot">' +
-      '<span class="row-host" title="' +
-      esc(host || '') +
-      '">' +
+      // The tooltip holds the full host, which is the only reason to have one:
+      // the visible text has had the netlify.app suffix stripped.
+      '<span class="row-host"' +
+      (host ? ' title="' + esc(host) + '"' : '') +
+      '>' +
       esc(host ? shortHost(host) : 'No deploy URL recorded') +
       '</span>' +
       repo +
@@ -270,11 +313,25 @@
     );
   }
 
-  function refreshStatus(id, state) {
-    var card = el.grid.querySelector('[data-id="' + id + '"]');
-    if (!card) return;
-    var pill = card.querySelector('.status');
-    if (pill) pill.outerHTML = statusMarkup(state);
+  /**
+   * Found by walking children rather than by building a selector from the id.
+   * An id containing a quote or bracket would make querySelector throw a
+   * SyntaxError and take the whole check down with it; comparing dataset.id
+   * cannot be broken by the data.
+   */
+  function findRow(id) {
+    var rows = el.grid.children;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].dataset.id === id) return rows[i];
+    }
+    return null;
+  }
+
+  function refreshStatus(item, state) {
+    var row = findRow(item.id);
+    if (!row) return;
+    var pill = row.querySelector('.status');
+    if (pill) pill.outerHTML = statusMarkup(state, item);
   }
 
   /* --------------------------------------------------------------- filters -- */
@@ -310,14 +367,34 @@
     });
   }
 
+  /**
+   * True once every deployed dashboard has an answer worth acting on. The
+   * offline state counts: the device has no connection, so waiting for a better
+   * answer would leave the summary claiming to be checking for ever while every
+   * badge already says otherwise.
+   */
   function settled() {
+    var targets = withUrl();
     return (
-      withUrl().length > 0 &&
-      withUrl().every(function (d) {
+      targets.length > 0 &&
+      targets.every(function (d) {
         var state = statusOf(d);
-        return state === 'live' || state === 'unverified';
+        return state === 'live' || state === 'unverified' || state === 'offline';
       })
     );
+  }
+
+  /**
+   * Keep each chip's visual state and its announced state in step. Without
+   * aria-pressed a screen reader cannot tell which filter is active.
+   */
+  function setScope(next) {
+    scope = next;
+    document.querySelectorAll('.chip').forEach(function (chip) {
+      var on = chip.dataset.scope === next;
+      chip.classList.toggle('is-on', on);
+      chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
   }
 
   /**
@@ -369,24 +446,43 @@
       return;
     }
 
+    // A manifest where nothing is deployed yet is a real state: saying
+    // "checking links" forever would be a lie, because there is nothing to check.
+    var checked = withUrl();
+    if (!checked.length) {
+      el.meta.innerHTML = '<strong>' + total + '</strong> dashboards, none deployed yet';
+      return;
+    }
+
     if (!settled()) {
       el.meta.innerHTML = '<strong>' + total + '</strong> dashboards, checking links';
       return;
     }
 
-    var checked = withUrl();
     var reachable = checked.filter(function (d) {
       return statusOf(d) === 'live';
     }).length;
-    var unverified = checked.length - reachable;
 
-    var parts = ['<strong>' + total + '</strong> dashboards', '<strong>' + reachable + '</strong> reachable'];
-    parts.push('checked <strong>' + esc(checkedAt || 'just now') + '</strong>');
-    el.meta.innerHTML = parts.join(', ');
-    if (unverified) el.meta.dataset.unverified = String(unverified);
+    el.meta.innerHTML =
+      '<strong>' +
+      total +
+      '</strong> dashboards, <strong>' +
+      reachable +
+      '</strong> reachable, checked <strong>' +
+      esc(checkedAt || 'just now') +
+      '</strong>';
   }
 
+  var introPlayed = false;
+
   function render() {
+    // The stagger is an entrance, not a transition. Replaying it on every
+    // keystroke made the whole list flicker while filtering, so it is applied
+    // to the first paint only. Toggled before the rows are inserted, so the
+    // rows created by a later render simply never match the rule.
+    el.grid.classList.toggle('is-intro', !introPlayed);
+    introPlayed = true;
+
     var visible = dashboards.filter(matches);
     var total = dashboards.length;
 
@@ -411,10 +507,22 @@
     var unverified = withUrl().filter(function (d) {
       return statusOf(d) === 'unverified';
     });
-    el.footnote.hidden = unverified.length === 0;
+    var offline = withUrl().filter(function (d) {
+      return statusOf(d) === 'offline';
+    });
 
-    if (!unverified.length) {
+    el.footnote.hidden = unverified.length === 0 && offline.length === 0;
+
+    if (!unverified.length && !offline.length) {
       el.footnoteText.textContent = '';
+      return;
+    }
+
+    // Being offline explains every badge at once, so it takes precedence.
+    if (offline.length) {
+      el.footnoteText.innerHTML =
+        'This device reports no network connection, so the links could not be checked. ' +
+        'They may be perfectly healthy.';
       return;
     }
 
@@ -426,7 +534,9 @@
       (unverified.length === 1
         ? '<strong>' + names[0] + '</strong> blocks'
         : '<strong>' + names.join('</strong>, <strong>') + '</strong> block') +
-      ' cross-site checks, so its badge cannot be confirmed from this browser. Open the dashboard to check by hand.';
+      ' cross-site checks, so ' +
+      (unverified.length === 1 ? 'its' : 'their') +
+      ' badge cannot be confirmed from this browser. Open the dashboard to check by hand.';
   }
 
   function finishCheck() {
@@ -444,15 +554,15 @@
     }
 
     // Only probe what we have no fresh answer for. A cached result is reused,
-    // so flicking between filters never re-hammers five hosts.
+    // so flicking between filters never re-hammers every host.
     var toProbe = 0;
     targets.forEach(function (item) {
       if (!force && probeState[item.id] && probeState[item.id] !== 'checking') {
-        refreshStatus(item.id, probeState[item.id]);
+        refreshStatus(item, probeState[item.id]);
         return;
       }
       probeState[item.id] = 'checking';
-      refreshStatus(item.id, 'checking');
+      refreshStatus(item, 'checking');
       toProbe++;
     });
 
@@ -467,7 +577,7 @@
       if (probeState[item.id] !== 'checking') return;
       probe(item.url).then(function (state) {
         probeState[item.id] = state;
-        refreshStatus(item.id, state);
+        refreshStatus(item, state);
         done++;
         if (done === toProbe) finishCheck();
       });
@@ -476,11 +586,22 @@
 
   /* --------------------------------------------------------------- events -- */
 
+  // The debounce means a keystroke can still be in flight when something else
+  // clears the filter. Any path that resets the field must cancel the pending
+  // write, or the queued keystroke lands afterwards and re-applies a query the
+  // input no longer shows.
   var filterTimer = null;
-  el.filter.addEventListener('input', function () {
+
+  function cancelPendingFilter() {
     clearTimeout(filterTimer);
+    filterTimer = null;
+  }
+
+  el.filter.addEventListener('input', function () {
+    cancelPendingFilter();
     var value = el.filter.value.trim();
     filterTimer = setTimeout(function () {
+      filterTimer = null;
       query = value;
       render();
     }, 110);
@@ -489,6 +610,7 @@
   el.filter.addEventListener('keydown', function (event) {
     if (event.key === 'Escape' && el.filter.value) {
       event.preventDefault();
+      cancelPendingFilter();
       el.filter.value = '';
       query = '';
       render();
@@ -497,21 +619,16 @@
 
   document.querySelectorAll('.chip').forEach(function (chip) {
     chip.addEventListener('click', function () {
-      scope = chip.dataset.scope;
-      document.querySelectorAll('.chip').forEach(function (other) {
-        other.classList.toggle('is-on', other === chip);
-      });
+      setScope(chip.dataset.scope);
       render();
     });
   });
 
   el.emptyReset.addEventListener('click', function () {
-    scope = 'all';
+    cancelPendingFilter();
     query = '';
     el.filter.value = '';
-    document.querySelectorAll('.chip').forEach(function (chip) {
-      chip.classList.toggle('is-on', chip.dataset.scope === 'all');
-    });
+    setScope('all');
     render();
     el.filter.focus();
   });
@@ -563,8 +680,15 @@
     el.themeToggle.title = 'Switch to ' + goingTo + ' mode';
     el.themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
 
+    // Read the token rather than hardcoding the value here: a literal in JS
+    // silently drifts out of step with styles.css and the browser chrome ends
+    // up the wrong colour. This runs after the stylesheets are applied, which
+    // is why theme-color is handled here and not in the pre-paint bootstrap.
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#0e1114' : '#f3f4f6');
+    if (meta) {
+      var bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+      if (bg) meta.setAttribute('content', bg);
+    }
   }
 
   el.themeToggle.addEventListener('click', function () {
@@ -587,6 +711,9 @@
   hydrateIcons(document);
   fillThemeGlyphs();
   applyTheme(root.dataset.theme === 'light' ? 'light' : 'dark', false);
+  // Derive the chips' pressed state from the variable rather than trusting the
+  // markup to agree with it.
+  setScope(scope);
   render();
   checkAll(false);
 

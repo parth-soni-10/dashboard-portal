@@ -22,6 +22,12 @@ and Netlify redeploys it. Nothing else needs touching.
 }
 ```
 
+`verified` surfaces in the status pill's tooltip. It exists because a probe is
+not sufficient evidence on its own: a dashboard that blocks cross-site checks
+can never confirm itself, so the date the link was last opened by hand is the
+honest fallback. It is only shown for entries that actually have a `url` — a
+deployment that does not exist cannot have been checked.
+
 `tone` is optional; omit it and the row falls back to the house accent.
 
 A `null` URL is a real state, not a bug. The row dims, reads "Not deployed",
@@ -110,8 +116,16 @@ interactive element stays on the single house accent.
 The wording is deliberately hedged, because a cross-origin check cannot tell the
 difference between a dead host and a host that refuses to be checked.
 
-Reads happen with `fetch(url, { mode: 'no-cors' })`: the response body is
-opaque, but the promise still resolves when the host answers. A dashboard that
+The check is a `HEAD` request with `mode: 'no-cors'`. The response is opaque, so
+its body can never be read: a `GET` would invite a transfer of the whole page of
+every dashboard (one of them is 212 KB) for information that gets discarded
+regardless. `HEAD` asks the only question being asked — did the host answer?
+
+Either verb leaves a companion `net::ERR_ABORTED` in devtools. That is Chrome
+discarding the opaque response, not a failed check: the 200 arrives first and
+the pill still resolves to Reachable. Do not chase it.
+
+A dashboard that
 ships `Cross-Origin-Resource-Policy: same-origin` in its own `netlify.toml`
 refuses cross-site checks outright, so its row would sit on "Could not verify"
 while the site is perfectly healthy. Calling that "Unreachable" would be a lie,
@@ -121,7 +135,15 @@ it, but the Expense Tracker repo sets that header, so a future entry can.
 
 Results are cached in `sessionStorage` for five minutes so the page never
 hammers four hosts on every keystroke. The refresh button in the bar clears the
-cache and probes everything again. Transient states are never cached.
+cache and probes everything again. Transient states are never cached — and a
+cache holding no durable results at all is treated as a miss rather than a hit,
+so badges cannot be stranded on a stale state for the rest of the window.
+
+Being offline is a settled state, not a pending one. Every pill reads "Offline
+", the summary reports 0 reachable, and the footnote explains that no link could
+be checked and that they may be perfectly healthy. The alternative — reporting
+"checking links" indefinitely while every badge already says otherwise — is a
+lie the first version told.
 
 If a dashboard ever moves to a custom domain, add that origin to `connect-src`
 in `_headers` or its pill will read "Could not verify" for the wrong reason.
@@ -144,6 +166,28 @@ can stay an external file. **If you ever add an inline `<script>` or a `style`
 attribute, the CSP will block it.** That also blocks Netlify's injected
 free-plan badge, which is intended.
 
+## Static audit
+
+```bash
+tools/audit.mjs
+```
+
+Zero-dependency checker that exits non-zero on a finding, so it can be wired
+into CI. It catches the failure modes that a read-through misses:
+
+- a CSS class or id selector nothing in the markup or `app.js` produces
+- a custom property declared but never read, or read but never defined
+- a glyph used but missing from `icons.js`, or defined but never used
+- an `@keyframes` block nothing animates
+- unbalanced markup, a `getElementById` with no matching id, a dead `#anchor`
+- an inline `<script>` or `style=""`, which the CSP would block
+- a `dataset.*` attribute assigned but never read
+- a manifest field that `app.js` never renders
+- a colour literal in JS that appears nowhere in `styles.css` (this is what
+  caught the `theme-color` meta drifting away from the real token)
+
+Run it after touching `styles.css`, `icons.js` or `data/dashboards.js`.
+
 ## Files
 
 ```
@@ -155,9 +199,9 @@ icons.js                      Tree-shaken Lucide 0.462.0 paths
 data/dashboards.js            The dashboard manifest
 vendor/open-props.min.css     Open Props 1.7.17 (MIT)
 vendor/modern-normalize.css   modern-normalize 3.0.1 (MIT)
-fonts/                        Inter, Geist Sans and Geist Mono (variable)
-tools/scrape-design.mjs       Re-runnable evidence collector
-tools/design-report.json      What it found, per dashboard
+fonts/                        Inter, Geist Sans and Geist Mono (variable)tools/scrape-design.mjs       Re-runnable evidence collector
+ tools/design-report.json      What it found, per dashboard
+ tools/audit.mjs               Static hygiene audit (dead CSS, tokens, fields)
 favicon.svg                   Monogram mark
 _headers                      CSP, caching, security headers (all deploy modes)
 netlify.toml                  Publish config only
@@ -177,8 +221,21 @@ netlify.toml                  Publish config only
 - **Shape is locked.** Containers 14px, controls 6px, status pills fully round.
 - **Boundary rule.** Hairline `--border` for surfaces you read, stronger
   `--border-strong` for controls you operate.
+- **Fonts:** Inter and Geist are preloaded; Geist Mono deliberately is not.
+  Resource Timing confirms each face is fetched exactly once per load, with
+  `initiatorType: "link"` for the two preloaded ones — so the preload is what
+  fetches them and the stylesheet reuses the same bytes. Geist Mono is only used
+  for numerals and the host line, so letting CSS pull it on demand keeps it off
+  the critical path.
+
+  Chrome may still log *"inter.woff2 was preloaded but not used within a few
+  seconds"*. That is a false positive for CSS-initiated font loads and the
+  Resource Timing entries above are the evidence: one request, not two. Do not
+  "fix" it by deleting `crossorigin` — that causes a genuinely duplicated fetch.
+
 - **Motion:** transform and opacity only, all of it switched off under
-  `prefers-reduced-motion`.
+  `prefers-reduced-motion`. The entrance stagger is gated on a class applied to
+  the first render only, so filtering does not replay it on every keystroke.
 - **Accessibility:** the filter has a real label (visually hidden), status
   changes announce through `aria-live`, the row focus ring is inset (`:focus-within`
   on the row, since the anchor is a stretched-link overlay and an outline on it
@@ -212,3 +269,11 @@ Any static server works, since there is no build step:
 ```bash
 python -m http.server 8000
 ```
+
+One gotcha while editing: `http.server` sets `Last-Modified` with one-second
+granularity and sends no `Cache-Control`, so Chrome applies heuristic caching and
+can serve a subresource you changed in the same second, leaving you testing a
+stale `data/dashboards.js`. Hard-reload, or touch the file and wait a second.
+
+There is also a `<noscript>` block. The list is built in the browser, so with
+scripting off the page would otherwise be blank with no explanation.

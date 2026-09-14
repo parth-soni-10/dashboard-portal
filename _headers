@@ -8,11 +8,12 @@
 #
 # Syntax is the same path-matching Netlify uses in netlify.toml.
 
-# Fonts are content-addressed by filename and change rarely, so they can be
-# cached hard. Everything else stays revalidated so a redeploy is never masked
-# by a stale cached copy.
+# The font filenames are stable, NOT content-hashed (fonts/inter.woff2), so a
+# long immutable cache would pin a client to a replaced file for a year with no
+# way to invalidate it. Thirty days keeps the win and bounds the mistake: to
+# ship a new font, rename the file.
 /fonts/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=2592000
   X-Content-Type-Options: nosniff
 
 # Security headers.

@@ -79,19 +79,39 @@
     </header>
 
     <main class="shell">
+      <!-- The list is built in the browser from data/dashboards.js. Without
+           scripting there would otherwise be a blank page and no explanation. -->
+      <noscript>
+        <p class="empty">
+          <span class="empty-title">This portal builds its list in the browser</span>
+          <span class="empty-body"
+            >With JavaScript disabled there is nothing to show. The repository and the
+            portfolio are linked in the footer.</span
+          >
+        </p>
+      </noscript>
+
       <!-- One band: counts or health on the left, filter on the right. -->
       <div class="ledger-head">
         <p id="meta" class="meta" aria-live="polite"></p>
 
         <div class="chips" role="group" aria-label="Filter by availability">
-          <button class="chip is-on" type="button" data-scope="all">All</button>
-          <button class="chip" type="button" data-scope="live">Reachable</button>
-          <button class="chip" type="button" data-scope="pending">Awaiting deploy</button>
+          <button class="chip is-on" type="button" data-scope="all" aria-pressed="true">
+            All
+          </button>
+          <button class="chip" type="button" data-scope="live" aria-pressed="false">
+            Reachable
+          </button>
+          <button class="chip" type="button" data-scope="pending" aria-pressed="false">
+            Awaiting deploy
+          </button>
         </div>
       </div>
 
-      <section aria-labelledby="dashboards">
-        <h2 id="dashboards" class="sr-only">Dashboards</h2>
+      <!-- tabindex="-1" on the skip link's target so a keyboard user actually
+           lands here; the heading alone is not focusable. -->
+      <section id="dashboards" tabindex="-1" aria-labelledby="dashboards-heading">
+        <h2 id="dashboards-heading" class="sr-only">Dashboards</h2>
 
         <ul id="grid" class="registry">
           <!-- Rows are rendered from data/dashboards.js -->

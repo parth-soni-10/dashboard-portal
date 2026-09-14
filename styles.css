@@ -93,7 +93,6 @@
   /* The family runs green. Irish Visa's --green / --green-text is the pair
      most recently designed, so the house accent is its descendant. */
   --accent: #0f7a4f;
-  --accent-hover: #0b5f3e;
   --accent-soft: #e6f3ec;
   --accent-ring: rgba(15, 122, 79, 0.3);
   /* Ink for text sitting ON the accent. The scraped projects both name this
@@ -144,7 +143,6 @@
   --text-soft: #949cab;
 
   --accent: #34d399;
-  --accent-hover: #6ee7b7;
   --accent-soft: rgba(52, 211, 153, 0.13);
   --accent-ring: rgba(52, 211, 153, 0.34);
   --on-accent: #0b1220;
@@ -259,6 +257,13 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* The skip link's target is a container, not a control, so it takes focus (it
+   needs tabindex="-1" to be focusable at all) without painting a ring around
+   the entire list. */
+#dashboards:focus-visible {
+  outline: none;
 }
 
 .skip-link {
@@ -432,6 +437,14 @@ body {
 
 .field-input:focus ~ .field-hint {
   opacity: 0;
+}
+
+/* Chromium paints a native clear button inside type="search" that would sit
+   underneath the "/" hint. Escape already clears the field. */
+.field-input::-webkit-search-cancel-button,
+.field-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* ---------------------------------------------------------- index header --
@@ -860,25 +873,28 @@ body {
 
 /* --------------------------------------------------------------- motion -- */
 
+/* The entrance stagger is gated on .is-intro, which app.js applies for the
+   first render only. Ungated it replayed on every keystroke, so the whole list
+   flickered while filtering. */
 @media (prefers-reduced-motion: no-preference) {
-  .row {
+  .is-intro .row {
     animation: row-in 300ms var(--ease) both;
   }
 
   /* A short stagger down the index, capped so a long list never crawls. */
-  .row:nth-child(2) {
+  .is-intro .row:nth-child(2) {
     animation-delay: 35ms;
   }
-  .row:nth-child(3) {
+  .is-intro .row:nth-child(3) {
     animation-delay: 70ms;
   }
-  .row:nth-child(4) {
+  .is-intro .row:nth-child(4) {
     animation-delay: 105ms;
   }
-  .row:nth-child(5) {
+  .is-intro .row:nth-child(5) {
     animation-delay: 140ms;
   }
-  .row:nth-child(n + 6) {
+  .is-intro .row:nth-child(n + 6) {
     animation-delay: 175ms;
   }
 
