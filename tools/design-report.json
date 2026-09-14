@@ -1,0 +1,1583 @@
+[
+  {
+    "id": "content-tracker",
+    "url": "https://contenttrackerdashboard.netlify.app/",
+    "bytes": 5297,
+    "stylesheets": {
+      "linked": [
+        "https://contenttrackerdashboard.netlify.app/styles.css"
+      ],
+      "inline": 0,
+      "externalBytes": 51509
+    },
+    "title": "Content Tracker",
+    "theme": {
+      "storesTheme": false
+    },
+    "previewImage": null,
+    "socialImageRaw": null,
+    "icons": [],
+    "fontFaces": [],
+    "fonts": [
+      "\"Inter\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+      "\"Inter\", sans-serif"
+    ],
+    "fontWeights": [
+      "400",
+      "500",
+      "600",
+      "700",
+      "750",
+      "800"
+    ],
+    "radii": [
+      "6px",
+      "2px",
+      "10px",
+      "50%",
+      "8px",
+      "var(--r)",
+      "var(--r) var(--r) 0 0",
+      "20px",
+      "4px",
+      "12px",
+      "3px",
+      "14px",
+      "14px 14px 0 0",
+      "7px",
+      "8px 0 0 8px",
+      "5px"
+    ],
+    "shadows": [
+      "0 4px 18px rgba(0,0,0,.4)",
+      "0 4px 18px rgba(16,35,26,.05)",
+      "var(--shadow-sm)",
+      "var(--shadow-md)",
+      "0 2px 4px rgba(20,40,32,.06), 0 18px 36px -16px rgba(20,40,32,.22)",
+      "0 4px 20px rgba(45,106,79,.35)"
+    ],
+    "accents": [
+      {
+        "rgb": "#e0504d",
+        "hue": 1,
+        "family": "red",
+        "uses": 7
+      },
+      {
+        "rgb": "#10231a",
+        "hue": 152,
+        "family": "green",
+        "uses": 6
+      },
+      {
+        "rgb": "#2d6a4f",
+        "hue": 153,
+        "family": "green",
+        "uses": 6
+      },
+      {
+        "rgb": "#7cc4a0",
+        "hue": 150,
+        "family": "green",
+        "uses": 4
+      },
+      {
+        "rgb": "#c0392b",
+        "hue": 6,
+        "family": "red",
+        "uses": 4
+      },
+      {
+        "rgb": "#142820",
+        "hue": 156,
+        "family": "green",
+        "uses": 4
+      }
+    ],
+    "customPropCount": 20,
+    "customPropsSample": [
+      [
+        "--bg",
+        [
+          "#f3f6f4",
+          "#0c1410"
+        ]
+      ],
+      [
+        "--surface",
+        [
+          "#ffffff",
+          "#131e17"
+        ]
+      ],
+      [
+        "--surface-soft",
+        [
+          "#f8faf8",
+          "#19261e"
+        ]
+      ],
+      [
+        "--green",
+        [
+          "#245c42",
+          "#7cc4a0"
+        ]
+      ],
+      [
+        "--green-mid",
+        [
+          "#3d8b63",
+          "#4da87e"
+        ]
+      ],
+      [
+        "--green-lite",
+        [
+          "#7cc4a0",
+          "#a9ddc2"
+        ]
+      ],
+      [
+        "--green-pale",
+        [
+          "#e6f2ea",
+          "#1a2d22"
+        ]
+      ],
+      [
+        "--border",
+        [
+          "#dbe6de",
+          "#24382c"
+        ]
+      ],
+      [
+        "--border-mid",
+        [
+          "#bcd3c4",
+          "#33503f"
+        ]
+      ],
+      [
+        "--gold",
+        [
+          "#c98a3d",
+          "#e2a860"
+        ]
+      ],
+      [
+        "--gold-pale",
+        [
+          "#fdf4e7",
+          "#352b1c"
+        ]
+      ],
+      [
+        "--text",
+        [
+          "#10231a",
+          "#e6efe9"
+        ]
+      ],
+      [
+        "--text-mid",
+        [
+          "#3a5445",
+          "#b3c8ba"
+        ]
+      ],
+      [
+        "--text-soft",
+        [
+          "#4e7a64",
+          "#93b0a0"
+        ]
+      ],
+      [
+        "--red",
+        [
+          "#c0392b",
+          "#e7877a"
+        ]
+      ],
+      [
+        "--red-pale",
+        [
+          "#fde8e8",
+          "#3a2421"
+        ]
+      ],
+      [
+        "--shadow-sm",
+        [
+          "0 1px 2px rgba(16,35,26,.05), 0 4px 14px rgba(16,35,26,.05)",
+          "0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3)"
+        ]
+      ],
+      [
+        "--shadow-md",
+        [
+          "0 12px 32px rgba(16,35,26,.12), 0 2px 6px rgba(16,35,26,.05)",
+          "0 12px 32px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.38)"
+        ]
+      ],
+      [
+        "--r",
+        [
+          "14px"
+        ]
+      ],
+      [
+        "--nav-h",
+        [
+          "60px"
+        ]
+      ]
+    ],
+    "hasHeader": true
+  },
+  {
+    "id": "irish-visa-tracker",
+    "url": "https://irishvisaupdatetracker.netlify.app/",
+    "bytes": 227530,
+    "stylesheets": {
+      "linked": [
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      ],
+      "inline": 1,
+      "externalBytes": 1145
+    },
+    "title": "Irish Visa Decision Tracker",
+    "theme": {
+      "storesTheme": true
+    },
+    "previewImage": null,
+    "socialImageRaw": null,
+    "icons": [],
+    "fontFaces": [
+      {
+        "family": "Geist",
+        "weight": "100 900",
+        "src": "url('fonts/geist-sans.woff2') format('woff2')"
+      },
+      {
+        "family": "Geist Mono",
+        "weight": "100 900",
+        "src": "url('fonts/geist-mono.woff2') format('woff2')"
+      },
+      {
+        "family": "Inter",
+        "weight": "400",
+        "src": "url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf) format('truetype')"
+      },
+      {
+        "family": "Inter",
+        "weight": "500",
+        "src": "url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf) format('truetype')"
+      },
+      {
+        "family": "Inter",
+        "weight": "600",
+        "src": "url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf) format('truetype')"
+      },
+      {
+        "family": "Inter",
+        "weight": "700",
+        "src": "url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf) format('truetype')"
+      },
+      {
+        "family": "Inter",
+        "weight": "800",
+        "src": "url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyYMZg.ttf) format('truetype')"
+      }
+    ],
+    "fonts": [
+      "'Geist'",
+      "'Geist Mono'",
+      "\"Inter\", \"Geist\", -apple-system, \"Segoe UI\", Helvetica, Arial, sans-serif",
+      "\"Geist Mono\", \"SF Mono\", Consolas, Menlo, monospace",
+      "inherit",
+      "\"Geist Mono\", \"SF Mono\", Consolas, monospace",
+      "'Inter'"
+    ],
+    "fontWeights": [
+      "100",
+      "400",
+      "500",
+      "600",
+      "700",
+      "800"
+    ],
+    "radii": [
+      "var(--r-control)",
+      "100px",
+      "50%",
+      "var(--r-container)",
+      "0 3px 3px 0",
+      "999px",
+      "10px",
+      "6px",
+      "3px",
+      "0",
+      "12px",
+      "4px",
+      "2px",
+      "8px",
+      "14px",
+      "20px",
+      "19px",
+      "2px 2px 0 0"
+    ],
+    "shadows": [
+      "0 4px 14px rgba(4, 120, 87, 0.35)",
+      "0 8px 24px -12px rgba(30, 41, 59, 0.25)",
+      "0 1px 3px rgba(15, 23, 42, 0.04)",
+      "0 1px 2px rgba(0,0,0,0.03)",
+      "0 0 0 3px rgba(5, 150, 105, 0.1)",
+      "none"
+    ],
+    "accents": [
+      {
+        "rgb": "#0077e6",
+        "hue": 209,
+        "family": "blue",
+        "uses": 16
+      },
+      {
+        "rgb": "#059669",
+        "hue": 161,
+        "family": "green",
+        "uses": 7
+      },
+      {
+        "rgb": "#047857",
+        "hue": 163,
+        "family": "green",
+        "uses": 6
+      },
+      {
+        "rgb": "#7c3aed",
+        "hue": 262,
+        "family": "violet",
+        "uses": 6
+      },
+      {
+        "rgb": "#fcd34d",
+        "hue": 46,
+        "family": "yellow",
+        "uses": 5
+      },
+      {
+        "rgb": "#7db9f8",
+        "hue": 211,
+        "family": "blue",
+        "uses": 4
+      }
+    ],
+    "customPropCount": 21,
+    "customPropsSample": [
+      [
+        "--ink",
+        [
+          "#333333",
+          "#e6edf5"
+        ]
+      ],
+      [
+        "--ink-soft",
+        [
+          "#777777",
+          "#a8b4c4"
+        ]
+      ],
+      [
+        "--ink-muted",
+        [
+          "#777777",
+          "#8b98ab"
+        ]
+      ],
+      [
+        "--surface",
+        [
+          "#ffffff",
+          "#0b1220"
+        ]
+      ],
+      [
+        "--surface-raised",
+        [
+          "#f8fafc",
+          "#101a2e"
+        ]
+      ],
+      [
+        "--surface-hover",
+        [
+          "#f1f5f9",
+          "#16233b"
+        ]
+      ],
+      [
+        "--border",
+        [
+          "#e2e8f0",
+          "#1e2c47"
+        ]
+      ],
+      [
+        "--green",
+        [
+          "#059669",
+          "#34d399"
+        ]
+      ],
+      [
+        "--green-deep",
+        [
+          "#047857",
+          "#10b981"
+        ]
+      ],
+      [
+        "--green-deeper",
+        [
+          "#065f46",
+          "#059669"
+        ]
+      ],
+      [
+        "--green-light",
+        [
+          "#10b981",
+          "#6ee7b7"
+        ]
+      ],
+      [
+        "--green-soft",
+        [
+          "#dcfce7",
+          "rgba(52, 211, 153, 0.15)"
+        ]
+      ],
+      [
+        "--green-text",
+        [
+          "#166534",
+          "#6ee7b7"
+        ]
+      ],
+      [
+        "--amber",
+        [
+          "#d97706",
+          "#fbbf24"
+        ]
+      ],
+      [
+        "--amber-soft",
+        [
+          "#fef3c7",
+          "rgba(251, 191, 36, 0.15)"
+        ]
+      ],
+      [
+        "--amber-text",
+        [
+          "#92400e",
+          "#fbbf24"
+        ]
+      ],
+      [
+        "--red",
+        [
+          "#dc2626",
+          "#f87171"
+        ]
+      ],
+      [
+        "--red-soft",
+        [
+          "#fee2e2",
+          "rgba(248, 113, 113, 0.15)"
+        ]
+      ],
+      [
+        "--red-text",
+        [
+          "#991b1b",
+          "#f87171"
+        ]
+      ],
+      [
+        "--r-container",
+        [
+          "14px"
+        ]
+      ],
+      [
+        "--r-control",
+        [
+          "6px"
+        ]
+      ]
+    ],
+    "hasHeader": true
+  },
+  {
+    "id": "rbi-weekly",
+    "url": "https://rbiweeklydashboard.netlify.app/",
+    "bytes": 207820,
+    "stylesheets": {
+      "linked": [
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+      ],
+      "inline": 1,
+      "externalBytes": 1320
+    },
+    "title": "RBI Weekly Dashboard",
+    "theme": {
+      "storesTheme": true
+    },
+    "previewImage": null,
+    "socialImageRaw": null,
+    "icons": [],
+    "fontFaces": [
+      {
+        "family": "DM Mono",
+        "weight": "400",
+        "src": "url(https://fonts.gstatic.com/s/dmmono/v16/aFTU7PB1QTsUX8KYhh0.ttf) format('truetype')"
+      },
+      {
+        "family": "DM Mono",
+        "weight": "500",
+        "src": "url(https://fonts.gstatic.com/s/dmmono/v16/aFTR7PB1QTsUX8KYvumzIYQ.ttf) format('truetype')"
+      },
+      {
+        "family": "Inter",
+        "weight": "400",
+        "src": "url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf) format('truetype')"
+      },
+      {
+        "family": "Inter",
+        "weight": "500",
+        "src": "url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf) format('truetype')"
+      },
+      {
+        "family": "Inter",
+        "weight": "600",
+        "src": "url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf) format('truetype')"
+      },
+      {
+        "family": "Inter",
+        "weight": "700",
+        "src": "url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf) format('truetype')"
+      }
+    ],
+    "fonts": [
+      "var(--font)",
+      "var(--mono)",
+      "'DM Mono'",
+      "'Inter'"
+    ],
+    "fontWeights": [
+      "400",
+      "450",
+      "500",
+      "550",
+      "600",
+      "650",
+      "700"
+    ],
+    "radii": [
+      "6px",
+      "var(--r2)",
+      "11px",
+      "calc(var(--r2) - 3px)",
+      "var(--pill)",
+      "50%",
+      "var(--r3)",
+      "calc(var(--r2) - 4px)",
+      "5px",
+      "2px",
+      "10px"
+    ],
+    "shadows": [
+      "var(--shadow)",
+      "0 3px 10px -3px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.25)",
+      "var(--shadow-sm)",
+      "0 2px 8px -2px rgba(0,0,0,.35)",
+      "var(--shadow-lg)",
+      "none"
+    ],
+    "accents": [
+      {
+        "rgb": "#e9b949",
+        "hue": 42,
+        "family": "orange / amber",
+        "uses": 8
+      },
+      {
+        "rgb": "#94a3b8",
+        "hue": 215,
+        "family": "blue",
+        "uses": 6
+      },
+      {
+        "rgb": "#0f1e37",
+        "hue": 218,
+        "family": "blue",
+        "uses": 6
+      },
+      {
+        "rgb": "#101e37",
+        "hue": 218,
+        "family": "blue",
+        "uses": 4
+      },
+      {
+        "rgb": "#030712",
+        "hue": 224,
+        "family": "blue",
+        "uses": 3
+      },
+      {
+        "rgb": "#b4700a",
+        "hue": 36,
+        "family": "orange / amber",
+        "uses": 3
+      }
+    ],
+    "customPropCount": 56,
+    "customPropsSample": [
+      [
+        "--r2",
+        [
+          "10px"
+        ]
+      ],
+      [
+        "--r3",
+        [
+          "15px"
+        ]
+      ],
+      [
+        "--pill",
+        [
+          "999px"
+        ]
+      ],
+      [
+        "--w",
+        [
+          "1180px"
+        ]
+      ],
+      [
+        "--font",
+        [
+          "'Inter',system-ui,-apple-system,sans-serif"
+        ]
+      ],
+      [
+        "--mono",
+        [
+          "'DM Mono',ui-monospace,'SF Mono',Menlo,monospace"
+        ]
+      ],
+      [
+        "--fs-body",
+        [
+          "14px"
+        ]
+      ],
+      [
+        "--dur-fast",
+        [
+          "150ms"
+        ]
+      ],
+      [
+        "--dur-normal",
+        [
+          "300ms"
+        ]
+      ],
+      [
+        "--dur-slow",
+        [
+          "500ms"
+        ]
+      ],
+      [
+        "--ease-out",
+        [
+          "cubic-bezier(.2,.9,.3,1)"
+        ]
+      ],
+      [
+        "--ease-spring",
+        [
+          "cubic-bezier(.2,.8,.25,1)"
+        ]
+      ],
+      [
+        "--bg",
+        [
+          "#070b15",
+          "#f1f3f7"
+        ]
+      ],
+      [
+        "--bg-tint-1",
+        [
+          "radial-gradient(1100px 520px at 88% -140px,rgba(233,185,73,.1),transparent 62%)",
+          "radial-gradient(1000px 480px at 85% -160px,rgba(210,150,40,.09),transparent 60%)"
+        ]
+      ],
+      [
+        "--bg-tint-2",
+        [
+          "radial-gradient(900px 560px at -12% 4%,rgba(59,130,246,.075),transparent 55%)",
+          "radial-gradient(820px 520px at -10% 0%,rgba(37,99,235,.06),transparent 55%)"
+        ]
+      ],
+      [
+        "--glow-lo",
+        [
+          ".4",
+          ".45"
+        ]
+      ],
+      [
+        "--glow-hi",
+        [
+          ".95",
+          ".8"
+        ]
+      ],
+      [
+        "--surface",
+        [
+          "#0d1526",
+          "#ffffff"
+        ]
+      ],
+      [
+        "--surface2",
+        [
+          "#111c31",
+          "#f4f6fa"
+        ]
+      ],
+      [
+        "--border",
+        [
+          "rgba(148,163,184,.13)",
+          "rgba(15,30,55,.11)"
+        ]
+      ],
+      [
+        "--border2",
+        [
+          "rgba(148,163,184,.28)",
+          "rgba(15,30,55,.22)"
+        ]
+      ],
+      [
+        "--border3",
+        [
+          "rgba(148,163,184,.4)",
+          "rgba(15,30,55,.35)"
+        ]
+      ],
+      [
+        "--ink",
+        [
+          "#e9eff8",
+          "#101d33"
+        ]
+      ],
+      [
+        "--ink2",
+        [
+          "#a2b2c9",
+          "#4d5e78"
+        ]
+      ],
+      [
+        "--ink3",
+        [
+          "#72829c",
+          "#5f7189"
+        ]
+      ],
+      [
+        "--brand",
+        [
+          "#e9b949",
+          "#9a5e06"
+        ]
+      ],
+      [
+        "--brand2",
+        [
+          "#f6cf7e",
+          "#7a4a04"
+        ]
+      ],
+      [
+        "--on-brand",
+        [
+          "#241a04",
+          "#ffffff"
+        ]
+      ],
+      [
+        "--brand-soft",
+        [
+          "rgba(233,185,73,.13)",
+          "rgba(180,112,10,.1)"
+        ]
+      ],
+      [
+        "--brand-line",
+        [
+          "rgba(233,185,73,.4)",
+          "rgba(154,94,6,.45)"
+        ]
+      ],
+      [
+        "--active-bg",
+        [
+          "#e9b949",
+          "#d9a02c"
+        ]
+      ],
+      [
+        "--active-fg",
+        [
+          "#241a04",
+          "#332106"
+        ]
+      ],
+      [
+        "--pos",
+        [
+          "#3ecf8e",
+          "#047857"
+        ]
+      ],
+      [
+        "--neg",
+        [
+          "#fb7d7d",
+          "#c22b2b"
+        ]
+      ],
+      [
+        "--pos-c",
+        [
+          "#2fb67c",
+          "#10a06e"
+        ]
+      ],
+      [
+        "--neg-c",
+        [
+          "#f97070",
+          "#e04545"
+        ]
+      ],
+      [
+        "--warn-fg",
+        [
+          "#eec06a",
+          "#965b00"
+        ]
+      ],
+      [
+        "--warn-bg",
+        [
+          "rgba(238,192,106,.12)",
+          "rgba(217,160,44,.16)"
+        ]
+      ],
+      [
+        "--info-fg",
+        [
+          "#7fbdf0",
+          "#1d5fb0"
+        ]
+      ],
+      [
+        "--info-bg",
+        [
+          "rgba(96,165,250,.13)",
+          "rgba(37,99,235,.09)"
+        ]
+      ]
+    ],
+    "hasHeader": true
+  },
+  {
+    "id": "csnl-module-picker",
+    "url": "https://ucdcsnlmodulepicker.netlify.app/",
+    "bytes": 16175,
+    "stylesheets": {
+      "linked": [
+        "https://ucdcsnlmodulepicker.netlify.app/styles.css"
+      ],
+      "inline": 0,
+      "externalBytes": 48356
+    },
+    "title": "CSNL Module Picker - Live UCD Timings",
+    "theme": {
+      "storesTheme": true
+    },
+    "previewImage": null,
+    "socialImageRaw": null,
+    "icons": [],
+    "fontFaces": [
+      {
+        "family": "Geist",
+        "weight": "400",
+        "src": "url(\"fonts/Geist-Regular.woff2\") format(\"woff2\")"
+      },
+      {
+        "family": "Geist",
+        "weight": "500",
+        "src": "url(\"fonts/Geist-Medium.woff2\") format(\"woff2\")"
+      },
+      {
+        "family": "Geist",
+        "weight": "600",
+        "src": "url(\"fonts/Geist-SemiBold.woff2\") format(\"woff2\")"
+      },
+      {
+        "family": "Geist",
+        "weight": "700",
+        "src": "url(\"fonts/Geist-Bold.woff2\") format(\"woff2\")"
+      },
+      {
+        "family": "Geist Mono",
+        "weight": "400",
+        "src": "url(\"fonts/GeistMono-Regular.woff2\") format(\"woff2\")"
+      },
+      {
+        "family": "Geist Mono",
+        "weight": "500",
+        "src": "url(\"fonts/GeistMono-Medium.woff2\") format(\"woff2\")"
+      }
+    ],
+    "fonts": [
+      "\"Geist\"",
+      "\"Geist Mono\"",
+      "var(--font-sans)",
+      "var(--font-mono)",
+      "inherit"
+    ],
+    "fontWeights": [
+      "400",
+      "500",
+      "600",
+      "700"
+    ],
+    "radii": [
+      "6px",
+      "0 0 10px 10px",
+      "10px",
+      "999px",
+      "50%",
+      "16px",
+      "12px",
+      "0 8px 8px 0",
+      "8px",
+      "9px",
+      "14px"
+    ],
+    "shadows": [
+      "0 1px 2px rgba(0, 0, 0, 0.3)",
+      "0 0 0 2px var(--bg), 0 0 0 4px var(--accent-ring)",
+      "inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent)",
+      "var(--shadow)",
+      "0 0 0 1px var(--ok-border)",
+      "0 0 0 3px var(--accent-ring)"
+    ],
+    "accents": [
+      {
+        "rgb": "#f87171",
+        "hue": 0,
+        "family": "red",
+        "uses": 16
+      },
+      {
+        "rgb": "#fbbf24",
+        "hue": 43,
+        "family": "orange / amber",
+        "uses": 16
+      },
+      {
+        "rgb": "#101828",
+        "hue": 220,
+        "family": "blue",
+        "uses": 9
+      },
+      {
+        "rgb": "#f2d48f",
+        "hue": 42,
+        "family": "orange / amber",
+        "uses": 9
+      },
+      {
+        "rgb": "#60a5fa",
+        "hue": 213,
+        "family": "blue",
+        "uses": 6
+      },
+      {
+        "rgb": "#34d399",
+        "hue": 158,
+        "family": "green",
+        "uses": 6
+      }
+    ],
+    "customPropCount": 30,
+    "customPropsSample": [
+      [
+        "--bg",
+        [
+          "#f4f5f7",
+          "#101216"
+        ]
+      ],
+      [
+        "--surface",
+        [
+          "#ffffff",
+          "#171a20"
+        ]
+      ],
+      [
+        "--surface-2",
+        [
+          "#f1f2f5",
+          "#1d2128"
+        ]
+      ],
+      [
+        "--surface-3",
+        [
+          "#e9ebef",
+          "#232830"
+        ]
+      ],
+      [
+        "--border",
+        [
+          "#e2e4ea",
+          "#262b33"
+        ]
+      ],
+      [
+        "--border-strong",
+        [
+          "#c8ccd6",
+          "#3a4150"
+        ]
+      ],
+      [
+        "--text",
+        [
+          "#17181c",
+          "#e8eaf0"
+        ]
+      ],
+      [
+        "--text-2",
+        [
+          "#555c66",
+          "#a7aebb"
+        ]
+      ],
+      [
+        "--text-3",
+        [
+          "#7a828e",
+          "#858d9b"
+        ]
+      ],
+      [
+        "--placeholder",
+        [
+          "#6f7783",
+          "#9aa2b0"
+        ]
+      ],
+      [
+        "--accent",
+        [
+          "#1d4ed8",
+          "#60a5fa"
+        ]
+      ],
+      [
+        "--accent-hover",
+        [
+          "#1e40af",
+          "#93c5fd"
+        ]
+      ],
+      [
+        "--accent-soft",
+        [
+          "#eef2fe",
+          "rgba(96, 165, 250, 0.14)"
+        ]
+      ],
+      [
+        "--accent-ring",
+        [
+          "rgba(29, 78, 216, 0.32)",
+          "rgba(96, 165, 250, 0.35)"
+        ]
+      ],
+      [
+        "--accent-text",
+        [
+          "#ffffff",
+          "#0b1220"
+        ]
+      ],
+      [
+        "--danger",
+        [
+          "#b91c1c",
+          "#f87171"
+        ]
+      ],
+      [
+        "--danger-bright",
+        [
+          "#dc2626",
+          "#ef4444"
+        ]
+      ],
+      [
+        "--danger-soft",
+        [
+          "#fef2f2",
+          "rgba(248, 113, 113, 0.1)"
+        ]
+      ],
+      [
+        "--danger-border",
+        [
+          "#f3c1c1",
+          "rgba(248, 113, 113, 0.35)"
+        ]
+      ],
+      [
+        "--ok",
+        [
+          "#047857",
+          "#34d399"
+        ]
+      ],
+      [
+        "--ok-soft",
+        [
+          "#ecfdf5",
+          "rgba(52, 211, 153, 0.1)"
+        ]
+      ],
+      [
+        "--ok-border",
+        [
+          "#b7e4cf",
+          "rgba(52, 211, 153, 0.35)"
+        ]
+      ],
+      [
+        "--shadow",
+        [
+          "0 1px 2px rgba(16, 24, 40, 0.05), 0 6px 20px rgba(16, 24, 40, 0.06)",
+          "0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.35)"
+        ]
+      ],
+      [
+        "--font-sans",
+        [
+          "\"Geist\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Arial, sans-serif"
+        ]
+      ],
+      [
+        "--font-mono",
+        [
+          "\"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        ]
+      ],
+      [
+        "--accent-solid",
+        [
+          "#2563eb"
+        ]
+      ],
+      [
+        "--accent-solid-hover",
+        [
+          "#1d4ed8"
+        ]
+      ],
+      [
+        "--hour-h",
+        [
+          "62",
+          "40"
+        ]
+      ],
+      [
+        "--head-h",
+        [
+          "44",
+          "30"
+        ]
+      ],
+      [
+        "--time-w",
+        [
+          "58",
+          "46"
+        ]
+      ]
+    ],
+    "hasHeader": true
+  },
+  {
+    "id": "portfolio",
+    "url": "https://parth-portfolio-wb.netlify.app/",
+    "bytes": 43419,
+    "stylesheets": {
+      "linked": [
+        "https://parth-portfolio-wb.netlify.app/style.css",
+        "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      ],
+      "inline": 0,
+      "externalBytes": 142180
+    },
+    "title": "Parth Soni | Data Analyst",
+    "theme": {
+      "storesTheme": false
+    },
+    "previewImage": "https://parth-portfolio-wb.netlify.app/og-card.png",
+    "socialImageRaw": "og-card.png",
+    "icons": [
+      "<link rel=\"icon\" href=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f0f0f"
+    ],
+    "fontFaces": [
+      {
+        "family": "Inter",
+        "weight": "100 900",
+        "src": "url(fonts/inter.woff2) format('woff2')"
+      },
+      {
+        "family": "DM Sans",
+        "weight": "100 1000",
+        "src": "url(fonts/dmsans.woff2) format('woff2')"
+      },
+      {
+        "family": "DM Sans",
+        "weight": "100 1000",
+        "src": "url(fonts/dmsans-italic.woff2) format('woff2')"
+      },
+      {
+        "family": "Font Awesome 6 Brands",
+        "weight": "400",
+        "src": "url(../webfonts/fa-brands-400.woff2) format(\"woff2\"),url(../webfonts/fa-brands-400.ttf) format(\"truetype\")"
+      },
+      {
+        "family": "Font Awesome 6 Free",
+        "weight": "400",
+        "src": "url(../webfonts/fa-regular-400.woff2) format(\"woff2\"),url(../webfonts/fa-regular-400.ttf) format(\"truetype\")"
+      },
+      {
+        "family": "Font Awesome 6 Free",
+        "weight": "900",
+        "src": "url(../webfonts/fa-solid-900.woff2) format(\"woff2\"),url(../webfonts/fa-solid-900.ttf) format(\"truetype\")"
+      },
+      {
+        "family": "Font Awesome 5 Brands",
+        "weight": "400",
+        "src": "url(../webfonts/fa-brands-400.woff2) format(\"woff2\"),url(../webfonts/fa-brands-400.ttf) format(\"truetype\")"
+      },
+      {
+        "family": "Font Awesome 5 Free",
+        "weight": "900",
+        "src": "url(../webfonts/fa-solid-900.woff2) format(\"woff2\"),url(../webfonts/fa-solid-900.ttf) format(\"truetype\")"
+      },
+      {
+        "family": "Font Awesome 5 Free",
+        "weight": "400",
+        "src": "url(../webfonts/fa-regular-400.woff2) format(\"woff2\"),url(../webfonts/fa-regular-400.ttf) format(\"truetype\")"
+      },
+      {
+        "family": "FontAwesome",
+        "weight": null,
+        "src": "url(../webfonts/fa-solid-900.woff2) format(\"woff2\"),url(../webfonts/fa-solid-900.ttf) format(\"truetype\")"
+      },
+      {
+        "family": "FontAwesome",
+        "weight": null,
+        "src": "url(../webfonts/fa-brands-400.woff2) format(\"woff2\"),url(../webfonts/fa-brands-400.ttf) format(\"truetype\")"
+      },
+      {
+        "family": "FontAwesome",
+        "weight": null,
+        "src": "url(../webfonts/fa-regular-400.woff2) format(\"woff2\"),url(../webfonts/fa-regular-400.ttf) format(\"truetype\")"
+      },
+      {
+        "family": "FontAwesome",
+        "weight": null,
+        "src": "url(../webfonts/fa-v4compatibility.woff2) format(\"woff2\"),url(../webfonts/fa-v4compatibility.ttf) format(\"truetype\")"
+      }
+    ],
+    "fonts": [
+      "'Inter'",
+      "'DM Sans'",
+      "var(--sans)",
+      "inherit",
+      "var(--data)",
+      "var(--fa-style-family,\"Font Awesome 6 Free\")",
+      "\"Font Awesome 6 Brands\"",
+      "\"Font Awesome 6 Free\"",
+      "\"Font Awesome 5 Brands\"",
+      "\"Font Awesome 5 Free\"",
+      "\"FontAwesome\""
+    ],
+    "fontWeights": [
+      "100",
+      "400",
+      "500",
+      "600",
+      "700",
+      "800",
+      "900"
+    ],
+    "radii": [
+      "4px",
+      "8px",
+      "2px",
+      "14px",
+      "999px",
+      "0 10px 10px 0",
+      "2.5px",
+      "12px",
+      "6px",
+      "50%",
+      "6px 6px 2px 2px",
+      "var(--fa-border-radius,.1em)"
+    ],
+    "shadows": [
+      "0 20px 40px -24px rgba(22,19,14,.25)",
+      "0 12px 24px -10px rgba(232,93,4,.45)",
+      "var(--shadow-card)",
+      "0 8px 18px -8px rgba(232,93,4,.45)",
+      "0 4px 14px rgba(22,19,14,.22)",
+      "0 1px 2px rgba(22,19,14,.04)"
+    ],
+    "accents": [
+      {
+        "rgb": "#16130e",
+        "hue": 38,
+        "family": "orange / amber",
+        "uses": 12
+      },
+      {
+        "rgb": "#e85d04",
+        "hue": 23,
+        "family": "orange / amber",
+        "uses": 12
+      },
+      {
+        "rgb": "#0a66c2",
+        "hue": 210,
+        "family": "blue",
+        "uses": 2
+      },
+      {
+        "rgb": "#4a453c",
+        "hue": 39,
+        "family": "orange / amber",
+        "uses": 1
+      },
+      {
+        "rgb": "#b44500",
+        "hue": 23,
+        "family": "orange / amber",
+        "uses": 1
+      },
+      {
+        "rgb": "#15803d",
+        "hue": 142,
+        "family": "green",
+        "uses": 1
+      }
+    ],
+    "customPropCount": 25,
+    "customPropsSample": [
+      [
+        "--paper",
+        [
+          "#f6f5f1"
+        ]
+      ],
+      [
+        "--paper-raise",
+        [
+          "#fcfbf8"
+        ]
+      ],
+      [
+        "--ink",
+        [
+          "#16130e"
+        ]
+      ],
+      [
+        "--ink-soft",
+        [
+          "#4a453c"
+        ]
+      ],
+      [
+        "--ink-mute",
+        [
+          "#756e62"
+        ]
+      ],
+      [
+        "--line",
+        [
+          "#ddd8cc"
+        ]
+      ],
+      [
+        "--line-strong",
+        [
+          "#b9b2a2"
+        ]
+      ],
+      [
+        "--accent",
+        [
+          "#e85d04"
+        ]
+      ],
+      [
+        "--accent-deep",
+        [
+          "#b44500"
+        ]
+      ],
+      [
+        "--accent-soft",
+        [
+          "#fdeee0"
+        ]
+      ],
+      [
+        "--green",
+        [
+          "#15803d"
+        ]
+      ],
+      [
+        "--green-soft",
+        [
+          "#e6f4ea"
+        ]
+      ],
+      [
+        "--red",
+        [
+          "#b91c1c"
+        ]
+      ],
+      [
+        "--red-soft",
+        [
+          "#fbe9e9"
+        ]
+      ],
+      [
+        "--amber",
+        [
+          "#b45309"
+        ]
+      ],
+      [
+        "--amber-soft",
+        [
+          "#fdf3e3"
+        ]
+      ],
+      [
+        "--shadow-card",
+        [
+          "0 1px 2px rgba(22,19,14,.05), 0 10px 30px -14px rgba(22,19,14,.14)"
+        ]
+      ],
+      [
+        "--sans",
+        [
+          "'DM Sans', system-ui, -apple-system, sans-serif"
+        ]
+      ],
+      [
+        "--data",
+        [
+          "'Inter', system-ui, -apple-system, sans-serif"
+        ]
+      ],
+      [
+        "--maxw",
+        [
+          "1180px"
+        ]
+      ],
+      [
+        "--pad",
+        [
+          "24px"
+        ]
+      ],
+      [
+        "--gh-cell",
+        [
+          "9px"
+        ]
+      ],
+      [
+        "--gh-gap",
+        [
+          "3px"
+        ]
+      ],
+      [
+        "--fa-style-family-brands",
+        [
+          "\"Font Awesome 6 Brands\""
+        ]
+      ],
+      [
+        "--fa-style-family-classic",
+        [
+          "\"Font Awesome 6 Free\""
+        ]
+      ]
+    ],
+    "hasHeader": true
+  }
+]

@@ -49,8 +49,17 @@
     }
   }
 
-  function plural(n, one, many) {
-    return n + ' ' + (n === 1 ? one : many);
+  /** Index numerals are a positional device, so they are wide enough to stop
+   *  the column shifting once a list passes nine entries. */
+  function pad2(n) {
+    return (n < 10 ? '0' : '') + n;
+  }
+
+  /** Every dashboard here is served from netlify.app, so that suffix is noise
+   *  in a 10px mono column. It is stripped for display only: the link and the
+   *  tooltip both keep the real host. */
+  function shortHost(host) {
+    return host.replace(/\.netlify\.app$/, '');
   }
 
   /* --------------------------------------------------------------- icons -- */
@@ -190,13 +199,14 @@
 
   /* ------------------------------------------------------------- rendering -- */
 
-  function cardMarkup(item) {
+  function rowMarkup(item, index) {
     var state = statusOf(item);
     var live = !!item.url;
     var host = hostOf(item.url);
+    var tagList = item.tags || [];
 
     var name = live
-      ? '<a class="card-link" href="' +
+      ? '<a href="' +
         esc(item.url) +
         '" target="_blank" rel="noopener" title="' +
         esc(item.description) +
@@ -205,45 +215,56 @@
         '</a>'
       : esc(item.name);
 
-    var tags = (item.tags || []).join(' / ');
-
     var repo = item.repo
       ? '<a class="icon-btn" href="' +
         esc(item.repo) +
-        '" target="_blank" rel="noopener" title="View source on GitHub" aria-label="' +
+        '" target="_blank" rel="noopener" title="' +
+        esc(item.name) +
+        ' source on GitHub" aria-label="' +
         esc(item.name) +
         ' source on GitHub">' +
-        icon('github', 16) +
+        icon('github', 15) +
         '</a>'
       : '';
 
     return (
-      '<li class="card' +
+      '<li class="row' +
       (live ? '' : ' is-pending') +
       '" data-id="' +
       esc(item.id) +
-      // An entry without a tone simply falls back to the house accent below.
-      (item.tone ? '" data-tone="' + esc(item.tone) : '') +
-      '">' +
-      '<div class="card-top">' +
-      '<span class="tile" aria-hidden="true">' +
-      esc(item.mark || item.name.slice(0, 2)) +
+      '"' +
+      // An entry with no tone falls back to the house accent in CSS.
+      (item.tone ? ' data-tone="' + esc(item.tone) + '"' : '') +
+      '>' +
+      '<span class="row-index" aria-hidden="true">' +
+      pad2(index + 1) +
       '</span>' +
-      statusMarkup(state) +
-      '</div>' +
-      '<h3 class="card-name">' +
+      '<div class="row-main">' +
+      '<h3 class="row-title">' +
       name +
       '</h3>' +
-      '<p class="card-desc">' +
+      '<p class="row-desc">' +
       esc(item.description) +
       '</p>' +
-      (tags ? '<p class="card-tags">' + esc(tags) + '</p>' : '') +
-      '<div class="card-foot">' +
-      '<span class="card-host">' +
-      esc(host || 'No deploy URL recorded') +
+      '</div>' +
+      '<div class="row-meta">' +
+      statusMarkup(state) +
+      '<div class="row-foot">' +
+      '<span class="row-host" title="' +
+      esc(host || '') +
+      '">' +
+      esc(host ? shortHost(host) : 'No deploy URL recorded') +
       '</span>' +
       repo +
-      (live ? '<span class="card-go" aria-hidden="true">' + icon('arrow-up-right', 16) + '</span>' : '') +
+      (live ? '<span class="row-go" aria-hidden="true">' + icon('arrow-up-right', 15) + '</span>' : '') +
+      '</div>' +
+      (tagList.length
+        ? '<p class="row-tags" title="' +
+          esc(tagList.join(', ')) +
+          '">' +
+          esc(tagList.join(' \u00b7 ')) +
+          '</p>'
+        : '') +
       '</div>' +
       '</li>'
     );
@@ -267,7 +288,7 @@
     if (scope === 'pending' && item.url) return false;
 
     if (!query) return true;
-    var haystack = [item.name, item.tagline, item.description, (item.tags || []).join(' ')]
+    var haystack = [item.name, item.description, (item.tags || []).join(' ')]
       .join(' ')
       .toLowerCase();
     return query
@@ -369,7 +390,7 @@
     var visible = dashboards.filter(matches);
     var total = dashboards.length;
 
-    el.grid.innerHTML = visible.map(cardMarkup).join('');
+    el.grid.innerHTML = visible.map(rowMarkup).join('');
     hydrateIcons(el.grid);
 
     el.empty.hidden = visible.length !== 0;

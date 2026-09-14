@@ -22,7 +22,7 @@
 #     This blocks Netlify's injected free-plan badge, which is intended.
 #   * connect-src allows *.netlify.app because the reachability check pings the
 #     deployed dashboards. If a dashboard ever moves to a custom domain, add
-#     that origin here or its card will read "Could not verify".
+#     that origin here or its pill will read "Could not verify".
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

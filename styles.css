@@ -1,202 +1,237 @@
 /* ---------------------------------------------------------------------------
  * Dashboard Portal
  *
- * Two token layers, deliberately separated:
+ * Two token layers, kept deliberately separate:
  *
- *   1. Scale tokens come from Open Props (MIT, argyleink) - spacing, radii,
- *      shadows, font sizes, easings. Vendored in vendor/open-props.min.css and
- *      loaded before this file. Do not hand-roll replacements for these ramps.
- *   2. Colour tokens are hand-tuned here and contrast-verified, because the
- *      house palette (one emerald accent, light and dark) has to stay exactly
- *      consistent with the sibling dashboards.
+ *   1. SCALE      Open Props (MIT, vendored). Spacing, type ramp, radii,
+ *                 easing. Proven numbers instead of invented ones.
+ *                 Note its spacing ramp skips 12px: 4 / 8 / 16 / 20 / 24 /
+ *                 28 / 32 / 48 / 64. Where a 12px optical nudge is genuinely
+ *                 needed it is written as a literal and called out below.
+ *
+ *   2. COLOUR     Hand-authored, and lifted from the live dashboards by
+ *                 tools/scrape-design.mjs. Colour is NOT taken from Open
+ *                 Props because contrast has to stay verifiable; inheriting
+ *                 a palette you have not measured is how AA failures ship.
+ *
+ * What the scrape established, and how it shaped this file:
+ *
+ *   Type      Inter is in all five frontends. Geist + Geist Mono are the faces
+ *             of the two newest dashboards. All three are self-hosted here.
+ *   Radii     The family's own named pair, taken verbatim:
+ *               --r-container 14px (Content Tracker --r, Irish Visa --r-container)
+ *               --r-control    6px (Irish Visa, RBI)
+ *             No invented radius scale.
+ *   Surfaces  Module Picker's --bg #f4f5f7 / #101216 is the most neutral of
+ *             the five, so it is the portal's own ground.
+ *   Shadows   Every project tints its shadow toward its ink hue rather than
+ *             black (Content Tracker uses rgba(16,35,26,.05)). Same here.
+ *   Ambience  RBI ships --bg-tint-1 / --bg-tint-2 radial gradients behind the
+ *             page. That exact device is reused, in the portal's own accent.
+ *   Tones     Each row's identity colour is that project's own brand token,
+ *             including its own light/dark pair. Nothing is invented.
  *
  * Locked decisions:
- *   Shape    cards 16px (--radius-3), controls 8px (radius-3 halved), status
- *            pills fully round. Nothing else gets a radius.
- *   Colour   one accent for every interactive element. Each card additionally
- *            carries its own identity tone, drawn from that dashboard's real
- *            palette, used ONLY on its monogram tile and hover border.
+ *   Shape    containers 14px, controls 6px, status pills fully round.
+ *   Colour   one accent for every interactive element. Per-row brand colour
+ *            appears only on the index numeral and the left edge key.
+ *   Layout   a numbered registry, not a card grid: this is a launcher, and a
+ *            list of four links belongs in a list. No card containers, so
+ *            nothing here reads as a template tile.
  *   Theme    light and dark are both first class, driven by [data-theme].
- *   Motion   transform and opacity only, all of it optional under
+ *   Motion   transform and opacity only, all of it off under
  *            prefers-reduced-motion.
  * ------------------------------------------------------------------------ */
 
+/* Self-hosted variable fonts. Same declarations the sister projects use, so
+   type renders identically. Inter is the 100-900 latin variable subset already
+   self-hosted by the portfolio. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('fonts/inter.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @font-face {
   font-family: 'Geist';
-  src: url('fonts/geist-sans.woff2') format('woff2');
-  font-weight: 100 900;
   font-style: normal;
+  font-weight: 100 900;
   font-display: swap;
+  src: url('fonts/geist-sans.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'Geist Mono';
-  src: url('fonts/geist-mono.woff2') format('woff2');
-  font-weight: 100 900;
   font-style: normal;
+  font-weight: 100 900;
   font-display: swap;
+  src: url('fonts/geist-mono.woff2') format('woff2');
 }
 
 /* --------------------------------------------------------------- tokens -- */
 
 :root {
-  --bg: #f3f4f6;
+  /* Ground: Module Picker's --bg, the most neutral of the five. */
+  --bg: #f4f5f7;
   --surface: #ffffff;
   --surface-sunken: #f7f8fa;
-  --surface-hover: #f4f5f7;
-  --border: #e4e6eb;
-  --border-strong: #c9cdd5;
-  --text: #14161a;
-  --text-mid: #454b55;
-  --text-soft: #5f666f;
+  --surface-hover: #f6f7f9;
+  --border: #e2e4ea;
+  --border-strong: #c8ccd6;
 
+  /* Ink: Module Picker's --text / --text-2 / --text-3, darkened slightly on
+     the soft step so small mono metadata clears 4.5:1 on every surface. */
+  --text: #17181c;
+  --text-mid: #4c525c;
+  --text-soft: #62676f;
+
+  /* The family runs green. Irish Visa's --green / --green-text is the pair
+     most recently designed, so the house accent is its descendant. */
   --accent: #0f7a4f;
   --accent-hover: #0b5f3e;
-  --accent-soft: #e7f3ed;
-  --accent-ring: rgba(15, 122, 79, 0.28);
+  --accent-soft: #e6f3ec;
+  --accent-ring: rgba(15, 122, 79, 0.3);
+  /* Ink for text sitting ON the accent. The scraped projects both name this
+     explicitly (Module Picker --accent-text, RBI --on-brand), and it has to
+     flip with the theme: the dark accent is a light mint, so white on it is
+     only 1.9:1. */
+  --on-accent: #ffffff;
 
   --ok: #0f7a4f;
-  --ok-soft: #e7f3ed;
-  --warn: #8f5405;
-  --warn-soft: #fcf1e0;
+  --ok-soft: #e6f3ec;
+  --warn: #8a5205;
+  --warn-soft: #fdf1e0;
 
-  --shadow-color: 220 12% 24%;
-  --shadow-strength: 5%;
+  /* Tinted toward the ink hue, as Content Tracker does. */
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.03);
 
-  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  /* Ambient tint behind the page: RBI's --bg-tint-1 / --bg-tint-2 device. */
+  --ambient-1: radial-gradient(1000px 460px at 86% -170px, rgba(15, 122, 79, 0.1), transparent 62%);
+  --ambient-2: radial-gradient(820px 520px at -10% 2%, rgba(29, 78, 216, 0.05), transparent 58%);
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-display: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --r-card: var(--radius-3);
-  --r-control: calc(var(--radius-3) / 2);
+  /* The family's own named pair, taken verbatim. */
+  --r-container: 14px;
+  --r-control: 6px;
   --r-pill: 999px;
 
-  --shadow-card: var(--shadow-2);
-  --shadow-lift: var(--shadow-3);
-
   --ease: var(--ease-3);
-  --dur: 180ms;
+  --dur: 165ms;
 
-  --maxw: 1140px;
-  --nav-h: 60px;
+  --maxw: 1080px;
+  --nav-h: 58px;
 }
 
 :root[data-theme='dark'] {
-  --bg: #0e1114;
-  --surface: #16191e;
-  --surface-sunken: #13161a;
-  --surface-hover: #1c2026;
-  --border: #252a31;
-  --border-strong: #3a414c;
-  --text: #e9ebf0;
-  --text-mid: #a9b1bd;
-  --text-soft: #8b93a1;
+  /* Ground: Module Picker's dark --bg. */
+  --bg: #101216;
+  --surface: #171a20;
+  --surface-sunken: #14171c;
+  --surface-hover: #1c2027;
+  --border: #262b33;
+  --border-strong: #3a4150;
+
+  --text: #e8eaf0;
+  --text-mid: #a7aebb;
+  --text-soft: #949cab;
 
   --accent: #34d399;
   --accent-hover: #6ee7b7;
   --accent-soft: rgba(52, 211, 153, 0.13);
-  --accent-ring: rgba(52, 211, 153, 0.32);
+  --accent-ring: rgba(52, 211, 153, 0.34);
+  --on-accent: #0b1220;
 
   --ok: #34d399;
   --ok-soft: rgba(52, 211, 153, 0.13);
-  --warn: #fbbf24;
-  --warn-soft: rgba(251, 191, 36, 0.13);
+  --warn: #e9b949;
+  --warn-soft: rgba(233, 185, 73, 0.13);
 
-  --shadow-color: 220 40% 2%;
-  --shadow-strength: 22%;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32);
+
+  --ambient-1: radial-gradient(1100px 500px at 88% -150px, rgba(52, 211, 153, 0.075), transparent 62%);
+  --ambient-2: radial-gradient(900px 560px at -12% 4%, rgba(96, 165, 250, 0.045), transparent 58%);
 }
 
-/* Per-dashboard identity tones. Every value is a real token taken from that
-   project's own palette, so a card's colour matches the product it opens:
-     gold     Content Tracker     (its --gold accent)
-     emerald  Irish Visa Tracker  (its --green)
-     slate    RBI Weekly          (its --secondary)
-     blue     CSNL Module Picker  (its --accent)
-   --tone is the raw brand colour (tile tint, hover border).
-   --tone-ink is the same hue darkened or lightened to clear AA on the tile. */
-[data-tone='gold'] {
-  --tone: #c98a3d;
-  --tone-ink: #7f5219;
+/* ------------------------------------------------------------------ tones --
+ * Each tone is one dashboard's own brand token, with that project's own
+ * light/dark pair wherever it defines one. All four pairs below are quoted
+ * straight from the scrape; none is invented.
+ *
+ *   forest   Content Tracker      --green       #245c42 / #7cc4a0
+ *   emerald  Irish Visa Tracker   --green-text  #166534 / #6ee7b7
+ *   amber    RBI Weekly           --brand       #9a5e06 / #e9b949
+ *   cobalt   CSNL Module Picker   --accent      #1d4ed8 / #60a5fa
+ *
+ * --tone is the identity source (numeral, edge key, hover border).
+ * --tone-ink is the variant that clears AA as small text on --surface, which
+ * is why emerald and amber use the project's *text* token rather than its
+ * fill token: #059669 and #e9b949 are fills, not legible small text.
+ */
+[data-tone='forest'] {
+  --tone: #245c42;
+  --tone-ink: #245c42;
 }
 
 [data-tone='emerald'] {
   --tone: #059669;
-  --tone-ink: #04654a;
+  --tone-ink: #166534;
 }
 
-[data-tone='slate'] {
-  --tone: #334155;
-  --tone-ink: #334155;
+[data-tone='amber'] {
+  --tone: #e9b949;
+  --tone-ink: #8a5205;
 }
 
-[data-tone='blue'] {
+[data-tone='cobalt'] {
   --tone: #1d4ed8;
-  --tone-ink: #1c46bf;
+  --tone-ink: #1d4ed8;
 }
 
-:root[data-theme='dark'] [data-tone='gold'] {
-  --tone-ink: #e0a95f;
+:root[data-theme='dark'] [data-tone='forest'] {
+  --tone: #7cc4a0;
+  --tone-ink: #7cc4a0;
 }
+
 :root[data-theme='dark'] [data-tone='emerald'] {
-  --tone-ink: #34d399;
-}
-:root[data-theme='dark'] [data-tone='slate'] {
-  --tone-ink: #a7b3c4;
-}
-:root[data-theme='dark'] [data-tone='blue'] {
-  --tone-ink: #7fa8ff;
+  --tone: #34d399;
+  --tone-ink: #6ee7b7;
 }
 
-/* ---------------------------------------------------------------- reset -- */
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+:root[data-theme='dark'] [data-tone='amber'] {
+  --tone: #e9b949;
+  --tone-ink: #e9b949;
 }
 
-html {
-  -webkit-text-size-adjust: 100%;
+:root[data-theme='dark'] [data-tone='cobalt'] {
+  --tone: #60a5fa;
+  --tone-ink: #60a5fa;
 }
+
+/* ----------------------------------------------------------------- base -- */
 
 body {
-  margin: 0;
   min-height: 100dvh;
   background-color: var(--bg);
+  background-image: var(--ambient-1), var(--ambient-2);
+  background-repeat: no-repeat;
   color: var(--text);
   font-family: var(--font-sans);
   font-size: var(--font-size-1);
   line-height: var(--font-lineheight-3);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv11' 1, 'ss01' 1; /* Inter's more open a/g */
 }
 
-h1,
-h2,
-h3,
-p,
-dl,
-dd,
-figure {
-  margin: 0;
-}
-
-ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-a {
-  color: inherit;
-}
-
-button {
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-/* `display: flex`/`grid` below would otherwise beat the user-agent's
+/* `display: grid`/`flex` below would otherwise beat the user agent's
    `[hidden] { display: none }`, leaving "hidden" elements visible. */
 [hidden] {
   display: none !important;
@@ -219,29 +254,30 @@ button {
   border: 0;
 }
 
+/* No border-radius here: an outline already follows the element's own radius,
+   and Open Props' --radius-2 (5px) is not this project's control radius. */
 :focus-visible {
-  outline: var(--border-size-2) solid var(--accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: var(--radius-1);
 }
 
 .skip-link {
   position: absolute;
   left: var(--size-3);
   top: -4rem;
-  z-index: 10;
+  z-index: 20;
   padding: var(--size-2) var(--size-4);
   border-radius: var(--r-control);
   background: var(--accent);
-  color: #fff;
-  font-size: var(--font-size-0);
-  font-weight: var(--font-weight-6);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 600;
   text-decoration: none;
   transition: top var(--dur) var(--ease);
 }
 
 .skip-link:focus {
-  top: var(--size-3);
+  top: var(--size-2);
 }
 
 /* --------------------------------------------------------------- topbar -- */
@@ -250,21 +286,20 @@ button {
   position: sticky;
   top: 0;
   z-index: 5;
-  height: var(--nav-h);
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-bottom: var(--border-size-1) solid var(--border);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  border-bottom: 1px solid var(--border);
 }
 
 .topbar-inner {
   max-width: var(--maxw);
-  height: 100%;
+  min-height: var(--nav-h);
   margin: 0 auto;
   padding: 0 var(--size-5);
   display: flex;
   align-items: center;
-  gap: var(--size-3);
+  gap: var(--size-2);
 }
 
 .brand {
@@ -276,43 +311,44 @@ button {
 
 .brand-mark {
   flex: none;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border-radius: var(--r-control);
   background: var(--accent-soft);
-  border: var(--border-size-1) solid color-mix(in srgb, var(--accent) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
   color: var(--accent);
   font-family: var(--font-mono);
-  font-size: var(--font-size-0);
-  font-weight: var(--font-weight-6);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
 }
 
-.brand-text h1 {
-  font-size: var(--font-size-2);
-  font-weight: var(--font-weight-6);
-  letter-spacing: -0.2px;
+.brand-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
-.topbar-spacer {
-  flex: 1 1 auto;
-}
-
+/* Boundary rule, applied consistently: hairline --border for surfaces the user
+   reads, stronger --border-strong for controls the user operates. */
 .icon-btn {
   flex: none;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   border-radius: var(--r-control);
-  border: var(--border-size-1) solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text-mid);
   text-decoration: none;
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
-    background-color var(--dur) var(--ease), transform 120ms var(--ease);
+    background-color var(--dur) var(--ease), transform 110ms var(--ease);
 }
 
 .icon-btn:hover {
@@ -322,10 +358,9 @@ button {
 }
 
 .icon-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
-/* One glyph per theme, no JS needed to swap them. */
 .theme-glyph {
   display: none;
 }
@@ -336,34 +371,22 @@ button {
   place-items: center;
 }
 
-/* ---------------------------------------------------------------- shell -- */
-
-.shell {
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: var(--size-5) var(--size-5) var(--size-8);
-}
-
-/* -------------------------------------------------------------- toolbar -- */
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--size-2);
-  flex-wrap: wrap;
-}
+/* --------------------------------------------------------------- search -- */
 
 .field {
   position: relative;
-  flex: 1 1 260px;
-  min-width: 0;
   display: flex;
   align-items: center;
+}
+
+.topbar .field {
+  flex: 0 1 260px;
+  margin-left: auto;
 }
 
 .field-ico {
   position: absolute;
-  left: var(--size-3);
+  left: 9px;
   display: grid;
   place-items: center;
   color: var(--text-soft);
@@ -372,14 +395,14 @@ button {
 
 .field-input {
   width: 100%;
-  height: 38px;
-  padding: 0 var(--size-7) 0 38px;
+  height: 30px;
+  padding: 0 var(--size-7) 0 31px;
   border-radius: var(--r-control);
-  border: var(--border-size-1) solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
-  font-size: var(--font-size-1);
+  font-size: 13px;
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
@@ -395,214 +418,282 @@ button {
 
 .field-hint {
   position: absolute;
-  right: var(--size-2);
-  padding: 2px 6px;
-  border-radius: var(--radius-2);
-  border: var(--border-size-1) solid var(--border);
+  right: 7px;
+  padding: 0 4px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
   background: var(--surface-sunken);
   color: var(--text-soft);
   font-family: var(--font-mono);
-  font-size: var(--font-size-0);
+  font-size: 10px;
+  line-height: 15px;
   pointer-events: none;
 }
 
-.chips {
+.field-input:focus ~ .field-hint {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------- index header --
+ * One band, never two: the health/count line on the left, the filter on the
+ * right. Keeping these on a single row is what stops the chrome from pushing
+ * the dashboards below the fold.
+ */
+
+.shell {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: var(--size-5) var(--size-5) var(--size-8);
+}
+
+.ledger-head {
   display: flex;
   align-items: center;
-  gap: var(--size-1);
+  gap: var(--size-4);
+  flex-wrap: wrap;
+  min-height: 30px;
+  padding-bottom: var(--size-3);
 }
 
-.chip {
-  height: 32px;
-  padding: 0 var(--size-3);
-  border-radius: var(--r-control);
-  border: var(--border-size-1) solid transparent;
-  background: transparent;
-  color: var(--text-mid);
-  font-size: var(--font-size-0);
-  font-weight: var(--font-weight-5);
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease),
-    border-color var(--dur) var(--ease);
-}
-
-.chip:hover {
-  color: var(--text);
-  background: var(--surface-hover);
-}
-
-.chip.is-on {
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
-  color: var(--accent);
-}
-
-/* The one line of chrome. Carries either the filter count or the health
-   summary, never both, so it always fits on a single row. */
 .meta {
-  display: flex;
-  align-items: center;
-  gap: var(--size-1);
-  min-height: 20px;
-  margin-top: var(--size-3);
-  padding-bottom: var(--size-4);
-  border-bottom: var(--border-size-1) solid var(--border);
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   color: var(--text-soft);
-  font-size: var(--font-size-0);
+  font-size: 12.5px;
 }
 
 .meta strong {
   color: var(--text-mid);
-  font-weight: var(--font-weight-5);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------------------------------------------------------------- cards -- */
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
-  gap: var(--size-3);
-  padding-top: var(--size-4);
-}
-
-.card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: var(--size-2);
-  min-width: 0;
-  padding: var(--size-4);
-  border-radius: var(--r-card);
-  border: var(--border-size-1) solid var(--border);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease),
-    box-shadow var(--dur) var(--ease);
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--tone, var(--accent)) 40%, var(--border));
-  box-shadow: var(--shadow-lift);
-}
-
-.card:focus-within {
-  border-color: var(--accent);
-}
-
-.card-top {
+.chips {
+  flex: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--size-2);
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
 }
 
-.tile {
-  flex: none;
-  width: 34px;
-  height: 34px;
+.chip {
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-mid);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.chip:hover {
+  color: var(--text);
+}
+
+.chip.is-on {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-card);
+}
+
+/* -------------------------------------------------------------- registry --
+ * The content itself: a numbered index, not a grid of tiles. One container
+ * with hairline row dividers, which is the grouping the house style uses in
+ * place of elevation.
+ */
+
+.registry {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r-container);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden; /* clips row hover fills to the radius */
+}
+
+.row {
+  position: relative;
   display: grid;
-  place-items: center;
-  border-radius: var(--r-control);
-  background: color-mix(in srgb, var(--tone, var(--accent)) 14%, transparent);
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--size-4);
+  padding: var(--size-4);
+  transition: background-color var(--dur) var(--ease);
+}
+
+.row + .row {
+  border-top: 1px solid var(--border);
+}
+
+/* This dashboard's brand colour, as a key on the leading edge. It is the only
+   ornament in the list, and it is what makes four rows scannable at a glance
+   without turning them into four coloured boxes. */
+.row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--size-4);
+  bottom: var(--size-4);
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--tone, var(--accent));
+  opacity: 0.45;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.row:hover {
+  background: var(--surface-hover);
+}
+
+.row:hover::before {
+  opacity: 1;
+}
+
+/* An INSET ring on the row, because the anchor itself is our stretched-link
+   overlay: an outline on it would trace the <a> box, not the row. */
+.row:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* An entry with no deploy URL yet: still listed, visibly not a link. */
+.row.is-pending {
+  background: var(--surface-sunken);
+}
+
+.row.is-pending::before {
+  opacity: 0.18;
+}
+
+.row.is-pending .row-title {
+  color: var(--text-mid);
+}
+
+.row-index {
+  padding-top: 3px;
   color: var(--tone-ink, var(--accent));
   font-family: var(--font-mono);
-  font-size: var(--font-size-0);
-  font-weight: var(--font-weight-6);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
-.card-name {
+.row-main {
   min-width: 0;
-  font-size: var(--font-size-2);
-  font-weight: var(--font-weight-6);
-  letter-spacing: -0.2px;
-  line-height: var(--font-lineheight-1);
 }
 
-.card-name a {
+.row-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.2;
+}
+
+.row-title a {
+  color: inherit;
   text-decoration: none;
 }
 
-.card-name a:hover {
+.row-title a:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
 }
 
-/* Stretched link: the whole card opens the dashboard, but only the title is
-   the anchor, so the repo button stays independently clickable and focus order
+/* Stretched link: the whole row opens the dashboard, but only the title is the
+   anchor, so the repo button stays independently clickable and focus order
    stays sane. */
-.card-link::after {
+.row-title a::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: var(--r-card);
 }
 
-.card-foot .icon-btn,
-.card-go {
-  position: relative;
-  z-index: 1;
+/* The row ring is the focus affordance; suppress the anchor's own outline. */
+.row-title a:focus-visible {
+  outline: none;
 }
 
-.card-desc {
-  margin-top: var(--size-1);
+.row-desc {
+  margin: 3px 0 0;
+  max-width: 66ch;
   color: var(--text-mid);
-  font-size: var(--font-size-0);
-  line-height: var(--font-lineheight-3);
-  max-width: 52ch;
-  /* Cards stay scannable; the full sentence is still in the DOM and in the
-     link's title attribute for anyone who needs it. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  font-size: 13.5px;
+  line-height: 1.5;
 }
 
-.card-tags {
-  color: var(--text-soft);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-00);
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.row-meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  max-width: 15rem;
+  /* Optical nudge (Open Props' ramp has no 12px step): the status pill is
+     20px tall, so 2px brings its optical centre level with the title. */
+  padding-top: 2px;
 }
 
-.card-foot {
-  /* auto, so footers line up across a row when one card is taller than its
-     neighbours, and the slack lands between the tags and the rule. */
-  margin-top: auto;
-  padding-top: var(--size-3);
-  border-top: var(--border-size-1) solid var(--border);
+.row-foot {
+  position: relative; /* above the stretched-link overlay */
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: var(--size-2);
+  max-width: 100%;
 }
 
-.card-host {
-  flex: 1 1 auto;
+/* Smaller than the bar's buttons: these sit inside a row, where the three-band
+   rail is what sets the row's height. Still above the 24px WCAG target floor. */
+.row .icon-btn {
+  width: 26px;
+  height: 26px;
+}
+
+.row-host {
   min-width: 0;
   color: var(--text-soft);
   font-family: var(--font-mono);
-  font-size: var(--font-size-00);
+  font-size: 10.5px;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.card-go {
+.row-tags {
+  margin: 0;
+  max-width: 100%;
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-go {
   flex: none;
   display: grid;
   place-items: center;
   color: var(--text-soft);
-  /* Sits above the stretched link so it can animate on hover, but must not
-     swallow the click that the stretched link is there to catch. */
-  pointer-events: none;
+  pointer-events: none; /* must not swallow the stretched link's click */
   transition: color var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 
-.card:hover .card-go {
+.row:hover .row-go {
   color: var(--accent);
   transform: translate(2px, -2px);
 }
@@ -613,32 +704,33 @@ button {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: var(--size-1);
-  padding: 3px var(--size-2) 3px 6px;
+  gap: 5px;
+  padding: 2px 9px 2px 7px;
   border-radius: var(--r-pill);
   background: var(--surface-sunken);
-  border: var(--border-size-1) solid var(--border);
+  border: 1px solid var(--border);
   color: var(--text-soft);
-  font-size: var(--font-size-00);
-  font-weight: var(--font-weight-5);
+  font-size: 11px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .status-dot {
+  flex: none;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: currentColor;
-  flex: none;
 }
 
 .status-live {
-  border-color: color-mix(in srgb, var(--ok) 34%, transparent);
+  border-color: color-mix(in srgb, var(--ok) 32%, transparent);
   background: var(--ok-soft);
   color: var(--ok);
 }
 
-/* Amber, not red: an unanswered check is not proof the dashboard is down. */
+/* Amber, never red: an unanswered check is not evidence the site is down. */
 .status-warn {
   border-color: color-mix(in srgb, var(--warn) 34%, transparent);
   background: var(--warn-soft);
@@ -659,26 +751,20 @@ button {
   }
 }
 
-/* ---------------------------------------------------------------- notes -- */
+/* -------------------------------------------------------- empty / notes -- */
 
-/* Quiet footer note, not a callout box: the caveat matters, but it should not
-   compete with the dashboards for attention. */
 .footnote {
-  margin-top: var(--size-5);
   display: flex;
   align-items: flex-start;
   gap: var(--size-2);
-  color: var(--text-soft);
-  font-size: var(--font-size-0);
+  margin: var(--size-4) 0 0;
   max-width: 76ch;
+  color: var(--text-soft);
+  font-size: 12.5px;
 }
 
 .footnote .ico {
   margin-top: 2px;
-}
-
-.footnote a {
-  color: var(--text-mid);
 }
 
 .empty {
@@ -686,10 +772,9 @@ button {
   flex-direction: column;
   align-items: center;
   gap: var(--size-2);
-  margin-top: var(--size-4);
   padding: var(--size-8) var(--size-5);
-  border-radius: var(--r-card);
-  border: var(--border-size-1) dashed var(--border-strong);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-container);
   background: var(--surface-sunken);
   text-align: center;
 }
@@ -697,23 +782,25 @@ button {
 .empty-ico {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--r-control);
+  border: 1px solid var(--border);
   background: var(--surface);
-  border: var(--border-size-1) solid var(--border);
   color: var(--text-soft);
 }
 
 .empty-title {
-  font-size: var(--font-size-2);
-  font-weight: var(--font-weight-6);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 .empty-body {
-  color: var(--text-soft);
-  font-size: var(--font-size-0);
   max-width: 42ch;
+  color: var(--text-soft);
+  font-size: 13px;
 }
 
 .btn {
@@ -721,19 +808,19 @@ button {
   align-items: center;
   justify-content: center;
   gap: var(--size-1);
+  min-height: 32px;
   margin-top: var(--size-1);
-  min-height: 36px;
   padding: 0 var(--size-4);
   border-radius: var(--r-control);
-  border: var(--border-size-1) solid var(--border-strong);
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
-  font-size: var(--font-size-0);
-  font-weight: var(--font-weight-5);
-  text-decoration: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
-  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease),
-    color var(--dur) var(--ease);
+  text-decoration: none;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .btn:hover {
@@ -744,20 +831,20 @@ button {
 /* --------------------------------------------------------------- footer -- */
 
 .footer {
-  border-top: var(--border-size-1) solid var(--border);
   margin-top: var(--size-8);
+  border-top: 1px solid var(--border);
 }
 
 .footer-inner {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: var(--size-5);
+  padding: var(--size-4) var(--size-5);
   display: flex;
   align-items: center;
   gap: var(--size-4);
   flex-wrap: wrap;
   color: var(--text-soft);
-  font-size: var(--font-size-0);
+  font-size: 12.5px;
 }
 
 .footer-inner a {
@@ -771,34 +858,34 @@ button {
   text-underline-offset: 3px;
 }
 
-/* -------------------------------------------------------------- motion -- */
+/* --------------------------------------------------------------- motion -- */
 
 @media (prefers-reduced-motion: no-preference) {
-  .card {
-    animation: card-in 300ms var(--ease-spring-1, var(--ease)) both;
+  .row {
+    animation: row-in 300ms var(--ease) both;
   }
 
-  /* A short cascade so the grid arrives as a group rather than all at once. */
-  .card:nth-child(2) {
-    animation-delay: 45ms;
+  /* A short stagger down the index, capped so a long list never crawls. */
+  .row:nth-child(2) {
+    animation-delay: 35ms;
   }
-  .card:nth-child(3) {
-    animation-delay: 90ms;
+  .row:nth-child(3) {
+    animation-delay: 70ms;
   }
-  .card:nth-child(4) {
-    animation-delay: 135ms;
+  .row:nth-child(4) {
+    animation-delay: 105ms;
   }
-  .card:nth-child(5) {
-    animation-delay: 180ms;
+  .row:nth-child(5) {
+    animation-delay: 140ms;
   }
-  .card:nth-child(6) {
-    animation-delay: 225ms;
+  .row:nth-child(n + 6) {
+    animation-delay: 175ms;
   }
 
-  @keyframes card-in {
+  @keyframes row-in {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
@@ -816,51 +903,104 @@ button {
     transition-duration: 0.01ms !important;
   }
 
-  .card:hover {
-    transform: none;
-  }
-
-  .card:hover .card-go {
+  .row:hover .row-go {
     transform: none;
   }
 }
 
 /* ---------------------------------------------------------- responsive -- */
 
-@media (max-width: 720px) {
+/* The search drops to its own line inside the sticky bar rather than
+   disappearing, so filtering stays reachable on a phone. */
+@media (max-width: 700px) {
+  .topbar-inner {
+    flex-wrap: wrap;
+    padding: var(--size-2) var(--size-3);
+    row-gap: var(--size-2);
+  }
+
+  .topbar .field {
+    order: 3;
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+
   .shell {
     padding: var(--size-4) var(--size-3) var(--size-7);
   }
 
-  .topbar-inner {
-    padding: 0 var(--size-3);
+  .footer-inner {
+    padding: var(--size-4) var(--size-3);
   }
 
-  .grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .field {
-    flex: 1 1 100%;
-  }
-
-  /* Chips scroll sideways rather than stacking into a second row. */
-  .chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: thin;
-  }
-
-  .chip {
-    flex: none;
-  }
-
-  .card {
+  /* Rows re-flow instead of stacking into four bands: the status moves up to
+     the title line, and the two wrappers dissolve so their children can be
+     placed directly on the row grid. */
+  .row {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'title title'
+      'desc desc'
+      'tags tags'
+      'status foot';
+    column-gap: var(--size-3);
+    row-gap: 6px;
     padding: var(--size-3);
   }
 
-  .empty {
-    padding: var(--size-6) var(--size-3);
+  .row::before {
+    top: var(--size-3);
+    bottom: var(--size-3);
+  }
+
+  .row-main,
+  .row-meta {
+    display: contents;
+  }
+
+  /* The numeral is dropped rather than crammed in. */
+  .row-index {
+    display: none;
+  }
+
+  /* The title keeps the full width; the pill lives on the last line instead of
+     squeezing it into a second line. */
+  .row-title {
+    grid-area: title;
+  }
+
+  .status {
+    grid-area: status;
+    align-self: center;
+  }
+
+  .row-desc {
+    grid-area: desc;
+    max-width: none;
+  }
+
+  .row-foot {
+    grid-area: foot;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  .row-tags {
+    grid-area: tags;
+  }
+
+  /* Redundant with the row being a link in the first place. */
+  .row-host {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .chips {
+    flex: 1 1 100%;
+  }
+
+  .chip {
+    flex: 1 1 auto;
   }
 }

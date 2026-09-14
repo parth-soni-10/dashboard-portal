@@ -8,21 +8,22 @@
       name="description"
       content="One page for every deployed dashboard: media analytics, visa decisions, RBI data and UCD timetables."
     />
-    <meta name="theme-color" content="#0e1114" />
+    <meta name="theme-color" content="#101216" />
     <meta name="color-scheme" content="dark light" />
 
     <!-- Runs before first paint so the stored theme applies without a flash. -->
     <script src="theme-init.js"></script>
 
-    <link
-      rel="preload"
-      href="fonts/geist-sans.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-    <!-- Open Props (MIT): the scale tokens (space, radii, shadows, type sizes,
-         easings) that styles.css consumes. Keep it before styles.css. -->
+    <!-- Both faces are first-paint critical: Geist sets the wordmark and every
+         row title, Inter sets everything else. -->
+    <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Two vendored libraries, both MIT, both zero-build:
+           modern-normalize  cross-browser baseline
+           Open Props        the scale tokens styles.css consumes
+         Order matters: normalize, then tokens, then this project's rules. -->
+    <link rel="stylesheet" href="vendor/modern-normalize.css" />
     <link rel="stylesheet" href="vendor/open-props.min.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -34,12 +35,24 @@
       <div class="topbar-inner">
         <div class="brand">
           <div class="brand-mark" aria-hidden="true">DP</div>
-          <div class="brand-text">
-            <h1>Dashboard Portal</h1>
-          </div>
+          <h1 class="brand-name">Dashboard Portal</h1>
         </div>
 
-        <div class="topbar-spacer"></div>
+        <!-- Filtering lives in the bar so it costs no vertical space. Below
+             700px it wraps to a second line instead of being hidden. -->
+        <div class="field">
+          <label class="sr-only" for="filter">Filter dashboards</label>
+          <span class="field-ico" data-icon="search" aria-hidden="true"></span>
+          <input
+            id="filter"
+            class="field-input"
+            type="search"
+            placeholder="Filter dashboards"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <kbd class="field-hint" aria-hidden="true">/</kbd>
+        </div>
 
         <button
           id="recheck"
@@ -66,35 +79,22 @@
     </header>
 
     <main class="shell">
-      <section class="toolbar" aria-label="Filter dashboards">
-        <div class="field">
-          <label class="sr-only" for="filter">Filter dashboards</label>
-          <span class="field-ico" data-icon="search" aria-hidden="true"></span>
-          <input
-            id="filter"
-            class="field-input"
-            type="search"
-            placeholder="Filter dashboards"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <kbd class="field-hint" aria-hidden="true">/</kbd>
-        </div>
+      <!-- One band: counts or health on the left, filter on the right. -->
+      <div class="ledger-head">
+        <p id="meta" class="meta" aria-live="polite"></p>
 
         <div class="chips" role="group" aria-label="Filter by availability">
           <button class="chip is-on" type="button" data-scope="all">All</button>
           <button class="chip" type="button" data-scope="live">Reachable</button>
           <button class="chip" type="button" data-scope="pending">Awaiting deploy</button>
         </div>
-      </section>
-
-      <p id="meta" class="meta" aria-live="polite"></p>
+      </div>
 
       <section aria-labelledby="dashboards">
         <h2 id="dashboards" class="sr-only">Dashboards</h2>
 
-        <ul id="grid" class="grid">
-          <!-- Cards are rendered from data/dashboards.js -->
+        <ul id="grid" class="registry">
+          <!-- Rows are rendered from data/dashboards.js -->
         </ul>
 
         <p id="empty" class="empty" hidden>

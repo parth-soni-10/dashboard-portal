@@ -3,27 +3,27 @@
  *
  * Add an entry, commit, and Netlify redeploys it. Nothing else needs touching.
  *
- *   id          stable slug, used for the anchor and localStorage keys
+ *   id          stable slug, used as the card's data-id in the DOM
  *   name        display name
- *   mark        one or two characters shown in the card monogram
- *   tone        identity colour, drawn from that project's own palette.
- *               One of: gold, emerald, slate, blue (see styles.css)
- *   tagline     short line under the name (aim for under 45 characters)
- *   description one sentence, plain language, under 130 characters
+ *   tone        identity colour, drawn from THAT project's own palette.
+ *               One of: forest, emerald, amber, cobalt (see styles.css).
+ *               Optional; omit it and the row falls back to the house accent.
+ *   description one sentence, plain language. Aim for under 130 characters:
+ *               it is clamped to two lines in the row.
  *   url         live Netlify URL, or null when it has not been deployed yet
  *   repo        GitHub repository URL, or null
- *   tags        short labels; also what the search box matches against
+ *   tags        short labels; also what the filter box matches against
  *   verified    ISO date the URL was last confirmed reachable by hand
- *   note        optional line shown when url is null (pending state)
+ *
+ * Deliberately absent: a monogram and a one-line tagline. The row already
+ * leads with an index numeral, and a tagline restated the description.
  * ------------------------------------------------------------------------ */
 
 window.DASHBOARDS = [
   {
     id: 'content-tracker',
     name: 'Content Tracker',
-    mark: 'CT',
-    tone: 'gold',
-    tagline: 'Media and viewing analytics',
+    tone: 'forest',
     description:
       '342+ titles logged in a Google Sheet, turned into yearly comparisons, genre breakdowns and recommendations.',
     url: 'https://contenttrackerdashboard.netlify.app/',
@@ -34,11 +34,9 @@ window.DASHBOARDS = [
   {
     id: 'irish-visa-tracker',
     name: 'Irish Visa Tracker',
-    mark: 'IV',
     tone: 'emerald',
-    tagline: 'Embassy of Ireland, New Delhi decisions',
     description:
-      'Daily decision and approval counts, plus community wait times reported by the people still waiting.',
+      'Daily Embassy of Ireland decision and approval counts, plus the community wait times still being reported.',
     url: 'https://irishvisaupdatetracker.netlify.app/',
     repo: 'https://github.com/parth-soni-10/Irish-Visa-Tracker',
     tags: ['Python', 'GitHub Actions', 'Scraping'],
@@ -47,11 +45,9 @@ window.DASHBOARDS = [
   {
     id: 'rbi-weekly',
     name: 'RBI Weekly Dashboard',
-    mark: 'RB',
-    tone: 'slate',
-    tagline: "India's weekly macro and forex data",
+    tone: 'amber',
     description:
-      'RBI Weekly Statistical Supplement figures with crude estimates, FII flows and external-debt rankings.',
+      'Weekly Statistical Supplement figures with crude estimates, FII flows and external-debt rankings.',
     url: 'https://rbiweeklydashboard.netlify.app/',
     repo: 'https://github.com/parth-soni-10/RBI-Weekly-Data-Dashboard',
     tags: ['Scrapers', 'World Bank', 'Functions'],
@@ -60,11 +56,9 @@ window.DASHBOARDS = [
   {
     id: 'csnl-module-picker',
     name: 'CSNL Module Picker',
-    mark: 'MP',
-    tone: 'blue',
-    tagline: 'Clash-free UCD timetables',
+    tone: 'cobalt',
     description:
-      "Builds a clash-free timetable from UCD's live module timetables, with assessment weights and exam options.",
+      "Builds a clash-free timetable from UCD's live module data, with assessment weights and exam options.",
     url: 'https://ucdcsnlmodulepicker.netlify.app/',
     repo: 'https://github.com/parth-soni-10/UCD-CSNL-Module_Picker',
     tags: ['UCD', 'Timetabling', 'Live data'],
