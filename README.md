@@ -460,7 +460,9 @@ tools/design-report.json      What it found, per dashboard
   first version of this bar overflowed a 323px screen by 1px — enough to give
   the entire page a horizontal scrollbar — because the old bar wrapped instead.
 
-### ResponsiveTwo layouts, both declared in the same component:
+### Responsive
+
+Two layouts, both declared in the same component:
 
 - **≥760px:** four columns — a 28px numeral, the subject, a 200px host column
   and an 88px actions column, under a header row that labels the first three.
