@@ -32,23 +32,37 @@
  *      label, and every <a> has an href.
  *  12. A manifest entry can never inject markup: every field app.js renders is
  *      passed through esc(), and esc() is present at all.
+ *  13. Every {placeholder} in a description has a figure to fill it, every
+ *      recorded figure is printed somewhere, and a count block has both an
+ *      endpoint and fallbacks. A mismatch here prints a literal "{shows}" on
+ *      the page, which no other check would catch.
+ *  14. Every live endpoint is routed by netlify.toml, and the function it is
+ *      routed to exists. An unrouted endpoint works locally and 404s in
+ *      production, which is the worst possible place to find out.
+ *  15. Frames are declared deliberately: a title, a sandbox that cannot
+ *      navigate this page away, and a frame-src in our own CSP. Without the
+ *      last one the preview is blocked by this site's policy and looks like
+ *      the other dashboard's fault.
  */
 
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(join(root, p), 'utf8');
 
-const [html, css, app, icons, themeInit, manifest] = await Promise.all([
+const [html, css, app, icons, themeInit, manifest, headerRules, toml] = await Promise.all([
   read('index.html'),
   read('styles.css'),
   read('app.js'),
   read('icons.js'),
   read('theme-init.js'),
-  read('data/dashboards.js')
+  read('data/dashboards.js'),
+  read('_headers'),
+  read('netlify.toml')
 ]);
+const functionFiles = await readdir(join(root, 'netlify/functions')).catch(() => []);
 const js = [app, icons, themeInit].join('\n');
 
 const allSource = [html, app, icons, themeInit, manifest].join('\n');
@@ -58,6 +72,30 @@ const attr = (source, re) => {
   const m = source.match(re);
   return m ? m[1] : null;
 };
+
+/* The manifest, split into its entries once, so more than one check can read
+   per-entry values. Entries are separated by the two-space object indent the
+   file is written with. */
+const entries = manifest
+  .split(/\n  \{/)
+  .slice(1)
+  .map((chunk) => {
+    const described = chunk.match(/description:\s*(?:'([^']*)'|"([^"]*)")/);
+    const count = chunk.match(/count:\s*\{([\s\S]*?)\n\s*\}/);
+    return {
+      id: attr(chunk, /\bid:\s*'([^']+)'/),
+      text: described ? (described[1] ?? described[2] ?? '') : '',
+      count: count ? count[1] : null
+    };
+  });
+
+/** The figure names a `count` block records as its fallbacks. */
+function recordedFigures(countBlock) {
+  const fallback = countBlock ? attr(countBlock, /fallback:\s*\{([^}]*)\}/) : null;
+  return [...(fallback || '').matchAll(/([a-z][a-zA-Z0-9]*)\s*:/g)].map((m) => m[1]);
+}
+
+const fallbackKeys = new Set(entries.flatMap((entry) => recordedFigures(entry.count)));
 
 /* -- 1. Dead CSS selectors ------------------------------------------------- */
 
@@ -111,19 +149,28 @@ for (const [name, value] of defined) {
 }
 
 // Every var(--x) that is never defined anywhere is a silent fallback failure.
+// A var() carrying a fallback cannot resolve to nothing, and neither can one
+// that app.js sets at runtime with setProperty — both are deliberate, so they
+// are not findings.
 const openProps = await read('vendor/open-props.min.css');
 const vendorPlusOwn = cssNoComments + openProps;
-for (const m of cssNoComments.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)/g)) {
-  if (!new RegExp(`${m[1]}\\s*:`).test(vendorPlusOwn)) {
-    note('undefined-token', `var(${m[1]}) is not defined in styles.css or Open Props`);
+for (const m of cssNoComments.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)\s*(,)?/g)) {
+  const [name, fallback] = [m[1], m[2]];
+  if (fallback) continue;
+  if (new RegExp(`setProperty\\(\\s*'${name}'`).test(js)) continue;
+  if (!new RegExp(`${name}\\s*:`).test(vendorPlusOwn)) {
+    note('undefined-token', `var(${name}) is not defined in styles.css or Open Props`);
   }
 }
 
 /* -- 3. Icon glyphs ------------------------------------------------------- */
 
 const glyphsDefined = new Set([...icons.matchAll(/^\s*'?([a-z][a-z0-9-]*)'?:/gm)].map((m) => m[1]));
+// app.js writes markup too, so a glyph it names in a data-icon attribute is
+// just as used as one written by hand in index.html.
 const glyphsUsed = new Set([
   ...[...html.matchAll(/data-icon=["']([a-z-]+)["']/g)].map((m) => m[1]),
+  ...[...app.matchAll(/data-icon=["']([a-z-]+)["']/g)].map((m) => m[1]),
   ...[...app.matchAll(/icon\(\s*'([a-z-]+)'/g)].map((m) => m[1])
 ]);
 for (const g of glyphsUsed) {
@@ -256,6 +303,9 @@ const manifestKeys = new Set(
   [...manifest.matchAll(/^\s*([a-z][a-zA-Z0-9]*)\s*:/gm)].map((m) => m[1])
 );
 for (const key of [...manifestKeys].sort()) {
+  // A fallback's own keys are not fields: they are the names a description
+  // prints, and check 13 proves each of those is used.
+  if (fallbackKeys.has(key)) continue;
   if (!new RegExp(`\\.${key}\\b`).test(app)) {
     note('unused-manifest-field', `'${key}' is never read by app.js`);
   }
@@ -266,6 +316,99 @@ for (const key of [...manifestKeys].sort()) {
 for (const m of js.matchAll(/#[0-9a-fA-F]{6}\b/g)) {
   if (!css.toUpperCase().includes(m[0].toUpperCase())) {
     note('stale-colour', `${m[0]} in JS does not appear anywhere in styles.css`);
+  }
+}
+
+/* -- 13. Live figures ---------------------------------------------------- */
+
+const endpoints = [];
+
+for (const entry of entries) {
+  const placeholders = [...new Set([...entry.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))];
+  const figures = recordedFigures(entry.count);
+
+  if (entry.count) {
+    const endpoint = attr(entry.count, /endpoint:\s*'([^']+)'/);
+    if (!endpoint) {
+      note(
+        'count-without-endpoint',
+        `'${entry.id}' has a count block with no endpoint, so its placeholders would print literally`
+      );
+    } else {
+      endpoints.push(endpoint);
+    }
+    if (!figures.length) {
+      note(
+        'count-without-fallback',
+        `'${entry.id}' has a count block with no fallback figures, so nothing can paint before the answer arrives`
+      );
+    }
+  }
+
+  for (const name of placeholders) {
+    if (!entry.count) {
+      note('placeholder-without-count', `'${entry.id}' prints {${name}} but has no count block to fill it`);
+    } else if (!figures.includes(name)) {
+      note('missing-figure', `'${entry.id}' prints {${name}} but its fallback records no such figure`);
+    }
+  }
+
+  for (const name of figures) {
+    if (!placeholders.includes(name)) {
+      note('unused-figure', `'${entry.id}' records a '${name}' figure the description never prints`);
+    }
+  }
+}
+
+/* -- 14. Endpoints routed to functions that exist ------------------------ */
+
+const redirects = new Map();
+for (const block of toml.split('[[redirects]]').slice(1)) {
+  const from = attr(block, /from\s*=\s*"([^"]+)"/);
+  const to = attr(block, /to\s*=\s*"([^"]+)"/);
+  if (from && to) redirects.set(from, to);
+}
+
+for (const endpoint of endpoints) {
+  if (!redirects.has(endpoint)) {
+    note('unrouted-endpoint', `${endpoint} is not routed in netlify.toml, so it would 404 in production`);
+    continue;
+  }
+  const target = redirects.get(endpoint);
+  const name = target.match(/^\/\.netlify\/functions\/([\w-]+)$/);
+  if (!name) {
+    note('odd-route-target', `${endpoint} points at ${target}, which is not a function path`);
+  } else if (!functionFiles.includes(`${name[1]}.js`)) {
+    note('missing-function', `${endpoint} points at netlify/functions/${name[1]}.js, which does not exist`);
+  }
+}
+
+/* -- 15. Frames ---------------------------------------------------------- */
+
+if (/<iframe\b/.test(app)) {
+  // Comments are stripped first: an explanatory note *about* a sandbox
+  // permission would otherwise read as the sandbox asking for it, which is
+  // exactly what happened the first time this check ran.
+  const code = app.replace(/^[ \t]*\/\/.*$/gm, '');
+  for (const tag of code.matchAll(/<iframe\b[^>]*>/g)) {
+    const t = tag[0];
+    if (!/\stitle=/.test(t)) {
+      note('frame-no-title', 'an <iframe> has no title, so a screen reader announces it as an unnamed frame');
+    }
+    if (!/\ssandbox=/.test(t)) {
+      note('frame-unsandboxed', 'an <iframe> has no sandbox attribute');
+    }
+    if (/allow-top-navigation/.test(t)) {
+      note('frame-top-navigation', 'a sandbox lets the framed page navigate this page away');
+    }
+  }
+
+  const policy = attr(headerRules, /Content-Security-Policy:\s*([^\n]+)/i) || '';
+  if (!/\bframe-src\b/.test(policy)) {
+    note(
+      'csp-frame-src',
+      'the page frames dashboards but _headers sets no frame-src, so default-src blocks every one of them'
+    );
   }
 }
 

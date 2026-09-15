@@ -1,8 +1,11 @@
 # Dashboard Portal
 
-One page that links every deployed dashboard, checks whether each one still
-answers, and keeps the set filterable. Static HTML, CSS and JavaScript with no
-build step, matching the other dashboards.
+One page that links every deployed dashboard, previews each one live inside its
+own row, checks whether it still answers, and keeps the set filterable. Static
+HTML, CSS and JavaScript with no build step, matching the other dashboards —
+the one piece that needs a server (reading the Content Tracker's figures) is a
+single Netlify Function, because that dashboard's data endpoint cannot be read
+from a browser on this origin.
 
 ## Adding or changing a dashboard
 
@@ -29,6 +32,33 @@ honest fallback. It is only shown for entries that actually have a `url` — a
 deployment that does not exist cannot have been checked.
 
 `tone` is optional; omit it and the row falls back to the house accent.
+
+`embed` declares whether the dashboard can be shown in a frame. It defaults to
+true; set it to `false` for a site that ships `X-Frame-Options: DENY` or a
+`frame-ancestors` policy that excludes this page. The row then explains that
+instead of showing a browser error page. `node tools/check-embed.mjs` asserts
+these flags against the live response headers, so a dashboard that changes its
+policy is caught rather than silently breaking its preview.
+
+`count` makes parts of a description live, and is optional:
+
+```js
+  description: '{titles} titles logged — {shows} shows — and yearly comparisons.',
+  count: {
+    endpoint: '/api/watchlist',        // same-origin route, proxied server-side
+    source: 'the watchlist Google Sheet',   // named in the hover text
+    recorded: '2026-09-15',            // when the fallbacks below were true
+    fallback: { titles: 363, shows: 277 }
+  }
+```
+
+Each `{placeholder}` is filled from the endpoint, so **never write one of those
+numbers into the sentence by hand** — a hand-written literal is exactly how this
+number went stale in the first place. The `fallback` values paint immediately
+and stand in if the reading never completes, and the figures carry hover text
+saying which of the two you are looking at: "Live from … , read at 09:41" or
+"Last recorded figures, from 15 Sept 2026. The live reading did not complete."
+A recorded number is never presented as a live one.
 
 `url` must be an **absolute** `http://` or `https://` address, and it is
 enforced rather than assumed. A typo like `example.com` is a *relative* URL,
@@ -162,6 +192,78 @@ lie the first version told.
 If a dashboard ever moves to a custom domain, add that origin to `connect-src`
 in `_headers` or its pill will read "Could not verify" for the wrong reason.
 
+## Live figures
+
+The Content Tracker row prints figures read from that dashboard's own data. It
+cannot be read from here directly: its endpoint sends no
+`Access-Control-Allow-Origin` and answers `OPTIONS` with 405, so a browser on
+this origin is not allowed to see the response. `netlify/functions/watchlist-count.js`
+therefore does the reading server-side and returns three integers —
+the upstream document is 84 KB and the page wants three numbers out of it, so
+the document never leaves the function. Netlify caches the response for fifteen
+minutes, so the sheet is read at most once per quarter hour however many people
+visit.
+
+The counting rules are copied verbatim from `ContentTrackerDashboard/app.js`,
+including its own row filter (a row counts only when it has a name and a year
+above zero). They have to match, because a "shows" figure that disagrees with
+the dashboard it describes is worse than no figure at all.
+
+Two things it does deliberately:
+
+- **A failure is never cached.** The response carries `no-store` on error, so a
+transient upstream problem cannot pin a wrong answer at the edge for the whole
+  TTL. The page falls back to the recorded figures with an honest tooltip.
+- **The read time travels with the figures.** If the edge serves a cached copy,
+  the tooltip says when they were read rather than implying they are live. A
+  timestamp generated in the browser would quietly claim the opposite.
+
+The function's fetch is capped at nine seconds: Netlify kills a synchronous
+function at ten, and the upstream has been measured taking eight seconds just to
+connect during a cold spell. The page waits twelve, so it always receives the
+function's answer instead of cutting it off first.
+
+## Previews
+
+Each row can open a live, scaled view of the dashboard itself, inside its own
+row rather than in a floating overlay — so it cannot cover another row, needs no
+scroll or resize anchoring, and behaves the same for a mouse, a keyboard and a
+thumb. Only one is ever open, and closing it empties the box, which is what
+unloads the frame; leaving four detached iframes behind would keep four
+dashboards running.
+
+The frame is `1280 x 800`, laid out as it would be on a desktop and then scaled
+to fit, which is what makes it read as a miniature of the real page rather than
+as a reflowed mobile column. It is sandboxed without `allow-top-navigation`, so
+the framed dashboard cannot navigate this page away, and it sends no referrer.
+
+Two states have no frame at all, and both say so plainly:
+
+- an entry with `embed: false`
+- a frame that never settles, replaced after ten seconds
+
+**The honest limitation:** if a dashboard is down, the browser's own error page
+renders inside the frame. From this side that is indistinguishable from a real
+page, and no client-side check can tell the difference — so the preview cannot
+report it. `embed` plus `tools/check-embed.mjs` is what covers the case that can
+be detected: a dashboard starting to refuse frames.
+
+This is also why `_headers` needs `frame-src https://*.netlify.app`. Without it
+our own CSP blocks every preview, and it would look like the other dashboard's
+fault. `tools/audit.mjs` fails the build if the two ever disagree.
+
+## Verifying the embeds
+
+```bash
+node tools/check-embed.mjs
+```
+
+Read-only. Runs the manifest against a stand-in for `window`, asks each
+dashboard for its headers, and reports whether every `embed` flag matches
+reality. Exits non-zero on a disagreement. A dashboard that cannot be reached is
+reported as unchecked rather than as a failure — not being able to ask is not an
+answer.
+
 ## Deploying to Netlify
 
 Pure static, `publish = "."`, no build command. Either connect the repository or
@@ -179,6 +281,13 @@ bootstrap that runs before first paint lives in `theme-init.js` precisely so it
 can stay an external file. **If you ever add an inline `<script>` or a `style`
 attribute, the CSP will block it.** That also blocks Netlify's injected
 free-plan badge, which is intended.
+
+One thing does need a deploy that processes functions — a repository-connected
+deploy, or `netlify deploy` — and that is the Content Tracker's live figures.
+`netlify.toml` rewrites `/api/watchlist` to
+`/.netlify/functions/watchlist-count`. An exact rewrite, not a wildcard: a
+greedy one is how an asset ends up served as `index.html` with a status of 200.
+If the function is missing, the row still works and shows its recorded figures.
 
 ## Static audit
 
@@ -203,29 +312,57 @@ into CI. It catches the failure modes that a read-through misses:
 - a manifest field interpolated into markup without going through `esc()`
 - a colour literal in JS that appears nowhere in `styles.css` (this is what
   caught the `theme-color` meta drifting away from the real token)
+- a `{placeholder}` in a description with no figure to fill it, a recorded
+  figure the description never prints, or a `count` block with no endpoint or no
+  fallbacks — any of which would print a literal `{shows}` on the page
+- a live endpoint with no `[[redirects]]` entry in `netlify.toml`, or one
+  pointing at a function file that does not exist — which works locally and
+  404s in production
+- an `<iframe>` with no `title`, no `sandbox`, or a sandbox permitting
+  `allow-top-navigation`, and a page that frames dashboards without a `frame-src`
+  in its own CSP
 
-Run it after touching `styles.css`, `icons.js` or `data/dashboards.js`.
+Run it after touching `styles.css`, `icons.js` or `data/dashboards.js`. It is
+worth proving that a new check can fail before trusting it: each of the checks
+above was confirmed by breaking the thing it guards and watching it report.
 
 ## Files
 
 ```
 index.html                    Page shell: bar, index header, registry, footer
 styles.css                    Colour tokens, layout, every rule
-app.js                        Rendering, filtering, link checks, theme handling
+app.js                        Rendering, filtering, link checks, live figures,
+                              previews, theme handling
 theme-init.js                 Pre-paint theme bootstrap (external, keeps CSP strict)
 icons.js                      Tree-shaken Lucide 0.462.0 paths
 data/dashboards.js            The dashboard manifest
 vendor/open-props.min.css     Open Props 1.7.17 (MIT)
 vendor/modern-normalize.css   modern-normalize 3.0.1 (MIT)
-fonts/                        Inter, Geist Sans and Geist Mono (variable)tools/scrape-design.mjs       Re-runnable evidence collector
- tools/design-report.json      What it found, per dashboard
- tools/audit.mjs               Static hygiene audit (dead CSS, tokens, fields)
+fonts/                        Inter, Geist Sans and Geist Mono (variable)
+netlify/functions/            watchlist-count.js — the only server-side piece
 favicon.svg                   Monogram mark
+
 _headers                      CSP, caching, security headers (all deploy modes)
-netlify.toml                  Publish config only
+netlify.toml                  Publish config plus the /api rewrites
+
+tools/dev-server.mjs          Static files + functions, no-store (see below)
+tools/audit.mjs               Static hygiene audit (dead CSS, tokens, fields)
+tools/check-embed.mjs         Asserts the embed flags against live headers
+tools/scrape-design.mjs       Re-runnable evidence collector
+tools/design-report.json      What it found, per dashboard
 ```
 
 ## Design decisions
+
+- **The preview opens inside its own row.** Not a floating card and not a
+  modal. It cannot cover another row, it needs no scroll or resize anchoring,
+  and it works identically for a mouse, a keyboard and a thumb — which a
+  hover-card does not. It is also the only arrangement in which the preview
+  cannot be confused with the page's own chrome.
+- **A figure says where it came from.** Live counts are not just printed; they
+  carry the source and the time they were read, and a recorded value is visibly
+  different from a live one. A number whose provenance is invisible is a number
+  nobody can trust.
 
 - **A registry, not a card grid.** Four links to internal tools belong in a
   list. One bordered container with hairline row dividers does the grouping
@@ -289,19 +426,24 @@ disappearing, so it stays reachable on a phone.
 
 ## Local preview
 
-Any static server works, since there is no build step:
-
 ```bash
-python -m http.server 8000
+node tools/dev-server.mjs        # http://127.0.0.1:4180/
+node tools/dev-server.mjs 4181   # if that port is taken
 ```
 
-One gotcha while editing, and it is worth taking seriously: `http.server` sends
-no `Cache-Control`, so Chrome applies heuristic caching to every subresource and
-will happily keep serving a `styles.css` you have already changed — even after a
-touch and a reload. This is not theoretical; it was masking a CSS fix during
-development and made a working rule look broken. If a change to `styles.css`
-does not appear, check `getComputedStyle`, then serve on a different port to get
-a fresh origin rather than assuming the rule is wrong.
+It serves the static files and the functions behind exactly the routes
+`netlify.toml` rewrites to, reading that file rather than repeating the list, so
+local routing cannot drift from production. Everything is sent `no-store`.
+
+That last part matters. `python -m http.server` sends no `Cache-Control` at all,
+so Chrome applies heuristic caching to every subresource and will happily keep
+serving a `styles.css` or `data/dashboards.js` you have already changed — even
+after a touch and a reload, and even after confirming the file on disk is
+correct. It is not theoretical: it masked a CSS fix here and made a working rule
+look broken, and a later fix looked like it had not applied when it had. If a
+change does not appear, check `getComputedStyle` before assuming the rule is
+wrong. Any static server still works for the shell alone; this one exists so the
+figures can be tested locally too.
 
 There is also a `<noscript>` block. The list is built in the browser, so with
 scripting off the page would otherwise be blank with no explanation.

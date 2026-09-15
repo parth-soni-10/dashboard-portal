@@ -41,6 +41,10 @@
  *   Theme    light and dark are both first class, driven by [data-theme].
  *   Motion   transform and opacity only, all of it off under
  *            prefers-reduced-motion.
+ *   Figures  a figure read live is a .fig with its source and read time in the
+ *            hover text; a recorded one carries .fig-stale so the two are
+ *            never mistaken for each other.
+ *   Preview  opens inside the row it belongs to, never as an overlay.
  * ------------------------------------------------------------------------ */
 
 /* Self-hosted variable fonts. Same declarations the sister projects use, so
@@ -657,6 +661,21 @@ body {
   line-height: 1.5;
 }
 
+/* A figure read from the dashboard's own data. Tabular figures stop the
+   sentence from reflowing when the number changes, and the dotted underline on
+   a recorded one is the whole signal that it is not the live value — the hover
+   text says the rest. */
+.fig {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.fig-stale {
+  border-bottom: 1px dotted var(--text-soft);
+  cursor: help;
+}
+
 .row-meta {
   flex: none;
   display: flex;
@@ -773,6 +792,114 @@ body {
   50% {
     opacity: 0.3;
   }
+}
+
+/* -------------------------------------------------------------- preview --
+ * Opened inside its own row, so it cannot cover another row and needs no
+ * anchoring. The frame is laid out at a desktop width and scaled down, which is
+ * what makes it read as a miniature of the real page rather than as a reflowed
+ * mobile column.
+ */
+
+.row-preview {
+  /* Spans the numeral's column too, so the frame lines up with the title. */
+  grid-column: 1 / -1;
+  /* Above the title's stretched-link overlay: that overlay reaches `inset: 0`
+     of the entire row and would otherwise swallow every click in the frame. */
+  position: relative;
+  z-index: 1;
+  margin-top: var(--size-3);
+}
+
+/* The width the preview is laid out at, scaled down to fit. Kept in step with
+   PREVIEW_DOC_W in app.js; the ratio here must match the frame's 1280 x 800. */
+.preview-viewport {
+  position: relative;
+  max-width: 38rem;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-container);
+  background: var(--surface-sunken);
+}
+
+.preview-doc {
+  width: 1280px;
+  height: 800px;
+  border: 0;
+  background: var(--surface);
+  transform: scale(var(--preview-scale, 0.4));
+  transform-origin: 0 0;
+}
+
+/* Covers the frame until it has actually loaded, which also hides the moment
+   the unscaled document paints inside it. */
+.preview-state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.preview-cap {
+  max-width: 38rem;
+  margin: var(--size-2) 0 0;
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.preview-open {
+  color: var(--text-mid);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-strong);
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.preview-open:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* Shown instead of a frame when there is nothing a frame could display: either
+   the dashboard refuses to be embedded, or it did not arrive in time. */
+.preview-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-2);
+  max-width: 62ch;
+  margin: 0;
+  padding: var(--size-3) var(--size-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-container);
+  background: var(--surface-sunken);
+  color: var(--text-mid);
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.preview-note strong {
+  color: var(--text);
+}
+
+.preview-note-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+  color: var(--warn);
+}
+
+.preview-btn.is-open {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  background: var(--accent-soft);
 }
 
 /* -------------------------------------------------------- empty / notes -- */

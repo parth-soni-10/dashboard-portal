@@ -11,3 +11,13 @@
 
 [build]
   publish = "."
+
+# The Content Tracker row shows live figures read from that dashboard's own data
+# endpoint, which sends no CORS headers — so a browser here cannot read it and
+# the reading happens in a function instead. This gives it a short, stable,
+# same-origin path. An exact rewrite, not a wildcard: a greedy one is how an
+# asset ends up served as index.html with a 200.
+[[redirects]]
+  from = "/api/watchlist"
+  to = "/.netlify/functions/watchlist-count"
+  status = 200

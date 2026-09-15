@@ -3,7 +3,7 @@
  *
  * Paths are copied verbatim from Lucide v0.462.0 (ISC), the same icon library
  * that Irish-Visa-Tracker vendors as lucide.min.js. The full UMD bundle is
- * ~350 KB; this portal renders seven glyphs, so they are inlined here as a
+ * ~350 KB; this portal renders nine glyphs, so they are inlined here as a
  * generated module instead of shipping the whole thing.
  *
  * Do not hand-draw replacements. To add a glyph, pull the real Lucide path and
@@ -13,6 +13,8 @@
 
 const ICON_PATHS = {
   'arrow-up-right': '<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+  ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  eye: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
   github:
     '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
