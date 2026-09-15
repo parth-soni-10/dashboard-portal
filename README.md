@@ -281,10 +281,48 @@ reality. Exits non-zero on a disagreement. A dashboard that cannot be reached is
 reported as unchecked rather than as a failure — not being able to ask is not an
 answer.
 
+## Checking the deployed site
+
+```bash
+node tools/check-live.mjs https://your-site.netlify.app
+```
+
+The host is required, and there is no default: guessing which site this
+repository deploys to is how you end up checking somebody else's. That is not a
+theoretical caution either — `dashboard-portal.netlify.app` belongs to a
+stranger, runs an SPA catch-all that answers **200 for every path including
+`/.git/config`**, and sends no CSP at all. The first thing this script does is
+confirm the host is actually running this codebase (its `<title>`, plus a
+marker added in the same commit as the rest of the work), because "the checks
+passed" against the wrong site is worse than an error.
+
+It then reads `_redirects`, `_headers`, `netlify.toml` and the manifest out of
+the repository and asserts the live host obeys them: every public file resolves,
+every blocked path answers 404, the five security headers match what `_headers`
+declares, the deployed `frame-src` names every embeddable dashboard, and
+`/api/watchlist` returns three integers — with a 502 reported as a *note*
+rather than a failure, because falling back to the recorded figures is the
+designed behaviour and not a fault.
+
+The check that earns its place is the one a status code cannot do. **A blocked
+path is fetched and its body compared against the real file**, because a rule
+can answer 404 while still returning the contents — which leaks exactly as much
+as a 200, and which a status-only check would wave through. Every assertion here
+was confirmed by breaking it: a host that serves everything with a 200, a host
+that returns the files' bytes under a 404, a weakened CSP, a `frame-src`
+missing two origins, a figures response with no timestamp, and a 502 that
+leaked the upstream's own error text.
+
 ## Deploying to Netlify
 
 Pure static, `publish = "."`, no build command. Either connect the repository or
 drag the folder onto Netlify Drop.
+
+A **repository-connected deploy is the one that matters**, because it is the
+only mode that processes the function — and without the function the Content
+Tracker row falls back to its recorded figures. It also means one push ships
+`_redirects`, `_headers` and the function together, which is what
+`tools/check-live.mjs` is there to confirm afterwards.
 
 `publish = "."` is what lets this deploy with no build step, and it has a cost
 worth naming: **everything in the repository is uploaded, so every tracked file
@@ -415,9 +453,10 @@ _headers                      CSP, caching, security headers (all deploy modes)
 _redirects                    404s that keep development files off the site
 netlify.toml                  Publish config plus the /api rewrites
 
-tools/dev-server.mjs          Static files + functions, no-store (see below)
+tools/dev-server.mjs          Static files + functions + _headers, no-store (see below)
 tools/audit.mjs               Static hygiene audit (dead CSS, tokens, fields)
 tools/check-embed.mjs         Asserts the embed flags against live headers
+tools/check-live.mjs          Asserts the deployed host obeys _redirects/_headers
 tools/scrape-design.mjs       Re-runnable evidence collector
 tools/design-report.json      What it found, per dashboard
 ```
