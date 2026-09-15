@@ -1,0 +1,45 @@
+# Response headers live in `_headers`. This file does the other half of the job.
+#
+# The site is published from the repository root, because that is exactly what
+# lets this repo deploy with no build step. The cost is that everything in the
+# root gets uploaded: the verification tools, this repo's README, the manifest's
+# worked examples, and the function's own source. None of it belongs on a public
+# page, and none of it is reachable now.
+#
+# The target is index.html because a 404 response still needs a body. The status
+# code is the point: the file's contents are never served.
+#
+# `netlify/` is the function's directory as *published*, which is not the same
+# path as its endpoint — that is `/.netlify/functions/watchlist-count`, with a
+# leading dot, and it is deliberately not matched here.
+#
+# THE `!` IS NOT OPTIONAL. Netlify's redirects shadow: a rule never fires for a
+# URL that resolves to a file the site actually has, and that applies to custom
+# 404s as much as to rewrites. Every path below *does* resolve to a real file —
+# that is the entire reason it is listed — so without the `!` Netlify would
+# cheerfully serve tools/audit.mjs with a 200 and this file would achieve
+# nothing while looking correct. Verified against Netlify's docs:
+#   "the 404 pages will only be returned for nonexistent assets"
+#   "...you can force the redirect to happen with either a ! appended to your
+#    status code (for _redirects)"
+#
+# tools/audit.mjs fails when a file is added to the repository without a rule
+# below, and fails again if a 404 rule here is missing its `!`, because a rule
+# that cannot fire is worse than no rule at all.
+#
+# Syntax is the same as Netlify's: from, target, optional status.
+
+/tools/*          /index.html   404!
+/README.md        /index.html   404!
+/.gitignore       /index.html   404!
+/netlify/*        /index.html   404!
+
+# Netlify is documented as not serving its own config file, but this does not
+# rely on that: the audit proves the rule is here, so the behaviour is ours.
+/netlify.toml     /index.html   404!
+
+# Same reasoning for the control files themselves. If Netlify already withholds
+# them these rules never fire; if it ever stops withholding them, they do. An
+# inert rule costs nothing, an unfounded assumption costs the file.
+/_headers         /index.html   404!
+/_redirects       /index.html   404!

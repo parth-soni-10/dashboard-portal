@@ -3,16 +3,32 @@
  *
  *   node tools/dev-server.mjs [port]
  *
- * Serves the site the way Netlify will: static files from the repo root, and
- * the functions behind exactly the routes netlify.toml rewrites to them. Those
- * routes are read out of that file rather than written again here, so the local
- * routing cannot drift away from production.
+ * Serves the site the way Netlify will: static files from the repo root, the
+ * functions behind exactly the routes netlify.toml rewrites to them, and the
+ * 404s declared in `_redirects`. Both files are read rather than restated here,
+ * so local routing cannot drift away from production — including the rules that
+ * keep development files off the published site, which would otherwise look
+ * fine locally and be blocked in production.
+ *
+ * Netlify's shadowing is modelled too, because it decides whether those rules
+ * do anything at all. A `_redirects` rule does not fire for a URL that resolves
+ * to a file the site has — which is exactly what every rule in that file is
+ * aimed at — unless the status carries a `!`. So this server only applies an
+ * unforced 404 rule to a path that is genuinely missing. Without that, a rule
+ * missing its `!` would 404 here and serve the file in production, and the
+ * difference would only show up after deploying.
  *
  * Everything is served `no-store`, on purpose. `python -m http.server` sends no
  * cache headers at all, and Chrome's heuristic cache then hands back a stale
  * styles.css or data/dashboards.js for minutes without revalidating — which
  * makes a change that works look like a change that did nothing. That cost real
  * debugging time here more than once; this server does not allow it.
+ *
+ * Functions are re-read from disk on every request. Node caches a required
+ * module for the life of the process, so without dropping it an edited function
+ * would keep serving the old code until the server was restarted — which made a
+ * correct edit look broken once, when a renamed file kept answering at its old
+ * URL.
  *
  * Not part of the deploy, and not referenced by the page.
  */
@@ -61,6 +77,45 @@ async function readRoutes() {
   return routes;
 }
 
+/** The rules `_redirects` declares: { from, to, status, force }, in file order. */
+async function readRedirectRules() {
+  const file = await readFile(join(root, '_redirects'), 'utf8').catch(() => '');
+  return file
+    .split('\n')
+    .map((line) => line.replace(/#.*$/, '').trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [from, to, status] = line.split(/\s+/);
+      // `404!` — the bang is Netlify's "even though the file exists".
+      const force = Boolean(status && status.endsWith('!'));
+      return { from, to, status: Number(force ? status.slice(0, -1) : status) || 301, force };
+    });
+}
+
+/** Whether the publish directory really holds this path. A rule without `!`
+    only fires when it does not. */
+async function staticExists(pathname) {
+  const file = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
+  if (file !== root && !file.startsWith(root + sep)) return false;
+  try {
+    return (await stat(file)).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/** The first rule matching a path, or null. `*` is treated as a prefix. */
+function matchRedirect(pathname, rules) {
+  for (const rule of rules) {
+    if (rule.from.endsWith('*')) {
+      if (pathname.startsWith(rule.from.slice(0, -1))) return rule;
+    } else if (pathname === rule.from) {
+      return rule;
+    }
+  }
+  return null;
+}
+
 /** Which function, if any, serves this path. */
 function functionFor(pathname, routes) {
   const target = routes.has(pathname) ? routes.get(pathname) : pathname;
@@ -96,10 +151,25 @@ async function serveStatic(pathname, res) {
 }
 
 const routes = await readRoutes();
+const redirectRules = await readRedirectRules();
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${port}`);
   const pathname = decodeURIComponent(url.pathname);
+
+  // Declared 404s come first, as they do in production: these are the rules
+  // that keep development files off the site.
+  const rule = matchRedirect(pathname, redirectRules);
+  if (rule && rule.status === 404 && (rule.force || !(await staticExists(pathname)))) {
+    const body = await readFile(join(root, 'index.html')).catch(() => '');
+    res.writeHead(404, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': body.length,
+      'Cache-Control': 'no-store'
+    });
+    res.end(body);
+    return;
+  }
 
   const name = functionFor(pathname, routes);
   if (!name) {
@@ -109,7 +179,9 @@ const server = createServer(async (req, res) => {
 
   let handler;
   try {
-    ({ handler } = require(join(root, 'netlify', 'functions', `${name}.js`)));
+    const file = join(root, 'netlify', 'functions', `${name}.js`);
+    delete require.cache[require.resolve(file)]; // edited functions take effect at once
+    ({ handler } = require(file));
   } catch (error) {
     reply(res, 500, 'text/plain; charset=utf-8', `Cannot load function ${name}: ${error.message}\n`);
     return;
@@ -143,8 +215,11 @@ server.on('error', (error) => {
 });
 
 server.listen(port, '127.0.0.1', async () => {
-  console.log(`serving http://127.0.0.1:${port}/  (no-store, functions from netlify.toml)`);
+  console.log(`serving http://127.0.0.1:${port}/  (no-store, no build step)`);
   const functions = await readdir(join(root, 'netlify', 'functions')).catch(() => []);
   for (const [from, to] of routes) console.log(`  ${from}  ->  ${to}`);
   console.log(`  ${functions.filter((f) => f.endsWith('.js')).length} function file(s) in netlify/functions`);
+  for (const rule of redirectRules) {
+    console.log(`  ${rule.from}  ->  ${rule.to}  ${rule.status}${rule.force ? '!' : ''}`);
+  }
 });

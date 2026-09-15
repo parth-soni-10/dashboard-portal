@@ -43,6 +43,12 @@
  *      navigate this page away, and a frame-src in our own CSP. Without the
  *      last one the preview is blocked by this site's policy and looks like
  *      the other dashboard's fault.
+ *  16. Every file in the repository is either intentionally public or blocked
+ *      in `_redirects`, and every blocking rule actually fires. The site is
+ *      published from the repo root, so an undeclared file is a live URL: this
+ *      is what stops a development file from quietly shipping the next time one
+ *      is added, and what stops a rule that Netlify would shadow from passing
+ *      as a block.
  */
 
 import { readdir, readFile } from 'node:fs/promises';
@@ -52,16 +58,18 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(join(root, p), 'utf8');
 
-const [html, css, app, icons, themeInit, manifest, headerRules, toml] = await Promise.all([
-  read('index.html'),
-  read('styles.css'),
-  read('app.js'),
-  read('icons.js'),
-  read('theme-init.js'),
-  read('data/dashboards.js'),
-  read('_headers'),
-  read('netlify.toml')
-]);
+const [html, css, app, icons, themeInit, manifest, headerRules, toml, redirectRules] =
+  await Promise.all([
+    read('index.html'),
+    read('styles.css'),
+    read('app.js'),
+    read('icons.js'),
+    read('theme-init.js'),
+    read('data/dashboards.js'),
+    read('_headers'),
+    read('netlify.toml'),
+    read('_redirects').catch(() => '')
+  ]);
 const functionFiles = await readdir(join(root, 'netlify/functions')).catch(() => []);
 const js = [app, icons, themeInit].join('\n');
 
@@ -412,6 +420,77 @@ if (/<iframe\b/.test(app)) {
   }
 }
 
+/* -- 16. Nothing undeclared is published -------------------------------- */
+
+// `netlify.toml` sets `publish = "."`, so every tracked file is a public URL
+// unless `_redirects` answers it with a 404. That pair is the whole contract: a
+// file that is in neither is published by accident, and this check names it
+// rather than letting it go live unnoticed. `_headers`, `_redirects` and
+// `netlify.toml` are deliberately *absent* from the list, because a rule exists
+// for each — relying on Netlify to withhold its own control files is the kind
+// of assumption that holds right up until it does not.
+const publicFiles = new Set([
+  'index.html',
+  'styles.css',
+  'app.js',
+  'icons.js',
+  'theme-init.js',
+  'favicon.svg',
+  'data/dashboards.js'
+]);
+const publicDirs = ['fonts/', 'vendor/'];
+
+const parsedRules = redirectRules
+  .split('\n')
+  .map((line) => line.replace(/#.*$/, '').trim())
+  .filter(Boolean)
+  .map((line) => {
+    const [from, to, status] = line.split(/\s+/);
+    const force = Boolean(status && status.endsWith('!'));
+    return { from, to, status: Number(force ? status.slice(0, -1) : status) || 301, force };
+  });
+
+const blocked = parsedRules.filter((rule) => rule.status === 404).map((rule) => rule.from);
+
+// The `!` is load-bearing, and it is the one part of this that a reader would
+// reasonably assume was optional. Netlify's redirects shadow a URL that
+// resolves to a file the site actually has, custom 404s included — and every
+// path blocked here is listed *because* a file sits at it. Without the `!` the
+// rule looks correct and serves the file anyway, which is worse than no rule:
+// it is a blocked path that reads as handled.
+for (const rule of parsedRules) {
+  if (rule.status === 404 && !rule.force) {
+    note(
+      'shadowed-404-rule',
+      `${rule.from} -> ${rule.to} 404 does not fire: append ! to the status or the files it names stay public`
+    );
+  }
+}
+
+const isBlocked = (path) =>
+  blocked.some((rule) => (rule.endsWith('*') ? path.startsWith(rule.slice(0, -1)) : path === rule));
+
+async function walk(dir, prefix = '') {
+  const found = [];
+  for (const item of await readdir(dir, { withFileTypes: true })) {
+    if (item.name === '.git' || item.name === 'node_modules') continue;
+    const rel = prefix + item.name;
+    if (item.isDirectory()) found.push(...(await walk(join(dir, item.name), rel + '/')));
+    else found.push(rel);
+  }
+  return found;
+}
+
+for (const file of await walk(root)) {
+  if (publicFiles.has(file)) continue;
+  if (publicDirs.some((dir) => file.startsWith(dir))) continue;
+  if (isBlocked('/' + file)) continue;
+  note(
+    'published-dev-file',
+    `${file} is published at /${file} — allow it in the audit or block it in _redirects`
+  );
+}
+
 /* ---------------------------------------------------------------- report -- */
 
 if (!problems.length) {
@@ -421,6 +500,7 @@ if (!problems.length) {
   console.log(`  ${glyphsDefined.size} icon glyphs, all used`);
   console.log(`  ${manifestKeys.size} manifest fields, all rendered`);
   console.log(`  ${manifestIds.length} manifest entries, ids unique`);
+  console.log(`  ${(await walk(root)).length} files, none published by accident`);
   process.exit(0);
 }
 

@@ -277,6 +277,29 @@ answer.
 Pure static, `publish = "."`, no build command. Either connect the repository or
 drag the folder onto Netlify Drop.
 
+`publish = "."` is what lets this deploy with no build step, and it has a cost
+worth naming: **everything in the repository is uploaded, so every tracked file
+is a public URL.** Shipping the audit, this README, the manifest's worked
+examples and the function's own source does not leak a secret, but it is not
+something to discover later either. `_redirects` answers those paths with a 404,
+and `tools/audit.mjs` keeps the two lists honest — it fails when a file is added
+that is neither public on purpose nor blocked, so the next development file
+cannot quietly start shipping.
+
+`_redirects` is also where one Netlify behaviour has to be known or the whole
+thing silently does nothing: **redirects shadow a URL that resolves to a file
+the site actually has, and that applies to custom 404s too.** Every path blocked
+there is listed precisely *because* a file sits at it, so each rule carries a
+`!` after the status — `404!` — which is Netlify's "even though the file
+exists". Without it the rule reads as a block and serves the file with a 200.
+The audit fails on a 404 rule missing its `!`, and `tools/dev-server.mjs` models
+the shadowing, so a rule that cannot fire 404s locally *and* reports itself
+rather than looking fixed until someone visits the deployed site.
+
+Everything the page needs still resolves: `/tools/…`, `/README.md`,
+`/.gitignore`, `/netlify/…` and `/netlify.toml` return 404, while every asset
+returns 200 and the function still answers at `/api/watchlist`.
+
 **Response headers live in `_headers`, not `netlify.toml`,** and that is
 deliberate. Netlify only reads `netlify.toml` for a repository-connected deploy;
 a drag-and-drop or API/zip deploy ignores it completely and would ship the site
@@ -329,6 +352,10 @@ into CI. It catches the failure modes that a read-through misses:
 - an `<iframe>` with no `title`, no `sandbox`, or a sandbox permitting
   `allow-top-navigation`, and a page that frames dashboards without a `frame-src`
   in its own CSP
+- a file that would be published but is neither declared public nor blocked in
+  `_redirects` — the check that stops a development file from going live
+- a `_redirects` 404 rule with no `!`, which Netlify would shadow: the file it
+  names stays public while the rule reads as a block
 
 Run it after touching `styles.css`, `icons.js` or `data/dashboards.js`. It is
 worth proving that a new check can fail before trusting it: each of the checks
@@ -351,6 +378,7 @@ netlify/functions/            watchlist-count.js — the only server-side piece
 favicon.svg                   Monogram mark
 
 _headers                      CSP, caching, security headers (all deploy modes)
+_redirects                    404s that keep development files off the site
 netlify.toml                  Publish config plus the /api rewrites
 
 tools/dev-server.mjs          Static files + functions, no-store (see below)
@@ -441,7 +469,12 @@ node tools/dev-server.mjs 4181   # if that port is taken
 
 It serves the static files and the functions behind exactly the routes
 `netlify.toml` rewrites to, reading that file rather than repeating the list, so
-local routing cannot drift from production. Everything is sent `no-store`.
+local routing cannot drift from production. It also reads `_redirects` and
+applies the same 404s, **including the shadowing rule** — an unforced rule only
+fires for a path that genuinely does not exist. That detail is what makes the
+server worth having: a rule that forgot its `!` serves the file here exactly as
+Netlify would, instead of 404ing locally and lulling you into thinking the path
+is blocked. Everything is sent `no-store`.
 
 That last part matters. `python -m http.server` sends no `Cache-Control` at all,
 so Chrome applies heuristic caching to every subresource and will happily keep
