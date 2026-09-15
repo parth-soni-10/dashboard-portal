@@ -669,7 +669,10 @@
     var preview = null;
 
     try {
-      q = String(new URLSearchParams(window.location.search).get('q') || '');
+      // Trimmed, exactly as the field's own input handler trims: `?q=%20%20`
+      // would otherwise be a truthy query that matches nothing, leaving the
+      // page on "Nothing matches "  "" and the field visibly empty.
+      q = String(new URLSearchParams(window.location.search).get('q') || '').trim();
     } catch (e) {
       q = '';
     }

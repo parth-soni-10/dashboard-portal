@@ -443,6 +443,13 @@ tools/design-report.json      What it found, per dashboard
   onerror=…>` is dropped instead of trusted, and `?q=` is capped at 80 characters
   and echoed through `textContent`. The audit fails on an `innerHTML` assignment
   the query could reach.
+- **The preview's scale is set in JS, on purpose.** `fitPreview()` reads
+  `clientWidth` from a `ResizeObserver` and sets `--preview-scale`. Container
+  query units cannot replace it: the frame needs a *unitless* ratio
+  (`viewport ÷ 1280`), and `calc()` cannot divide a length by a length in any
+  currently shipping engine. The measurement is asynchronous and outside
+  render, which is the part that actually matters. Do not "simplify" it to
+  `cqw` — it does not compute.
 - **Escape undoes one thing per press, preview first.** The ordering is forced
   rather than chosen: clearing the search re-renders the rows, and the open
   preview lives inside a row, so clearing it while a preview is open would close
