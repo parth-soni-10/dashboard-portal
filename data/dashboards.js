@@ -13,7 +13,6 @@
  *   url         live Netlify URL, or null when it has not been deployed yet
  *   repo        GitHub repository URL, or null
  *   tags        short labels; also what the filter box matches against
- *   verified    ISO date the URL was last confirmed reachable by hand
  *   embed       whether the dashboard can be shown in a frame. Defaults to
  *               true; set false for a site that ships X-Frame-Options: DENY or
  *               frame-ancestors 'none'. `node tools/check-embed.mjs` checks
@@ -50,8 +49,7 @@ window.DASHBOARDS = [
     embed: true,
     url: 'https://contenttrackerdashboard.netlify.app/',
     repo: 'https://github.com/parth-soni-10/ContentTrackerDashboard',
-    tags: ['Analytics', 'Google Sheets', 'Chart.js'],
-    verified: '2026-09-14'
+    tags: ['Analytics', 'Google Sheets', 'Chart.js']
   },
   {
     id: 'irish-visa-tracker',
@@ -66,8 +64,7 @@ window.DASHBOARDS = [
     embed: false,
     url: 'https://irishvisaupdatetracker.netlify.app/',
     repo: 'https://github.com/parth-soni-10/Irish-Visa-Tracker',
-    tags: ['Python', 'GitHub Actions', 'Scraping'],
-    verified: '2026-09-14'
+    tags: ['Python', 'GitHub Actions', 'Scraping']
   },
   {
     id: 'rbi-weekly',
@@ -78,8 +75,7 @@ window.DASHBOARDS = [
     embed: true,
     url: 'https://rbiweeklydashboard.netlify.app/',
     repo: 'https://github.com/parth-soni-10/RBI-Weekly-Data-Dashboard',
-    tags: ['Scrapers', 'World Bank', 'Functions'],
-    verified: '2026-09-14'
+    tags: ['Scrapers', 'World Bank', 'Functions']
   },
   {
     id: 'csnl-module-picker',
@@ -90,7 +86,6 @@ window.DASHBOARDS = [
     embed: true,
     url: 'https://ucdcsnlmodulepicker.netlify.app/',
     repo: 'https://github.com/parth-soni-10/UCD-CSNL-Module_Picker',
-    tags: ['UCD', 'Timetabling', 'Live data'],
-    verified: '2026-09-14'
+    tags: ['UCD', 'Timetabling', 'Live data']
   }
 ];

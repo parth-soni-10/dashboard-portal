@@ -1,11 +1,10 @@
 # Dashboard Portal
 
-One page that links every deployed dashboard, previews each one live inside its
-own row, and checks whether it still answers. Static
-HTML, CSS and JavaScript with no build step, matching the other dashboards —
-the one piece that needs a server (reading the Content Tracker's figures) is a
-single Netlify Function, because that dashboard's data endpoint cannot be read
-from a browser on this origin.
+One page that links every deployed dashboard and previews each one live inside
+its own row. Static HTML, CSS and JavaScript with no build step, matching the
+other dashboards — the one piece that needs a server (reading the Content
+Tracker's figures) is a single Netlify Function, because that dashboard's data
+endpoint cannot be read from a browser on this origin.
 
 ## Adding or changing a dashboard
 
@@ -20,16 +19,9 @@ and Netlify redeploys it. Nothing else needs touching.
   description: 'One sentence. Clamped to two lines in the row.',
   url: 'https://example.netlify.app/',   // null until it is deployed
   repo: 'https://github.com/parth-soni-10/RBI-Weekly-Data-Dashboard',
-  tags: ['Scrapers', 'World Bank'],      // the filter box also matches these
-  verified: '2026-09-14'                 // ISO date you last opened it by hand
+  tags: ['Scrapers', 'World Bank']       // the filter box also matches these
 }
 ```
-
-`verified` surfaces in the status pill's tooltip. It exists because a probe is
-not sufficient evidence on its own: a dashboard that blocks cross-site checks
-can never confirm itself, so the date the link was last opened by hand is the
-honest fallback. It is only shown for entries that actually have a `url` — a
-deployment that does not exist cannot have been checked.
 
 `tone` is optional; omit it and the row falls back to the house accent.
 
@@ -62,15 +54,15 @@ A recorded number is never presented as a live one.
 
 `url` must be an **absolute** `http://` or `https://` address, and it is
 enforced rather than assumed. A typo like `example.com` is a *relative* URL,
-which would render as a link to nowhere and — far worse — would be probed
-against this page's own origin, come back successful, and paint the row green.
-An unusable value is therefore refused: the row shows no link, reports
-"Bad link", prints the offending value where the hostname goes so the typo is
-visible, and the footnote names the entry to fix.
+which resolves against this page instead of against the dashboard, so it looks
+like it works while going somewhere entirely wrong. An unusable value is
+refused: the row shows no link and no ↗, and prints the offending value where
+the hostname goes so the typo is visible on the page rather than buried in the
+file.
 
-A `null` URL is a real state, not a bug. The row dims, reads "Not deployed",
-shows "No deploy URL recorded" where the hostname would be, and offers only the
-repository link, so there is never a call to action that leads nowhere.
+A `null` URL is a real state, not a bug. The row dims, shows "No deploy URL
+recorded" where the hostname would be, and offers only the repository link, so
+there is never a call to action that leads nowhere.
 
 ## Libraries
 
@@ -141,57 +133,35 @@ its fill token: `#059669` and `#e9b949` are fills, and fail as small text. The
 tone appears only on the row's leading edge key and its index numeral; every
 interactive element stays on the single house accent.
 
-## The link check, and what its pills mean
+## No status indicator, deliberately
 
-| Pill | Colour | Meaning |
-|---|---|---|
-| Reachable | Green | This browser completed a request to the dashboard. |
-| Could not verify | Amber | The check did not complete. Not a claim that the site is down. |
-| Bad link | Amber | The `url` is not an absolute http(s) address. Neither linked nor checked. |
-| Offline | Grey | The device reports no network connection. |
-| Not deployed | Grey | No `url` recorded yet. |
-| Checking | Grey | A check is in flight. |
+There is no per-row badge reading Reachable / Offline / Could not verify, and no
+summary counting how many links answered. Both are gone, and so is the link
+check that fed them.
 
-**There are no status chips, deliberately.** A row's own pill already says what
-that row is, so a filter that hides rows by status mostly managed to hide the
-answer — the state is visible in place, one line per dashboard. The search box
-stays, because finding a dashboard by name is a different job from filtering by
-state, and it searches the tags and the live figures as well as the name.
+The check was never trustworthy enough to wear a colour. A `HEAD` request with
+`mode: 'no-cors'` is the only cross-origin check a page may make, and it reports
+that *this browser* could not complete a request — which is not the same as the
+dashboard being down. A host shipping `Cross-Origin-Resource-Policy: same-origin`
+refuses every such request by design while being perfectly healthy, and a typo'd
+relative URL resolves against this page's own origin and reads as green. That
+left a badge with states that were guesses, displayed with the same confidence
+as the one state that was not.
 
-That is also why the link check never says "down": a cross-origin check cannot
-tell a dead host from a host that refuses to be checked.
+Two things replaced it, and both are better evidence than a probe ever was:
 
-The check is a `HEAD` request with `mode: 'no-cors'`. The response is opaque, so
-its body can never be read: a `GET` would invite a transfer of the whole page of
-every dashboard (one of them is 212 KB) for information that gets discarded
-regardless. `HEAD` asks the only question being asked — did the host answer?
+- **The preview.** It loads the real dashboard, in the row, on demand — so "is
+  this up?" is answered by showing you the thing itself.
+- **The link.** Clicking it is the only test that actually settles the question.
 
-Either verb leaves a companion `net::ERR_ABORTED` in devtools. That is Chrome
-discarding the opaque response, not a failed check: the 200 arrives first and
-the pill still resolves to Reachable. Do not chase it.
+What went with the badge: the probe, the five-minute `sessionStorage` cache, the
+refresh button in the bar, the footnote under the list, the `--ok` / `--warn-soft`
+status tokens, the `pulse` keyframe, and the `connect-src https://*.netlify.app`
+those probes needed. A check with nothing to display is four requests per visit
+for no reader.
 
-A dashboard that
-ships `Cross-Origin-Resource-Policy: same-origin` in its own `netlify.toml`
-refuses cross-site checks outright, so its row would sit on "Could not verify"
-while the site is perfectly healthy. Calling that "Unreachable" would be a lie,
-hence the softer wording, and a footnote under the list names the offending
-dashboard instead of leaving you guessing. No dashboard listed today triggers
-it, but the Expense Tracker repo sets that header, so a future entry can.
-
-Results are cached in `sessionStorage` for five minutes so the page never
-hammers four hosts on every keystroke. The refresh button in the bar clears the
-cache and probes everything again. Transient states are never cached — and a
-cache holding no durable results at all is treated as a miss rather than a hit,
-so badges cannot be stranded on a stale state for the rest of the window.
-
-Being offline is a settled state, not a pending one. Every pill reads "Offline
-", the summary reports 0 reachable, and the footnote explains that no link could
-be checked and that they may be perfectly healthy. The alternative — reporting
-"checking links" indefinitely while every badge already says otherwise — is a
-lie the first version told.
-
-If a dashboard ever moves to a custom domain, add that origin to `connect-src`
-in `_headers` or its pill will read "Could not verify" for the wrong reason.
+The search box stays, because finding a dashboard by name is a different job
+from filtering by state — and it searches the tags and the live figures too.
 
 ## Live figures
 
@@ -404,12 +374,12 @@ tools/design-report.json      What it found, per dashboard
   list. One bordered container with hairline row dividers does the grouping
   that four elevated cards were doing, so nothing reads as a template tile.
 - **One band of chrome.** The page opens with a single sticky bar (brand,
-  search, refresh, theme) and one line carrying the count or the health
-  summary. At 1080px the first row starts 130px down the page; the version this
-  replaced started it at 359px, below the fold.
-- **The whole set fits one screen.** Four rows measure 117px each, so the
-  registry is 467px and the page needs no scrolling at desktop heights.
-- **Shape is locked.** Containers 14px, controls 6px, status pills fully round.
+  search, theme) and one line carrying the count. The first row starts 119px
+  down the page at 1280px; the version this replaced started it at 359px, below
+  the fold.
+- **The whole set fits one screen.** Four rows measure 105px each, so the
+  registry is 425px and the page needs no scrolling at desktop heights.
+- **Shape is locked.** Containers 14px, controls 6px.
 - **Boundary rule.** Hairline `--border` for surfaces you read, stronger
   `--border-strong` for controls you operate.
 - **Fonts:** Inter and Geist are preloaded; Geist Mono deliberately is not.
@@ -427,22 +397,22 @@ tools/design-report.json      What it found, per dashboard
 - **Motion:** transform and opacity only, all of it switched off under
   `prefers-reduced-motion`. The entrance stagger is gated on a class applied to
   the first render only, so searching does not replay it on every keystroke.
-- **Accessibility:** the filter has a real label (visually hidden), status
-  changes announce through `aria-live`, the row focus ring is inset (`:focus-within`
-  on the row, since the anchor is a stretched-link overlay and an outline on it
-  would trace the wrong box), and `/` focuses the filter from anywhere.
+- **Accessibility:** the filter has a real label (visually hidden), the result
+  count announces through `aria-live`, the row focus ring is inset
+  (`:focus-within` on the row, since the anchor is a stretched-link overlay and
+  an outline on it would trace the wrong box), and `/` focuses the filter from
+  anywhere.
 - **Long tokens wrap, they do not vanish.** `.row-title`, `.row-desc`,
-  `.footnote` and `.empty-body` set `overflow-wrap: anywhere`, because the
+  `.preview-note` and `.empty-body` set `overflow-wrap: anywhere`, because the
   manifest is hand-written and a description can hold a long unbroken URL. The
   registry's `overflow: hidden` would otherwise clip it silently — no scrollbar,
   no ellipsis, content just gone. `anywhere` rather than `break-word` so the
   grid track's min-content size shrinks too, which is what lets the column
   actually narrow.
 - **Contrast:** every text element clears WCAG AA 4.5:1 in both themes,
-  including the tone numerals and the status pills, verified by compositing the
-  translucent tints rather than eyeballing. The tightest pair is the light-mode
-  "Reachable" pill at 4.70:1. Text on the accent uses `--on-accent`, which has
-  to flip with the theme because the dark accent is a light mint.
+  including the tone numerals, verified by compositing the translucent tints
+  rather than eyeballing. Text on the accent uses `--on-accent`, which has to
+  flip with the theme because the dark accent is a light mint.
 - **Icons** come from Lucide and are inlined by glyph. Do not hand-draw
   replacements.
 
@@ -451,9 +421,9 @@ tools/design-report.json      What it found, per dashboard
 Two layouts, both declared in the same component:
 
 - **≥700px:** a three-column row — 26px index numeral, text column, right rail
-  carrying the status pill, host and tags.
-- **<700px:** the row re-flows to `title / description / tags / status+actions`.
-  The two wrappers dissolve with `display: contents` so their children can be
+  carrying the host, the controls and the tags.
+- **<700px:** the row re-flows to `title / description / tags / actions`. The
+  two wrappers dissolve with `display: contents` so their children can be
   placed on the row grid directly, the numeral is dropped, and the hostname is
   hidden as redundant with the row being a link.
 

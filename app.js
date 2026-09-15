@@ -10,8 +10,6 @@
   'use strict';
 
   var THEME_KEY = 'hub-theme';
-  var PROBE_TTL = 5 * 60 * 1000; // re-probe a link at most every five minutes
-  var PROBE_TIMEOUT = 8000;
   // Longer than the function's own 9s budget on purpose: the client must wait
   // for the function's answer, not cut it off and report a failure the server
   // was about to turn into a result.
@@ -30,9 +28,6 @@
     emptyTitle: document.getElementById('empty-title'),
     emptyBody: document.getElementById('empty-body'),
     meta: document.getElementById('meta'),
-    footnote: document.getElementById('footnote'),
-    footnoteText: document.getElementById('footnote-text'),
-    recheck: document.getElementById('recheck'),
     themeToggle: document.getElementById('theme-toggle')
   };
 
@@ -74,10 +69,9 @@
    *
    * This is not defensive padding. The manifest is edited by hand, and a typo
    * like `example.com` is a *relative* URL: rendered as-is it becomes a link to
-   * nowhere, and — far worse — the reachability probe resolves it against this
-   * page's own origin, gets a perfectly good response, and paints the row
-   * green. A false "Reachable" is the single most misleading thing this page
-   * could show, so an unusable URL is refused up front and reported as such.
+   * nowhere — to this page's own origin, in fact, so it looks like it works.
+   * An unusable URL is refused up front and the raw value is shown instead, so
+   * the typo is visible rather than dressed up as a working link.
    */
   function deployUrl(item) {
     if (!item || !item.url) return '';
@@ -142,7 +136,7 @@
       var read = liveCounts[item.id] && liveCounts[item.id].read;
       return 'Live from ' + cfg.source + (read ? ', read at ' + clockOf(read) : '') + '.';
     }
-    var when = formatVerified(cfg.recorded);
+    var when = formatDate(cfg.recorded);
     return when
       ? 'Last recorded figures, from ' + when + '. The live reading did not complete.'
       : 'Last recorded figures. The live reading did not complete.';
@@ -267,133 +261,10 @@
     if (moon) moon.innerHTML = icon('moon', 16);
   }
 
-  /* ------------------------------------------------------- link checking -- */
+  /* -- dates ------------------------------------------------------------- */
 
-  /**
-   * Ask whether this browser can reach a deployed dashboard.
-   *
-   * Cross-origin reads are blocked without CORS headers, so this sends a
-   * no-cors request: the body is opaque, but the promise resolves when the
-   * host answers. A rejection means this browser could not complete the
-   * request, which is NOT the same as the dashboard being down. A host that
-   * ships `Cross-Origin-Resource-Policy: same-origin` refuses cross-site
-   * checks by design and will always reject, so a rejection must never be
-   * reported as an outage.
-   *
-   * So the failure state is reported as "Could not verify" rather than
-   * "Unreachable". Overstating a blocked probe as an outage would be worse
-   * than showing no badge at all.
-   */
-  function probe(url) {
-    if (!('fetch' in window) || !url) return Promise.resolve('offline');
-    if (navigator.onLine === false) return Promise.resolve('offline');
-
-    var controller = 'AbortController' in window ? new AbortController() : null;
-    var timer = setTimeout(function () {
-      if (controller) controller.abort();
-    }, PROBE_TIMEOUT);
-
-    return fetch(url, {
-      // HEAD, not GET. A no-cors response is opaque, so its body can never be
-      // read: a GET invites a transfer of the whole page of every dashboard
-      // (one of them is 212 KB) for information that is discarded regardless.
-      // HEAD asks the only question this check asks — did the host answer?
-      //
-      // Either verb leaves a companion net::ERR_ABORTED in devtools. That is
-      // Chrome discarding the opaque response and is not a failure: the 200
-      // arrives first and the badge still resolves to Reachable.
-      method: 'HEAD',
-      mode: 'no-cors',
-      cache: 'no-store',
-      redirect: 'follow',
-      signal: controller ? controller.signal : undefined
-    })
-      .then(function () {
-        return 'live';
-      })
-      .catch(function () {
-        return navigator.onLine === false ? 'offline' : 'unverified';
-      })
-      .then(function (result) {
-        clearTimeout(timer);
-        return result;
-      });
-  }
-
-  function readCache() {
-    try {
-      var raw = sessionStorage.getItem('hub-probe');
-      var parsed = raw ? JSON.parse(raw) : null;
-      if (!parsed || !parsed.at || Date.now() - parsed.at >= PROBE_TTL) return null;
-      var results = parsed.results || {};
-      // An empty cache means every probe came back transient, so there is
-      // nothing worth reusing. Reporting it as a hit would strand the badges
-      // on their stale state for the rest of the TTL.
-      if (!Object.keys(results).length) return null;
-      return results;
-    } catch (e) {
-      /* ignore a corrupt cache */
-    }
-    return null;
-  }
-
-  function writeCache(results) {
-    // Never cache a transient state: an "offline" result or an interrupted
-    // check would otherwise stick for the whole five-minute window.
-    var durable = {};
-    Object.keys(results).forEach(function (id) {
-      if (results[id] === 'live' || results[id] === 'unverified') durable[id] = results[id];
-    });
-    try {
-      sessionStorage.setItem('hub-probe', JSON.stringify({ at: Date.now(), results: durable }));
-    } catch (e) {
-      /* storage unavailable: probing simply runs again next visit */
-    }
-  }
-
-  var probeState = readCache() || {};
-
-  /* ------------------------------------------------------ status rendering -- */
-
-  /*
-   * One colour, one meaning:
-   *   green  confirmed reachable from this browser
-   *   amber  could not be confirmed (never a claim that the site is down)
-   *   grey   nothing to confirm, or a check in flight
-   */
-  var STATUS_COPY = {
-    live: { cls: 'status-live', text: 'Reachable', hint: 'This browser reached the dashboard.' },
-    unverified: {
-      cls: 'status-warn',
-      text: 'Could not verify',
-      hint: 'The check did not complete. Some dashboards block cross-site requests, so this is not evidence the site is down.'
-    },
-    offline: {
-      cls: '',
-      text: 'Offline',
-      hint: 'This device reports no network connection.'
-    },
-    checking: { cls: 'status-checking', text: 'Checking', hint: 'Check in progress.' },
-    pending: {
-      cls: '',
-      text: 'Not deployed',
-      hint: 'No deploy URL has been recorded for this dashboard yet.'
-    },
-    broken: {
-      cls: 'status-warn',
-      text: 'Bad link',
-      hint: 'The url in data/dashboards.js is not a valid absolute http(s) address, so it was neither linked nor checked.'
-    }
-  };
-
-  function statusOf(item) {
-    if (!item.url) return 'pending';
-    if (!deployUrl(item)) return 'broken';
-    return probeState[item.id] || 'checking';
-  }
-
-  /** 2026-09-14 -> "14 Sept 2026", so the manifest's provenance line reads. */
-  function formatVerified(iso) {
+  /** 2026-09-14 -> "14 Sept 2026", so the recorded figure's provenance reads. */
+  function formatDate(iso) {
     var when = new Date(String(iso) + 'T00:00:00Z');
     if (isNaN(when.getTime())) return '';
     return when.toLocaleDateString('en-GB', {
@@ -402,32 +273,6 @@
       year: 'numeric',
       timeZone: 'UTC'
     });
-  }
-
-  /**
-   * The pill's tooltip carries the hand-checked date. An automatic probe cannot
-   * be trusted as the only evidence — a dashboard that blocks cross-site
-   * checks can never confirm itself — so the date the link was last opened by
-   * hand is the honest fallback, and this is where it belongs: available on
-   * hover and to a screen reader without adding a line of chrome.
-   */
-  function statusMarkup(state, item) {
-    var copy = STATUS_COPY[state] || STATUS_COPY.checking;
-    var hint = copy.hint || '';
-    // Only meaningful once there is a URL to have checked. A dashboard with no
-    // deploy link cannot have been hand-checked, and claiming otherwise would
-    // contradict the "Not deployed" label sitting next to it.
-    var seen = item && hasDeploy(item) && item.verified ? formatVerified(item.verified) : '';
-    if (seen) hint += ' Last hand-checked ' + seen + '.';
-    return (
-      '<span class="status ' +
-      copy.cls +
-      '" title="' +
-      esc(hint) +
-      '"><span class="status-dot" aria-hidden="true"></span>' +
-      esc(copy.text) +
-      '</span>'
-    );
   }
 
   /* --------------------------------------------------------------- preview --
@@ -636,7 +481,6 @@
   /* ------------------------------------------------------------- rendering -- */
 
   function rowMarkup(item, index) {
-    var state = statusOf(item);
     var href = deployUrl(item);
     var live = !!href;
     var host = hostOf(href);
@@ -698,7 +542,6 @@
       '</p>' +
       '</div>' +
       '<div class="row-meta">' +
-      statusMarkup(state, item) +
       '<div class="row-foot">' +
       // The tooltip holds the full host, which is the only reason to have one:
       // the visible text has had the netlify.app suffix stripped.
@@ -740,21 +583,13 @@
     return null;
   }
 
-  function refreshStatus(item, state) {
-    var row = findRow(item.id);
-    if (!row) return;
-    var pill = row.querySelector('.status');
-    if (pill) pill.outerHTML = statusMarkup(state, item);
-  }
-
   /* --------------------------------------------------------------- filters --
    * One filter, the search box. The availability chips that used to sit beside
-   * the count are gone: each row already states its own status in a pill, so
-   * choosing to hide rows by that status mostly managed to hide the answer.
+   * the count are gone: hiding rows by their state mostly managed to hide the
+   * answer. Searching by name is a different job and stays.
    */
 
   var query = '';
-  var checkedAt = '';
 
   function matches(item) {
     if (!query) return true;
@@ -768,30 +603,6 @@
       .every(function (term) {
         return haystack.indexOf(term) !== -1;
       });
-  }
-
-  /** Only entries that actually have a checkable address. */
-  function withUrl() {
-    return dashboards.filter(hasDeploy);
-  }
-
-  /**
-   * True once every deployed dashboard has an answer worth acting on. The
-   * offline state counts: the device has no connection, so waiting for a better
-   * answer would leave the summary claiming to be checking for ever while every
-   * badge already says otherwise.
-   */
-  function settled() {
-    var targets = withUrl();
-    return (
-      targets.length > 0 &&
-      targets.every(function (d) {
-        var state = statusOf(d);
-        return (
-          state === 'live' || state === 'unverified' || state === 'offline' || state === 'broken'
-        );
-      })
-    );
   }
 
   /** Two causes are left: a word that matches nothing, and an empty manifest. */
@@ -809,8 +620,10 @@
   }
 
   /* --------------------------------------------------------------- the meta line
-   * One line of chrome that carries either the search count or the health
-   * summary, never both, so it always stays on a single row. */
+   * One line of chrome, kept to a single row: the search count while a query is
+   * active, and otherwise just how many dashboards there are. It used to carry
+   * a health summary — how many links answered, and when — which was the
+   * reachability badge again in sentence form, and went with it. */
   function renderMeta() {
     var total = dashboards.length;
     if (!total) {
@@ -825,33 +638,7 @@
       return;
     }
 
-    // A manifest where nothing is deployed yet is a real state: saying
-    // "checking links" forever would be a lie, because there is nothing to check.
-    var checked = withUrl();
-    if (!checked.length) {
-      // Covers both "no url recorded" and "every url rejected": neither has
-      // anything that could be linked or checked.
-      el.meta.innerHTML = '<strong>' + total + '</strong> dashboards, none linked yet';
-      return;
-    }
-
-    if (!settled()) {
-      el.meta.innerHTML = '<strong>' + total + '</strong> dashboards, checking links';
-      return;
-    }
-
-    var reachable = checked.filter(function (d) {
-      return statusOf(d) === 'live';
-    }).length;
-
-    el.meta.innerHTML =
-      '<strong>' +
-      total +
-      '</strong> dashboards, <strong>' +
-      reachable +
-      '</strong> reachable, checked <strong>' +
-      esc(checkedAt || 'just now') +
-      '</strong>';
+    el.meta.innerHTML = '<strong>' + total + '</strong> dashboards';
   }
 
   var introPlayed = false;
@@ -885,111 +672,7 @@
     }
 
     renderMeta();
-  }
-
-  /* ------------------------------------------------------------ link check -- */
-
-  function updateFootnote() {
-    var unverified = withUrl().filter(function (d) {
-      return statusOf(d) === 'unverified';
-    });
-    var offline = withUrl().filter(function (d) {
-      return statusOf(d) === 'offline';
-    });
-    // Broken entries are not in withUrl(), because they are never checked.
-    var broken = dashboards.filter(function (d) {
-      return statusOf(d) === 'broken';
-    });
-
-    el.footnote.hidden = unverified.length === 0 && offline.length === 0 && broken.length === 0;
-
-    if (!unverified.length && !offline.length && !broken.length) {
-      el.footnoteText.textContent = '';
-      return;
-    }
-
-    // Being offline explains every badge at once, so it takes precedence.
-    if (offline.length) {
-      el.footnoteText.innerHTML =
-        'This device reports no network connection, so the links could not be checked. ' +
-        'They may be perfectly healthy.';
-      return;
-    }
-
-    // A rejected url needs a code change, so say exactly which entry is wrong.
-    if (broken.length) {
-      el.footnoteText.innerHTML =
-        'Invalid url in <strong>' +
-        broken
-          .map(function (d) {
-            return esc(d.name);
-          })
-          .join('</strong>, <strong>') +
-        '</strong>. Only absolute http(s) addresses can be linked and checked, so ' +
-        (broken.length === 1 ? 'this entry was' : 'these entries were') +
-        ' skipped.';
-      return;
-    }
-
-    var names = unverified.map(function (d) {
-      return esc(d.name);
-    });
-
-    el.footnoteText.innerHTML =
-      (unverified.length === 1
-        ? '<strong>' + names[0] + '</strong> blocks'
-        : '<strong>' + names.join('</strong>, <strong>') + '</strong> block') +
-      ' cross-site checks, so ' +
-      (unverified.length === 1 ? 'its' : 'their') +
-      ' badge cannot be confirmed from this browser. Open the dashboard to check by hand.';
-  }
-
-  function finishCheck() {
-    writeCache(probeState);
-    checkedAt = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    updateFootnote();
-    renderMeta();
-  }
-
-  function checkAll(force) {
-    var targets = withUrl();
-    if (!targets.length) {
-      renderMeta();
-      return;
-    }
-
-    // Only probe what we have no fresh answer for. A cached result is reused,
-    // so flicking between filters never re-hammers every host.
-    var toProbe = 0;
-    targets.forEach(function (item) {
-      if (!force && probeState[item.id] && probeState[item.id] !== 'checking') {
-        refreshStatus(item, probeState[item.id]);
-        return;
-      }
-      probeState[item.id] = 'checking';
-      refreshStatus(item, 'checking');
-      toProbe++;
-    });
-
-    if (!toProbe) {
-      finishCheck();
-      return;
-    }
-
-    renderMeta();
-    var done = 0;
-    targets.forEach(function (item) {
-      if (probeState[item.id] !== 'checking') return;
-      probe(item.url).then(function (state) {
-        probeState[item.id] = state;
-        refreshStatus(item, state);
-        done++;
-        if (done === toProbe) finishCheck();
-      });
-    });
-  }
-
-  /* --------------------------------------------------------------- events -- */
+  }  /* --------------------------------------------------------------- events -- */
 
   // The debounce means a keystroke can still be in flight when something else
   // clears the filter. Any path that resets the field must cancel the pending
@@ -1058,16 +741,6 @@
     el.filter.focus();
   });
 
-  el.recheck.addEventListener('click', function () {
-    try {
-      sessionStorage.removeItem('hub-probe');
-    } catch (e) {
-      /* nothing to clear */
-    }
-    probeState = {};
-    checkAll(true);
-  });
-
   // "/" focuses the filter from anywhere, unless the user is already typing.
   document.addEventListener('keydown', function (event) {
     if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
@@ -1078,11 +751,6 @@
     event.preventDefault();
     el.filter.focus();
     el.filter.select();
-  });
-
-  window.addEventListener('online', function () {
-    probeState = {};
-    checkAll(true);
   });
 
   /* ---------------------------------------------------------------- theme -- */
@@ -1137,19 +805,9 @@
   fillThemeGlyphs();
   applyTheme(root.dataset.theme === 'light' ? 'light' : 'dark', false);
   render();
-  checkAll(false);
 
   // The figures are fetched once per load. The descriptions paint from the
   // manifest's recorded numbers first and are repainted in place if an answer
   // arrives, so a slow or absent endpoint never holds up the list.
   Promise.all(dashboards.filter(countConfig).map(fetchCount)).then(refreshFigures);
-
-  // Keep the summary honest when the tab is left open for a long time: an
-  // expired cache is discarded rather than reused with a fresh timestamp.
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState !== 'visible') return;
-    if (readCache()) return;
-    probeState = {};
-    checkAll(true);
-  });
 })();

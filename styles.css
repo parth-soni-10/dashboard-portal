@@ -32,13 +32,14 @@
  *             including its own light/dark pair. Nothing is invented.
  *
  * Locked decisions:
- *   Shape    containers 14px, controls 6px, status pills fully round.
+ *   Shape    containers 14px, controls 6px.
  *   Colour   one accent for every interactive element. Per-row brand colour
  *            appears only on the index numeral and the left edge key.
  *   Layout   a numbered registry, not a card grid: this is a launcher, and a
  *            list of four links belongs in a list. No card containers, so
  *            nothing here reads as a template tile. One search box, and no
- *            status chips: the rows already state their own status.
+ *            status chrome of any kind: a row is a link, and whether it works
+ *            is the browser's answer to give, not a badge's.
  *   Theme    light and dark are both first class, driven by [data-theme].
  *   Motion   transform and opacity only, all of it off under
  *            prefers-reduced-motion.
@@ -106,10 +107,10 @@
      only 1.9:1. */
   --on-accent: #ffffff;
 
-  --ok: #0f7a4f;
-  --ok-soft: #e6f3ec;
+  /* One advisory colour, used only by the preview's "cannot be framed" note.
+     It used to carry a second role as the unconfirmed-link amber; that badge
+     is gone, so there is no green/amber/grey trio to keep in step any more. */
   --warn: #8a5205;
-  --warn-soft: #fdf1e0;
 
   /* Tinted toward the ink hue, as Content Tracker does. */
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.03);
@@ -125,7 +126,6 @@
   /* The family's own named pair, taken verbatim. */
   --r-container: 14px;
   --r-control: 6px;
-  --r-pill: 999px;
 
   --ease: var(--ease-3);
   --dur: 165ms;
@@ -152,10 +152,7 @@
   --accent-ring: rgba(52, 211, 153, 0.34);
   --on-accent: #0b1220;
 
-  --ok: #34d399;
-  --ok-soft: rgba(52, 211, 153, 0.13);
   --warn: #e9b949;
-  --warn-soft: rgba(233, 185, 73, 0.13);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32);
 
@@ -648,8 +645,8 @@ body {
   align-items: flex-end;
   gap: 5px;
   max-width: 15rem;
-  /* Optical nudge (Open Props' ramp has no 12px step): the status pill is
-     20px tall, so 2px brings its optical centre level with the title. */
+  /* Optical nudge (Open Props' ramp has no 12px step): the 26px controls need
+     a shade over the title's 21px line box to sit visually level with it. */
   padding-top: 2px;
 }
 
@@ -706,57 +703,6 @@ body {
   transform: translate(2px, -2px);
 }
 
-/* --------------------------------------------------------------- status -- */
-
-.status {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 9px 2px 7px;
-  border-radius: var(--r-pill);
-  background: var(--surface-sunken);
-  border: 1px solid var(--border);
-  color: var(--text-soft);
-  font-size: 11px;
-  font-weight: 550;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.status-dot {
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.status-live {
-  border-color: color-mix(in srgb, var(--ok) 32%, transparent);
-  background: var(--ok-soft);
-  color: var(--ok);
-}
-
-/* Amber, never red: an unanswered check is not evidence the site is down. */
-.status-warn {
-  border-color: color-mix(in srgb, var(--warn) 34%, transparent);
-  background: var(--warn-soft);
-  color: var(--warn);
-}
-
-.status-checking .status-dot {
-  animation: pulse 1.1s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
 }
 
 /* -------------------------------------------------------------- preview --
@@ -869,22 +815,6 @@ body {
 }
 
 /* -------------------------------------------------------- empty / notes -- */
-
-.footnote {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--size-2);
-  margin: var(--size-4) 0 0;
-  max-width: 76ch;
-  color: var(--text-soft);
-  font-size: 12.5px;
-  /* It echoes manifest names and urls, so it can contain a long token too. */
-  overflow-wrap: anywhere;
-}
-
-.footnote .ico {
-  margin-top: 2px;
-}
 
 .empty {
   display: flex;
@@ -1056,16 +986,17 @@ body {
     padding: var(--size-4) var(--size-3);
   }
 
-  /* Rows re-flow instead of stacking into four bands: the status moves up to
-     the title line, and the two wrappers dissolve so their children can be
-     placed directly on the row grid. */
+  /* Rows re-flow instead of stacking into four bands: the two wrappers
+     dissolve, so their children are placed directly on the row grid. The rail
+     is one band now rather than the two it was while a badge sat above the
+     host, which is a whole line given back to the row. */
   .row {
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
       'title title'
       'desc desc'
       'tags tags'
-      'status foot';
+      'foot foot';
     column-gap: var(--size-3);
     row-gap: 6px;
     padding: var(--size-3);
@@ -1086,15 +1017,9 @@ body {
     display: none;
   }
 
-  /* The title keeps the full width; the pill lives on the last line instead of
-     squeezing it into a second line. */
+  /* The title keeps the full width rather than sharing a line with the rail. */
   .row-title {
     grid-area: title;
-  }
-
-  .status {
-    grid-area: status;
-    align-self: center;
   }
 
   .row-desc {
@@ -1112,8 +1037,11 @@ body {
     grid-area: tags;
   }
 
-  /* Redundant with the row being a link in the first place. */
-  .row-host {
+  /* Redundant with the row being a link in the first place — but only then.
+     A row with no URL is not a link, so its host line is the one thing saying
+     why ("No deploy URL recorded", or the offending value of a url that was
+     refused), and hiding it left the dimmed row with no explanation at all. */
+  .row:not(.is-pending) .row-host {
     display: none;
   }
 }
