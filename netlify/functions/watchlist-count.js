@@ -90,14 +90,16 @@ exports.handler = async (event) => {
     // timestamp generated in the browser would quietly claim they were live.
     return reply(200, { ...count(rows), fetched: new Date().toISOString() }, OK_CACHE);
   } catch (error) {
+    // The reason goes to the function log, not to the caller. Echoing it put the
+    // upstream's status and host into a public JSON body, which tells a visitor
+    // about infrastructure they have no reason to see and does not help the
+    // page: it only ever renders its own recorded figures.
+    console.error('watchlist-count: read failed —', (error && error.message) || error);
+
     // Never cached. A transient upstream failure would otherwise pin a wrong
     // answer at the edge for the whole TTL; the page falls back to the figures
     // recorded in the manifest instead.
-    return reply(
-      502,
-      { error: 'Unable to read the watchlist', detail: String((error && error.message) || error) },
-      'no-store'
-    );
+    return reply(502, { error: 'Unable to read the watchlist' }, 'no-store');
   } finally {
     clearTimeout(timer);
   }

@@ -26,14 +26,22 @@
 #     *.netlify.app for the per-row reachability probes; those went with the
 #     badge, so the allowance went too rather than lingering as a hole that
 #     nothing needs.
-#   * frame-src allows *.netlify.app because a row's preview embeds the
-#     dashboard itself. Without it the preview would be blocked by OUR policy
-#     and look like the dashboard's fault. If a dashboard ever moves to a
-#     custom domain, add that origin here or its preview will be refused.
+#   * frame-src names the three dashboards that can actually be framed, and
+#     names them individually rather than as *.netlify.app. A wildcard let every
+#     subdomain on the platform be framed by this page to serve three known
+#     hosts — the same reasoning that closed connect-src, applied to the other
+#     directive that had a wildcard. Irish Visa Tracker is absent on purpose: it
+#     sends X-Frame-Options: DENY, so the page never frames it (a row there
+#     explains that instead of opening a box).
+#
+#     This list and the manifest's `embed` flags have to agree, and the audit
+#     enforces it: an entry with embed !== false whose origin is missing here
+#     would be blocked by OUR policy while looking like the dashboard's fault.
+#     If a dashboard moves to a custom domain, both places change together.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src https://*.netlify.app; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src https://contenttrackerdashboard.netlify.app https://rbiweeklydashboard.netlify.app https://ucdcsnlmodulepicker.netlify.app; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'

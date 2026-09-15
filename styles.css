@@ -135,6 +135,20 @@
   --bleed: 12px;
 }
 
+/* `color-scheme` follows the *chosen* theme, not the operating system's. The
+   meta tag alone (`dark light`) only declares that both are supported, so a
+   visitor who picks the theme opposite to their OS setting gets scrollbars,
+   form controls and the caret drawn for the other one — a white scrollbar down
+   the side of a black page. Declaring it here ties all of that to what the page
+   is actually rendering. */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
 :root[data-theme='dark'] {
   --bg: #0e0e11;
   --bg-sunken: #17171b;
@@ -258,7 +272,7 @@ body {
 .skip-link {
   position: absolute;
   left: var(--size-4);
-  top: -4rem;
+  top: var(--size-2);
   z-index: 20;
   padding: var(--size-2) var(--size-4);
   border-radius: var(--r-control);
@@ -267,11 +281,16 @@ body {
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
-  transition: top var(--dur) var(--ease);
+  /* Off-screen with a transform, not with `top`. Animating `top` runs layout
+     on every frame for an element that only ever moves on focus; a transform
+     is composited, and `transition: top` is the one property in this file that
+     did not follow its own rule about which properties are animated. */
+  transform: translateY(calc(-100% - var(--size-4)));
+  transition: transform var(--dur) var(--ease);
 }
 
 .skip-link:focus {
-  top: var(--size-2);
+  transform: none;
 }
 
 /* ------------------------------------------------------------------ bar --
@@ -347,6 +366,12 @@ body {
 .icon-btn:hover {
   color: var(--ink);
   border-color: var(--line-strong);
+}
+
+/* Declared here, before `.preview-btn.is-open`, so the later rule still wins on
+   an open button: a pressed *and* open control should read as open. */
+.icon-btn:active {
+  background: var(--bg-sunken);
 }
 
 .theme-glyph {
@@ -465,6 +490,8 @@ body {
 
 .title {
   margin: 0;
+  /* Keeps a two-word heading off two lines and stops a one-word last line. */
+  text-wrap: balance;
   font-family: var(--font-display);
   font-size: 32px;
   font-weight: 600;
@@ -477,12 +504,34 @@ body {
   max-width: 52ch;
   color: var(--ink-mid);
   font-size: 13.5px;
+  text-wrap: pretty;
 }
 
 .lede strong {
   color: var(--ink);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+
+/* Touch behaviour, once for every control on the page.
+   `manipulation` removes the double-tap-to-zoom wait: without it a tap on a row
+   stalls for roughly 300ms while the browser decides whether a second tap is
+   coming, which is the difference between a page that feels native and one that
+   feels laggy. The platform's grey tap flash is replaced rather than kept,
+   because each of these already draws its own pressed state (a row background,
+   a button surface) and two flashes for one tap is worse than one. */
+a,
+button,
+input,
+.row {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The skip link's target is a container, so scrolling to it would otherwise put
+   its first line behind the 52px sticky bar. */
+#index {
+  scroll-margin-top: calc(var(--bar-h) + var(--size-3));
 }
 
 /* ------------------------------------------------------------ the index --
@@ -518,13 +567,19 @@ body {
   align-items: start;
   padding-block: var(--size-4);
   transition: background-color var(--dur) var(--ease);
+  /* Landing on a row from a deep link must not put its title under the sticky
+     bar. Same reason as #index below. */
+  scroll-margin-top: calc(var(--bar-h) + var(--size-3));
 }
 
 .row + .row {
   border-top: 1px solid var(--line);
 }
 
-.row:hover {
+/* The pressed state mirrors hover rather than inventing a second colour: on a
+   touch screen there is no hover, so this is the only feedback a row has. */
+.row:hover,
+.row:active {
   background: var(--bg-sunken);
 }
 
@@ -607,6 +662,9 @@ body {
 .row-desc {
   margin: var(--size-1) 0 0;
   max-width: 68ch;
+  /* `pretty` rather than `balance`: this is a paragraph, so the goal is only to
+     avoid a stranded last word, not to even out the lines. */
+  text-wrap: pretty;
   color: var(--ink-mid);
   font-size: 13.5px;
   line-height: 1.55;

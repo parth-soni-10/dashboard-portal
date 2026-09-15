@@ -259,9 +259,15 @@ page, and no client-side check can tell the difference — so the preview cannot
 report it. `embed` plus `tools/check-embed.mjs` is what covers the case that can
 be detected: a dashboard starting to refuse frames.
 
-This is also why `_headers` needs `frame-src https://*.netlify.app`. Without it
-our own CSP blocks every preview, and it would look like the other dashboard's
-fault. `tools/audit.mjs` fails the build if the two ever disagree.
+This is also why `_headers` needs a `frame-src`. Without one our own CSP blocks
+every preview, and it would look like the other dashboard's fault. It names the
+three framable origins individually rather than `https://*.netlify.app`: a
+wildcard let every subdomain on the platform be framed by this page to serve
+three known hosts, which is the same reasoning that closed `connect-src` down to
+`'self'`. Irish Visa Tracker is absent on purpose — it can never be framed.
+`tools/audit.mjs` fails if an embeddable entry's origin is missing from
+`frame-src`, if `frame-src` allows an origin nothing uses, or if it is a
+wildcard, so the manifest and the policy cannot drift apart.
 
 ## Verifying the embeds
 
@@ -300,8 +306,20 @@ the shadowing, so a rule that cannot fire 404s locally *and* reports itself
 rather than looking fixed until someone visits the deployed site.
 
 Everything the page needs still resolves: `/tools/…`, `/README.md`,
-`/.gitignore`, `/netlify/…` and `/netlify.toml` return 404, while every asset
-returns 200 and the function still answers at `/api/watchlist`.
+`/.gitignore`, `/netlify/…`, `/netlify.toml`, `_headers`, `_redirects` and
+`/.git/…` return 404, while every asset returns 200 and the function still
+answers at `/api/watchlist`.
+
+`/.git` is the one that was actually reachable, and it is worth knowing why it
+went unnoticed. The audit's "nothing is published by accident" check walks the
+*tracked* files and skips `.git` while doing it, so the directory was covered by
+no check at all — `tools/dev-server.mjs` served `/.git/config` with a 200, and
+that file names the remote while the objects behind it are every blob ever
+committed, including anything added and later removed. There is now a rule for
+it, and a check that looks at the publish root rather than at the file list, so
+the next dot-directory is caught on the way in. `/.netlify` is the deliberate
+exception: that is where the function is served from, so a 404 rule over it
+would break `/api/watchlist`.
 
 **Response headers live in `_headers`, not `netlify.toml`,** and that is
 deliberate. Netlify only reads `netlify.toml` for a repository-connected deploy;
@@ -359,6 +377,19 @@ into CI. It catches the failure modes that a read-through misses:
   `_redirects` — the check that stops a development file from going live
 - a `_redirects` 404 rule with no `!`, which Netlify would shadow: the file it
   names stays public while the rule reads as a block
+- a dot-entry at the publish root that is not blocked — the gap above, which the
+  tracked-file check structurally cannot see
+- an `'unsafe-inline'` or `'unsafe-eval'` in the CSP, a `frame-src` wildcard, an
+  embeddable entry whose origin is missing from `frame-src`, or an origin there
+  that nothing frames
+- a `tools/dev-server.mjs` that does not apply `_headers`, because then the CSP
+  cannot be exercised locally and a regression reaches production untested
+- a theme without `color-scheme`, which leaves scrollbars and form controls
+  following the operating system instead of the page
+- an `app.js` that keeps no state in the URL, or an `innerHTML` assignment that
+  a URL-supplied query could reach (that would be reflected XSS)
+- a `transition` on `top`, `width`, `margin` or any other layout property —
+  layout on every frame, invisible in a screenshot and obvious on a slow phone
 
 Run it after touching `styles.css`, `icons.js` or `data/dashboards.js`. It is
 worth proving that a new check can fail before trusting it: each of the checks
@@ -369,7 +400,7 @@ above was confirmed by breaking the thing it guards and watching it report.
 ```
 index.html                    Page shell: bar, masthead, column header, footer
 styles.css                    Colour tokens, layout, every rule
-app.js                        Rendering, search, link checks, live figures,
+app.js                        Rendering, search, URL state, live figures,
                               previews, theme handling
 theme-init.js                 Pre-paint theme bootstrap (external, keeps CSP strict)
 icons.js                      Tree-shaken Lucide 0.462.0 paths
@@ -402,6 +433,21 @@ tools/design-report.json      What it found, per dashboard
   carry the source and the time they were read, and a recorded value is visibly
   different from a live one. A number whose provenance is invisible is a number
   nobody can trust.
+- **Both pieces of state are in the URL.** `?q=` is the search and
+  `#preview-<id>` is the open preview, written with `replaceState` so typing six
+  characters does not leave six history entries. A row is then something that can
+  be sent to someone — "look at the RBI one" becomes a link — and a reload or a
+  link followed from elsewhere arrives in the state it describes, because
+  `popstate` and `hashchange` are both applied. The id is matched against the
+  manifest rather than used to build a selector, so `#preview-<img src=x
+  onerror=…>` is dropped instead of trusted, and `?q=` is capped at 80 characters
+  and echoed through `textContent`. The audit fails on an `innerHTML` assignment
+  the query could reach.
+- **Escape undoes one thing per press, preview first.** The ordering is forced
+  rather than chosen: clearing the search re-renders the rows, and the open
+  preview lives inside a row, so clearing it while a preview is open would close
+  both at once — which is exactly what the page did. Now the first press closes
+  the preview and the search text survives; the next clears the field.
 
 - **A specification index, not a card list.** Column labels, hairline rules
   between entries, and no container around them. The list is flush with the page
@@ -418,6 +464,17 @@ tools/design-report.json      What it found, per dashboard
   one viewport high and the page needs no scrolling at desktop heights.
 - **Shape is locked.** Controls 6px, the preview frame 4px. There is no
   container radius left to spend the family's 14px on.
+- **Touch and type are declared, not inherited.** `touch-action: manipulation`
+  on every control removes the double-tap wait — without it a tap on a row
+  stalls for roughly 300ms while the browser waits for a second tap, which is
+  the difference between feeling native and feeling laggy. The platform's grey
+  tap flash is replaced rather than merely kept: each control draws its own
+  pressed state, and two flashes for one tap is worse than one. Headings use
+  `text-wrap: balance`, running text `text-wrap: pretty`, and every figure
+  `tabular-nums` so a changing number cannot shift its neighbours. `color-scheme`
+  follows the *chosen* theme rather than the operating system's, or a visitor
+  who picks the theme opposite to their OS gets a white scrollbar down the side
+  of a black page.
 - **Boundary rule.** Hairline `--line` for structure, stronger `--line-strong`
   for controls you operate.
 - **Fonts:** Inter and Geist are preloaded; Geist Mono deliberately is not.
@@ -492,6 +549,16 @@ fires for a path that genuinely does not exist. That detail is what makes the
 server worth having: a rule that forgot its `!` serves the file here exactly as
 Netlify would, instead of 404ing locally and lulling you into thinking the path
 is blocked. Everything is sent `no-store`.
+
+It reads `_headers` too, and applies it. That was the half it did not model, and
+the cost was real: production ships `script-src 'self'` while locally an inline
+`<script>`, an `onclick=` attribute or a CDN script all worked perfectly and
+failed only after deploying — a policy that cannot be exercised where the code
+is written is a policy that regresses. Headers from every matching block are
+merged in file order, so `/fonts/*` keeps its 30-day cache while `/*` supplies
+the security headers, exactly as it does on Netlify. **Function responses are
+deliberately not touched**, because Netlify does not apply `_headers` to them
+either: a function owns its own headers.
 
 That last part matters. `python -m http.server` sends no `Cache-Control` at all,
 so Chrome applies heuristic caching to every subresource and will happily keep

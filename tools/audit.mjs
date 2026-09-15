@@ -77,6 +77,18 @@ const functionFiles = await readdir(join(root, 'netlify/functions')).catch(() =>
 const js = [app, icons, themeInit].join('\n');
 
 const allSource = [html, app, icons, themeInit, manifest].join('\n');
+
+// `_headers` without its prose. The CSP is read out of this, not out of the raw
+// file, because the comments there necessarily *talk about* directives — an
+// early version of these checks read a comment that mentioned frame-src and
+// reported on that instead of on the policy, which is the same failure mode that
+// made the frame-sandbox check match its own explanatory note.
+const headerCode = headerRules
+  .split('\n')
+  .map((line) => line.trim())
+  .filter((line) => line && !line.startsWith('#'))
+  .join('\n');
+
 const problems = [];
 const note = (check, detail) => problems.push({ check, detail });
 const attr = (source, re) => {
@@ -96,7 +108,10 @@ const entries = manifest
     return {
       id: attr(chunk, /\bid:\s*'([^']+)'/),
       text: described ? (described[1] ?? described[2] ?? '') : '',
-      count: count ? count[1] : null
+      count: count ? count[1] : null,
+      url: attr(chunk, /\burl:\s*'([^']+)'/),
+      // `embed` defaults to true, so only an explicit false is meaningful.
+      embedFalse: /\bembed:\s*false\b/.test(chunk)
     };
   });
 
@@ -414,7 +429,7 @@ if (/<iframe\b/.test(app)) {
     }
   }
 
-  const policy = attr(headerRules, /Content-Security-Policy:\s*([^\n]+)/i) || '';
+  const policy = attr(headerCode, /Content-Security-Policy:\s*([^\n]+)/i) || '';
   if (!/\bframe-src\b/.test(policy)) {
     note(
       'csp-frame-src',
@@ -540,6 +555,155 @@ if (cssDepth.lowest < 0) {
     'unbalanced-css',
     `styles.css ends ${cssDepth.depth > 0 ? 'inside' : 'outside'} a block (depth ${cssDepth.depth})`
   );
+}
+
+/* -- 18. Nothing at all is published by accident ------------------------- */
+
+// Check 16 walks the *tracked* files, and deliberately skips .git and
+// node_modules while doing it — which left .git covered by nothing at all, and
+// it was reachable: `node tools/dev-server.mjs` served /.git/config with a 200,
+// naming the remote, and the objects behind it are every blob ever committed.
+// So this check looks at the publish root itself, dot-entries included, rather
+// than at the file list.
+//
+// `.netlify` is the one deliberate exception, and it is not an oversight: that
+// is where a deployed function is served from, so a 404 rule over it would
+// break /api/watchlist. If a local `netlify dev` ever creates one, exclude it
+// from the deploy instead of blocking the path the function answers on.
+const ALLOWED_DOT_ENTRIES = new Set(['.netlify']);
+
+for (const item of await readdir(root, { withFileTypes: true })) {
+  if (!item.name.startsWith('.')) continue;
+  if (ALLOWED_DOT_ENTRIES.has(item.name)) continue;
+  const path = '/' + item.name;
+  if (!isBlocked(path)) {
+    note('published-dotfile', `${item.name} is published at ${path} — block it in _redirects`);
+  }
+  // A directory also needs its contents blocked: `/.git` and `/.git/*` are
+  // different rules, and only the second one stops /.git/config.
+  if (item.isDirectory() && !blocked.includes(path + '/*')) {
+    note('published-dotdir', `${path}/* is not blocked in _redirects, so its contents stay public`);
+  }
+}
+
+/* -- 19. The CSP is what it claims to be -------------------------------- */
+
+const policy = attr(headerCode, /Content-Security-Policy:\s*([^\n]+)/i) || '';
+
+// script-src 'self' is the whole reason theme-init.js exists as a file. A
+// single 'unsafe-inline' would silently undo that, and nothing about the page
+// would look different.
+if (/unsafe-inline|unsafe-eval/.test(policy)) {
+  note('csp-unsafe', "the CSP allows 'unsafe-inline' or 'unsafe-eval'");
+}
+
+// frame-src must name the dashboards this page actually frames. A wildcard is
+// how the directive quietly became permission for all of *.netlify.app to serve
+// three known hosts, and a missing origin blocks a preview with this site's own
+// policy — which looks exactly like the other dashboard being broken.
+const frameSrc = attr(policy, /frame-src\s+([^;]+)/) || '';
+if (!frameSrc) {
+  note('csp-no-frame-src', 'the page frames dashboards but the CSP has no frame-src');
+} else {
+  if (frameSrc.includes('*')) {
+    note('csp-frame-wildcard', `frame-src is a wildcard (${frameSrc.trim()}), so any host on that domain may be framed`);
+  }
+  for (const entry of entries) {
+    if (!entry.url || entry.embedFalse) continue;
+    let origin = null;
+    try {
+      origin = new URL(entry.url).origin;
+    } catch {
+      note('bad-manifest-url', `${entry.id} has a url that is not absolute: ${entry.url}`);
+      continue;
+    }
+    if (!frameSrc.includes(origin)) {
+      note(
+        'csp-frame-missing',
+        `${entry.id} is declared embeddable but ${origin} is not in frame-src, so its preview is blocked by our own policy`
+      );
+    }
+  }
+  for (const origin of frameSrc.trim().split(/\s+/)) {
+    if (!entries.some((e) => e.url && !e.embedFalse && new URL(e.url).origin === origin)) {
+      note('csp-frame-extra', `frame-src allows ${origin}, which no embeddable entry uses`);
+    }
+  }
+}
+
+/* -- 20. The dev server enforces the headers it claims to ----------------- */
+
+// The server exists so local behaviour cannot drift from production. Headers
+// were the half it did not model, and it served the site with no CSP at all:
+// an inline <script> or an onclick= attribute worked locally and failed only
+// after deploying. Reading `_headers` is the fix, and this is what keeps it.
+const devServer = await read('tools/dev-server.mjs');
+if (!/readHeaderRules\s*\(/.test(devServer) || !/headersFor\s*\(/.test(devServer)) {
+  note(
+    'dev-server-no-headers',
+    'tools/dev-server.mjs does not apply _headers, so the CSP cannot be exercised locally'
+  );
+}
+
+/* -- 21. color-scheme follows the chosen theme --------------------------- */
+
+// The meta tag only says both are supported, which leaves scrollbars and form
+// controls following the operating system rather than the page: pick the theme
+// opposite to your OS and you get a white scrollbar on a black page.
+for (const theme of ['light', 'dark']) {
+  const block = new RegExp(`:root\\[data-theme='${theme}'\\][^{]*\\{([^}]*)\\}`).exec(cssNoComments);
+  if (!block || !/color-scheme/.test(block[1])) {
+    note('no-color-scheme', `:root[data-theme='${theme}'] does not declare color-scheme`);
+  }
+}
+
+/* -- 22. The URL carries the state, and its input is not trusted --------- */
+
+// The filter and the open preview live in the URL so a row can be linked to.
+// That makes `?q=` attacker-supplyable, so the sink matters: it is echoed
+// through textContent, never innerHTML. This check is a tripwire for the day
+// someone moves the empty state to innerHTML and turns a link into XSS.
+if (!/history\.replaceState/.test(app) || !/URLSearchParams/.test(app)) {
+  note('no-url-state', 'app.js does not read or write the URL, so no row can be linked to');
+}
+if (/innerHTML\s*=\s*[^;]*\bquery\b/.test(app)) {
+  note('query-into-innerhtml', 'the URL-supplied query reaches innerHTML — that is reflected XSS');
+}
+
+/* -- 23. Transitions animate what they claim to -------------------------- */
+
+// `transition: top` and friends run layout on every frame. The skip link used
+// to animate `top`, which is invisible in a screenshot and obvious on a slow
+// phone. transform/opacity/colour are fine; these are not.
+const LAYOUT_PROPS = new Set([
+  'all',
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'width',
+  'height',
+  'min-width',
+  'max-width',
+  'min-height',
+  'max-height',
+  'margin',
+  'padding',
+  'gap',
+  'font-size',
+  'line-height',
+  'flex-basis'
+]);
+for (const m of cssNoComments.matchAll(/transition:\s*([^;]+);/g)) {
+  for (const part of m[1].split(',')) {
+    const prop = part.trim().split(/\s+/)[0];
+    if (LAYOUT_PROPS.has(prop)) {
+      note(
+        'transition-layout',
+        `transition animates \u2018${prop}\u2019, which triggers layout every frame — use transform or opacity`
+      );
+    }
+  }
 }
 
 /* ---------------------------------------------------------------- report -- */

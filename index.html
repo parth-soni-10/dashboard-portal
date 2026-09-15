@@ -11,6 +11,20 @@
     <meta name="theme-color" content="#0e0e11" />
     <meta name="color-scheme" content="dark light" />
 
+    <!-- Link previews, so pasting this into a chat renders something rather
+         than a naked URL. og:url and og:image are deliberately absent rather
+         than guessed: the site has no hostname until it is deployed, and a
+         wrong og:url is worse than none — crawlers fall back to the requested
+         URL, which is right by definition. Add both with the real host once it
+         has one. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Dashboard Portal" />
+    <meta
+      property="og:description"
+      content="One index for every deployed dashboard: media analytics, visa decisions, RBI data and UCD timetables."
+    />
+    <meta name="twitter:card" content="summary" />
+
     <!-- Runs before first paint so the stored theme applies without a flash. -->
     <script src="theme-init.js"></script>
 
@@ -46,6 +60,7 @@
               id="filter"
               class="field-input"
               type="search"
+              name="q"
               placeholder="Filter"
               autocomplete="off"
               spellcheck="false"

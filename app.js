@@ -20,6 +20,9 @@
 
   var dashboards = Array.isArray(window.DASHBOARDS) ? window.DASHBOARDS.slice() : [];
 
+  // The deep-link id is parsed from the URL and matched against the manifest,
+  // never used to build a selector (see findRow).
+
   var el = {
     grid: document.getElementById('grid'),
     filter: document.getElementById('filter'),
@@ -412,13 +415,14 @@
     }
 
     setPreviewButton(id, false);
+    syncUrl();
     if (refocus) {
       var button = previewButtonOf(id);
       if (button) button.focus();
     }
   }
 
-  function openPreview(id) {
+  function openPreview(id, reveal) {
     var item = itemOf(id);
     if (!item || !hasDeploy(item) || id === previewOpenId) return;
     closePreview(false);
@@ -432,6 +436,11 @@
     hydrateIcons(box);
     previewOpenId = id;
     setPreviewButton(id, true);
+    syncUrl();
+
+    // A deep link arrives with its row possibly far down the page; a click does
+    // not, and must never move the page under the pointer.
+    if (reveal && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
 
     var viewport = box.querySelector('.preview-viewport');
     if (!viewport) return; // the declared-blocked explanation has no frame
@@ -626,6 +635,96 @@
    * to carry a health summary — how many links answered, and when — which was
    * the reachability badge again in sentence form, and went with it. Kept to
    * one line at every width, which is why the wording is this short. */
+  /* ---------------------------------------------------------- in the url --
+   * Both pieces of state this page has — the filter and the open preview — live
+   * in the URL: `?q=` and `#preview-<id>`. Two reasons. A row becomes something
+   * that can be sent to someone, so "look at the RBI one" is a link instead of
+   * instructions; and the browser's Back button starts doing something sensible
+   * with a preview you opened by mistake.
+   *
+   * replaceState rather than pushState: typing six characters into the field
+   * should not leave six entries in the history. The URL always matches what is
+   * on screen without a trail of dead ends behind it. The cost is that Back
+   * leaves the page rather than walking the state back, so both events are
+   * still handled — a link followed from elsewhere, or a reload, arrives as a
+   * popstate or hashchange and has to be applied.
+   *
+   * The query read back out of the URL is untrusted: anyone can hand someone a
+   * link with anything in it. It is echoed through textContent (emptyCopy() ->
+   * el.emptyTitle), never innerHTML, and it is length-capped on the way in so a
+   * 10,000-character `?q=` cannot be painted into the empty state.
+   */
+
+  var QUERY_MAX = 80;
+  var HISTORY_OK = (function () {
+    try {
+      return Boolean(window.history && window.history.replaceState && window.URL);
+    } catch (e) {
+      return false;
+    }
+  })();
+
+  function urlState() {
+    var q = '';
+    var preview = null;
+
+    try {
+      q = String(new URLSearchParams(window.location.search).get('q') || '');
+    } catch (e) {
+      q = '';
+    }
+    if (q.length > QUERY_MAX) q = q.slice(0, QUERY_MAX);
+
+    var match = String(window.location.hash || '').match(/^#preview-(.+)$/);
+    if (match) {
+      try {
+        preview = decodeURIComponent(match[1]);
+      } catch (e) {
+        preview = null;
+      }
+      // An id that is not in the manifest, or names a dashboard with nothing
+      // deployed, is dropped here rather than trusted: findRow() would quietly
+      // return nothing, or openPreview() would refuse and leave a hash in the
+      // URL for a box that never appears.
+      var item = preview ? itemOf(preview) : null;
+      if (!item || !hasDeploy(item)) preview = null;
+    }
+
+    return { q: q, preview: preview };
+  }
+
+  function syncUrl() {
+    if (!HISTORY_OK) return;
+    try {
+      var url = new URL(window.location.href);
+      if (query) url.searchParams.set('q', query);
+      else url.searchParams.delete('q');
+      url.hash = previewOpenId ? 'preview-' + encodeURIComponent(previewOpenId) : '';
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    } catch (e) {
+      /* A browser that refuses the write must not take the page down with it. */
+    }
+  }
+
+  /** Re-apply whatever the URL now says. Used by Back/Forward and by the hash. */
+  function applyUrlState() {
+    var next = urlState();
+
+    if (next.q !== query) {
+      cancelPendingFilter();
+      query = next.q;
+      el.filter.value = next.q;
+      // render() closes any open preview and syncs the URL, so the preview is
+      // reconciled *after* it, not instead of it — both can change in one step.
+      render();
+    }
+
+    if (next.preview !== previewOpenId) {
+      if (next.preview) openPreview(next.preview, true);
+      else closePreview(false);
+    }
+  }
+
   function renderMeta() {
     var total = dashboards.length;
     if (!total) {
@@ -674,6 +773,7 @@
     }
 
     renderMeta();
+    syncUrl();
   }  /* --------------------------------------------------------------- events -- */
 
   // The debounce means a keystroke can still be in flight when something else
@@ -697,14 +797,27 @@
     }, 110);
   });
 
+  /* Escape undoes one thing per press, and the preview goes first.
+
+     The ordering is not a preference. Clearing the field calls render(), which
+     rebuilds the rows — and the open preview lives *inside* a row, so render()
+     closes it. Clearing the search while a preview is open therefore closed
+     both at once, which is what the page did before this: one press, two
+     unrelated-looking things happen.
+
+     So an open preview is left to the document listener below, and this handler
+     stands aside — meaning the search text survives. The next press clears the
+     field. Largest transient change first, and both are reachable without
+     reaching for the mouse. */
   el.filter.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && el.filter.value) {
-      event.preventDefault();
-      cancelPendingFilter();
-      el.filter.value = '';
-      query = '';
-      render();
-    }
+    if (event.key !== 'Escape' || !el.filter.value) return;
+    if (previewOpenId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    cancelPendingFilter();
+    el.filter.value = '';
+    query = '';
+    render();
   });
 
   /* Preview buttons are wired by delegation, because the rows are rebuilt on
@@ -720,11 +833,17 @@
   /* Escape closes the open preview and hands focus back to the button that
      opened it. Focus inside the frame belongs to the other document and cannot
      reach this handler, which is why the button also toggles and the caption
-     links out. */
+     links out. It also runs when the field has focus and a preview is open: the
+     filter's own Escape handler stands aside in exactly that case, so the
+     preview is what closes and the search text is left alone. */
   document.addEventListener('keydown', function (event) {
     if (event.key !== 'Escape' || !previewOpenId) return;
     event.preventDefault();
-    closePreview(true);
+    // Focus goes back to the button that opened the preview, so a keyboard
+    // visitor is not dropped at the top of the document — but not when they were
+    // typing, where the preview closing is no reason to take the caret away from
+    // the field they are using.
+    closePreview(document.activeElement !== el.filter);
   });
 
   // Only needed where there is no ResizeObserver to do it.
@@ -734,6 +853,9 @@
     var viewport = row ? row.querySelector('.preview-viewport') : null;
     if (viewport) fitPreview(viewport);
   });
+
+  window.addEventListener('popstate', applyUrlState);
+  window.addEventListener('hashchange', applyUrlState);
 
   el.emptyReset.addEventListener('click', function () {
     cancelPendingFilter();
@@ -806,7 +928,17 @@
   hydrateIcons(document);
   fillThemeGlyphs();
   applyTheme(root.dataset.theme === 'light' ? 'light' : 'dark', false);
+
+  // A deep link decides the opening state, so it is read before the first paint
+  // of the list — otherwise a shared link flashes the unfiltered index and then
+  // rearranges itself.
+  var opening = urlState();
+  if (opening.q) {
+    query = opening.q;
+    el.filter.value = opening.q;
+  }
   render();
+  if (opening.preview) openPreview(opening.preview, true);
 
   // The figures are fetched once per load. The descriptions paint from the
   // manifest's recorded numbers first and are repainted in place if an answer

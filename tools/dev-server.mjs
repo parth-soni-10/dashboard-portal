@@ -4,11 +4,23 @@
  *   node tools/dev-server.mjs [port]
  *
  * Serves the site the way Netlify will: static files from the repo root, the
- * functions behind exactly the routes netlify.toml rewrites to them, and the
- * 404s declared in `_redirects`. Both files are read rather than restated here,
- * so local routing cannot drift away from production — including the rules that
- * keep development files off the published site, which would otherwise look
- * fine locally and be blocked in production.
+ * functions behind exactly the routes netlify.toml rewrites to them, the 404s
+ * declared in `_redirects`, and the response headers declared in `_headers`.
+ * All three files are read rather than restated here, so local behaviour cannot
+ * drift away from production — including the rules that keep development files
+ * off the published site, which would otherwise look fine locally and be
+ * blocked in production.
+ *
+ * Headers matter as much as routing, which is why they are applied here and not
+ * left to Netlify. Until they were, this server sent no Content-Security-Policy
+ * at all: production ships `script-src 'self'` with no unsafe-inline, and the
+ * theme bootstrap was pulled out into theme-init.js to keep it that way, but
+ * locally an inline <script>, an onclick= attribute or a CDN script all worked
+ * perfectly and failed only after deploying. A policy that cannot be exercised
+ * where the code is written is a policy that regresses.
+ *
+ * Function responses do NOT get `_headers` applied, because Netlify does not
+ * apply it to them either: a function owns its own headers.
  *
  * Netlify's shadowing is modelled too, because it decides whether those rules
  * do anything at all. A `_redirects` rule does not fire for a URL that resolves
@@ -56,11 +68,12 @@ const MIME = {
 
 const require = createRequire(import.meta.url);
 
-const reply = (res, status, type, body) => {
+const reply = (res, status, type, body, extra) => {
   res.writeHead(status, {
     'Content-Type': type,
     'Content-Length': Buffer.byteLength(body),
-    'Cache-Control': 'no-store'
+    'Cache-Control': 'no-store',
+    ...(extra || {})
   });
   res.end(body);
 };
@@ -75,6 +88,49 @@ async function readRoutes() {
     if (from && to) routes.set(from[1], to[1]);
   }
   return routes;
+}
+
+/**
+ * The rules `_headers` declares, in file order.
+ *
+ * A path pattern starts a block; every indented `Name: value` line after it
+ * belongs to that block. An indented line with no pattern above it is a
+ * malformed file rather than a header, so it is dropped rather than attributed
+ * to whichever block happens to be last.
+ */
+async function readHeaderRules() {
+  const file = await readFile(join(root, '_headers'), 'utf8').catch(() => '');
+  const rules = [];
+  for (const raw of file.split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    if (/^\s/.test(raw)) {
+      const current = rules[rules.length - 1];
+      const at = line.indexOf(':');
+      if (current && at > 0) {
+        current.headers.push([line.slice(0, at).trim(), line.slice(at + 1).trim()]);
+      }
+      continue;
+    }
+    rules.push({ pattern: line, headers: [] });
+  }
+  return rules;
+}
+
+/** Netlify's path matching: an exact path, or `/prefix/*` for everything under it. */
+function headerRuleMatches(pattern, pathname) {
+  if (pattern.endsWith('/*')) return pathname.startsWith(pattern.slice(0, -1));
+  return pathname === pattern;
+}
+
+/** Every header declared for this path. Later blocks win, as they do on Netlify. */
+function headersFor(pathname) {
+  const out = {};
+  for (const rule of headerRules) {
+    if (!headerRuleMatches(rule.pattern, pathname)) continue;
+    for (const [name, value] of rule.headers) out[name] = value;
+  }
+  return out;
 }
 
 /** The rules `_redirects` declares: { from, to, status, force }, in file order. */
@@ -125,33 +181,38 @@ function functionFor(pathname, routes) {
 
 async function serveStatic(pathname, res) {
   const file = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
+  const declared = headersFor(pathname);
 
   // Nothing outside the repo root, whatever the request says.
   if (file !== root && !file.startsWith(root + sep)) {
-    reply(res, 403, 'text/plain; charset=utf-8', 'Forbidden\n');
+    reply(res, 403, 'text/plain; charset=utf-8', 'Forbidden\n', declared);
     return;
   }
 
   try {
     const info = await stat(file);
     if (info.isDirectory()) {
-      reply(res, 404, 'text/plain; charset=utf-8', 'Not found\n');
+      reply(res, 404, 'text/plain; charset=utf-8', 'Not found\n', declared);
       return;
     }
     const body = await readFile(file);
     res.writeHead(200, {
       'Content-Type': MIME[extname(file).toLowerCase()] || 'application/octet-stream',
       'Content-Length': body.length,
-      'Cache-Control': 'no-store'
+      // `no-store` first, so a declared Cache-Control in _headers overrides it
+      // exactly as it would on Netlify, where no default is sent at all.
+      'Cache-Control': 'no-store',
+      ...declared
     });
     res.end(body);
   } catch {
-    reply(res, 404, 'text/plain; charset=utf-8', 'Not found\n');
+    reply(res, 404, 'text/plain; charset=utf-8', 'Not found\n', declared);
   }
 }
 
 const routes = await readRoutes();
 const redirectRules = await readRedirectRules();
+const headerRules = await readHeaderRules();
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${port}`);
@@ -165,7 +226,8 @@ const server = createServer(async (req, res) => {
     res.writeHead(404, {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Length': body.length,
-      'Cache-Control': 'no-store'
+      'Cache-Control': 'no-store',
+      ...headersFor(pathname)
     });
     res.end(body);
     return;
@@ -221,5 +283,8 @@ server.listen(port, '127.0.0.1', async () => {
   console.log(`  ${functions.filter((f) => f.endsWith('.js')).length} function file(s) in netlify/functions`);
   for (const rule of redirectRules) {
     console.log(`  ${rule.from}  ->  ${rule.to}  ${rule.status}${rule.force ? '!' : ''}`);
+  }
+  for (const rule of headerRules) {
+    console.log(`  headers ${rule.pattern}  (${rule.headers.length})`);
   }
 });

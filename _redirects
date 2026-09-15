@@ -34,6 +34,21 @@
 /.gitignore       /index.html   404!
 /netlify/*        /index.html   404!
 
+# The repository's own history. This one is not hypothetical: `publish = "."`
+# exists so the folder can be drag-and-dropped, which is the one deploy mode
+# where .git rides along — and `tools/dev-server.mjs` served /.git/config with a
+# 200 until this rule was added, because it models Netlify honestly. That file
+# names the remote, and packed-refs plus the loose objects hold every blob ever
+# committed, including anything added and later removed.
+#
+# Note the caret-shaped gap this does NOT cover: /.netlify/* is deliberately
+# left alone, because that is where the function endpoint lives — blocking it
+# would 404 /api/watchlist. There is no .netlify directory in this repository;
+# if a local `netlify dev` ever creates one, exclude it from the deploy rather
+# than blocking the path the function is served from.
+/.git             /index.html   404!
+/.git/*           /index.html   404!
+
 # Netlify is documented as not serving its own config file, but this does not
 # rely on that: the audit proves the rule is here, so the behaviour is ours.
 /netlify.toml     /index.html   404!
