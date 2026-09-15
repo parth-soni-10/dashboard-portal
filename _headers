@@ -20,7 +20,15 @@
 #   * X-Frame-Options + frame-ancestors 'none' - the portal is never iframed.
 #   * script-src 'self' - no inline script anywhere in the page, which is also
 #     why the theme bootstrap lives in theme-init.js instead of a <script> tag.
-#     This blocks Netlify's injected free-plan badge, which is intended.
+#     Note what this does and does not stop. Netlify injects its own HUD into
+#     served HTML as `/.netlify/scripts/hud`, which is SAME-ORIGIN, so this
+#     permits it and it runs. What refuses the badge is style-src: the HUD builds
+#     its badge in a srcdoc iframe, whose inline <style> and <script> are blocked
+#     because srcdoc inherits this policy. The badge therefore ends up clipped to
+#     nothing, and leaves two console errors on every load - verified on the live
+#     site, not inferred. `/.netlify/scripts/*` can be 404'd in _redirects to stop
+#     the HUD loading at all; that is narrower than `/.netlify/*`, which must stay
+#     open because the function is served from `/.netlify/functions/`.
 #   * connect-src is 'self' only. The page fetches exactly one thing over the
 #     network, /api/watchlist, and it is same-origin. It used to also allow
 #     *.netlify.app for the per-row reachability probes; those went with the

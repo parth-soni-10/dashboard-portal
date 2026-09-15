@@ -45,9 +45,18 @@ const problems = [];
 const notes = [];
 const fail = (check, detail) => problems.push({ check, detail });
 
+// A refused connection, a DNS failure or a timeout is an ordinary outcome for
+// this tool — the whole point is to ask a host that may not be there — and it
+// should read as a sentence, not as a stack trace from inside fetch(). Real
+// bugs keep their stack: only an error marked `expected` is printed plainly.
+process.on('uncaughtException', (error) => {
+  console.error(error && error.expected ? `check-live: ${error.message}` : error);
+  process.exit(2);
+});
+
 const TIMEOUT = 20000;
 
-/** One request. Returns { status, headers, body }, or throws on a network fault. */
+/** One request. Returns { status, headers, body }; a network fault is `expected`. */
 async function get(path, method = 'GET') {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT);
@@ -55,6 +64,14 @@ async function get(path, method = 'GET') {
     const res = await fetch(base + path, { method, redirect: 'follow', signal: controller.signal });
     const body = method === 'HEAD' ? '' : await res.text();
     return { status: res.status, headers: res.headers, body };
+  } catch (error) {
+    const reason =
+      error.name === 'AbortError'
+        ? `no answer within ${TIMEOUT / 1000}s`
+        : (error.cause && error.cause.code) || error.message;
+    const failure = new Error(`cannot reach ${base}${path} — ${reason}`);
+    failure.expected = true;
+    throw failure;
   } finally {
     clearTimeout(timer);
   }
@@ -85,6 +102,28 @@ if (home.status !== 200) {
   if (!/property="og:type"/.test(home.body)) {
     notes.push(`${base}/ lacks og:type, so it was built from a commit before this one`);
   }
+}
+
+/* ------------------------------------- nothing extra is running the page -- */
+
+// Netlify injects its own HUD into the HTML it serves, and being same-origin
+// `script-src 'self'` permits it — so it is worth naming rather than assuming.
+// The comparison is against this repository's own <script src> list, so the
+// check does not need a list of what is allowed; anything extra is extra.
+//
+// This is what surfaced the badge without anyone diffing the served HTML by
+// hand: the HUD's inline styles are refused by style-src, so the badge never
+// paints, but it still leaves two console errors on every load.
+const localScripts = new Set(
+  [...html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)].map((m) => m[1])
+);
+for (const m of home.body.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)) {
+  if (localScripts.has(m[1])) continue;
+  notes.push(
+    m[1].startsWith('/.netlify/')
+      ? `the host injects ${m[1]} — same-origin, so the CSP permits it; its inline styles are refused, which is where the page's console errors come from`
+      : `the host injects ${m[1]}, which is not a script this repository ships`
+  );
 }
 
 /* ---------------------------------------------------------- _headers live -- */

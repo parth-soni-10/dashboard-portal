@@ -369,8 +369,24 @@ The CSP is `script-src 'self'` and `style-src 'self'` with no hashes, so there
 is no inline script or `style` attribute anywhere in the page. The theme
 bootstrap that runs before first paint lives in `theme-init.js` precisely so it
 can stay an external file. **If you ever add an inline `<script>` or a `style`
-attribute, the CSP will block it.** That also blocks Netlify's injected
-free-plan badge, which is intended.
+attribute, the CSP will block it.**
+
+What that does to Netlify's own injection was checked on the live site rather
+than assumed, and the answer is not what this file used to claim. Netlify
+injects a HUD — `<script async src="/.netlify/scripts/hud?variant=public">` plus
+two `<meta>` tags — into the HTML it serves. That script is **same-origin**, so
+`script-src 'self'` *permits* it and it runs. What refuses the badge itself is
+`style-src`: the HUD builds it inside a `srcdoc` iframe, and a `srcdoc`
+document inherits this policy, so the badge's own inline `<style>` and `<script>`
+are blocked. Measured on the deployed page, the frame ends up clipped to nothing
+— `clip-path: path("M 0 0 Z")`, so zero area, and `elementFromPoint` over its box
+returns the page's own link, so it does not intercept clicks either.
+
+So the badge does not appear. The cost is **two CSP console errors on every page
+load**, which are the only console output the deployed page produces — the local
+dev server cannot show them, because nothing injects a HUD into a local file.
+`tools/check-live.mjs` names the injected script, and `_redirects` can stop it
+loading at all with a `/.netlify/scripts/*` 404.
 
 One thing does need a deploy that processes functions — a repository-connected
 deploy, or `netlify deploy` — and that is the Content Tracker's live figures.
