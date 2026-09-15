@@ -832,8 +832,9 @@ body {
   transform-origin: 0 0;
 }
 
-/* Covers the frame until it has actually loaded, which also hides the moment
-   the unscaled document paints inside it. */
+/* Covers the frame until it has loaded, and for a beat after: these dashboards
+   paint their figures only once they have fetched their own data, so revealing
+   the frame the instant `load` fires shows a blank box for that gap. */
 .preview-state {
   position: absolute;
   inset: 0;

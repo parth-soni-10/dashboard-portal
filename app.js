@@ -17,7 +17,8 @@
   // was about to turn into a result.
   var COUNT_TIMEOUT = 12000;
   var PREVIEW_DOC_W = 1280; // logical width a preview is rendered at
-  var PREVIEW_TIMEOUT = 10000; // how long a preview may take to appear
+  var PREVIEW_TIMEOUT = 10000; // how long a preview may take to appear at all
+  var PREVIEW_SETTLE = 900; // how long to hold the cover after `load` fires
 
   var dashboards = Array.isArray(window.DASHBOARDS) ? window.DASHBOARDS.slice() : [];
 
@@ -614,8 +615,16 @@
       if (settled) return;
       settled = true;
       clearTimeout(previewTimer);
-      var state = box.querySelector('.preview-state');
-      if (state) state.remove();
+      // `load` fires when the document and its subresources are done, but every
+      // dashboard here paints its figures *after* it has fetched its own data —
+      // RBI's banner and cards arrive a second or two later. Dropping the cover
+      // on `load` therefore revealed a blank box for exactly that gap. Holding
+      // it for one more beat covers the gap instead, and after that the frame
+      // is showing the dashboard's own progress rather than nothing.
+      previewTimer = setTimeout(function () {
+        var state = box.querySelector('.preview-state');
+        if (state) state.remove();
+      }, PREVIEW_SETTLE);
     });
   }
 

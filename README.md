@@ -237,6 +237,13 @@ to fit, which is what makes it read as a miniature of the real page rather than
 as a reflowed mobile column. It is sandboxed without `allow-top-navigation`, so
 the framed dashboard cannot navigate this page away, and it sends no referrer.
 
+The frame is covered while it loads, and for a beat after `load` fires. That
+second part is not padding: these dashboards paint their figures only once they
+have fetched their own data, and `load` arrives when the document and its
+subresources are done but well before that. Dropping the cover on `load`
+therefore revealed a blank box. Measured on RBI Weekly: `load` at 345ms, cover
+gone at 1259ms.
+
 Two states have no frame at all, and both say so plainly:
 
 - an entry with `embed: false`
