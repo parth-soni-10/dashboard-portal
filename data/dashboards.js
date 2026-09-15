@@ -7,7 +7,9 @@
  *   name        display name
  *   tone        identity colour, drawn from THAT project's own palette.
  *               One of: forest, emerald, amber, cobalt (see styles.css).
- *               Optional; omit it and the row falls back to the house accent.
+ *               Optional; omit it and the numeral falls back to ink.
+ *               The numeral is the only colour on the page, so this is the
+ *               whole of a row's identity — not a status, and not decoration.
  *   description one sentence, plain language. Aim for under 130 characters:
  *               it is clamped to two lines in the row.
  *   url         live Netlify URL, or null when it has not been deployed yet

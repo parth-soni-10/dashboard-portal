@@ -1,52 +1,68 @@
 /* ---------------------------------------------------------------------------
  * Dashboard Portal
  *
+ * Precision-instrument aesthetic, following CSNL Module Picker — the most
+ * disciplined piece in the family. Its own header comment set the terms:
+ * "neutral zinc, one disciplined blue accent, Geist Sans + Geist Mono,
+ * restrained motion." This page takes the neutrality and the restraint, and
+ * pushes the accent one step further: there is no coloured interface at all.
+ *
+ * THE RULE THAT DECIDES MOST OF THIS FILE
+ *
+ *   Ink is the only interface colour. The four row tones are the only colour on
+ *   the page, and they appear in exactly two places: the index numeral, and the
+ *   icon on a preview that cannot be framed. Everything interactive — links,
+ *   focus rings, selection, the "preview is open" state — is ink on ground.
+ *
+ *   A coloured accent was tried and removed. Every candidate collided with a
+ *   row's own identity colour (the house green reads as Irish Visa, a blue
+ *   reads as Module Picker), so an accent made the page say "this row is
+ *   special" when it meant "this control is interactive". Monochrome cannot
+ *   make that mistake, and it leaves the four identities as the only thing
+ *   colour is used for.
+ *
  * Two token layers, kept deliberately separate:
  *
  *   1. SCALE      Open Props (MIT, vendored). Spacing, type ramp, radii,
- *                 easing. Proven numbers instead of invented ones.
- *                 Note its spacing ramp skips 12px: 4 / 8 / 16 / 20 / 24 /
- *                 28 / 32 / 48 / 64. Where a 12px optical nudge is genuinely
- *                 needed it is written as a literal and called out below.
+ *                 easing. Proven numbers instead of invented ones. Its spacing
+ *                 ramp skips 12px: 4 / 8 / 16 / 20 / 24 / 28 / 32 / 48 / 64.
+ *                 Where another value is genuinely needed it is a literal,
+ *                 called out at the rule that needs it.
+ *   2. COLOUR     Hand-authored. Contrast is measured, never inherited: a
+ *                 palette taken on trust is how AA failures ship.
  *
- *   2. COLOUR     Hand-authored, and lifted from the live dashboards by
- *                 tools/scrape-design.mjs. Colour is NOT taken from Open
- *                 Props because contrast has to stay verifiable; inheriting
- *                 a palette you have not measured is how AA failures ship.
+ * What the scrape established (tools/scrape-design.mjs), and how it shaped this:
  *
- * What the scrape established, and how it shaped this file:
- *
- *   Type      Inter is in all five frontends. Geist + Geist Mono are the faces
- *             of the two newest dashboards. All three are self-hosted here.
- *   Radii     The family's own named pair, taken verbatim:
- *               --r-container 14px (Content Tracker --r, Irish Visa --r-container)
- *               --r-control    6px (Irish Visa, RBI)
- *             No invented radius scale.
- *   Surfaces  Module Picker's --bg #f4f5f7 / #101216 is the most neutral of
- *             the five, so it is the portal's own ground.
- *   Shadows   Every project tints its shadow toward its ink hue rather than
- *             black (Content Tracker uses rgba(16,35,26,.05)). Same here.
- *   Ambience  RBI ships --bg-tint-1 / --bg-tint-2 radial gradients behind the
- *             page. That exact device is reused, in the portal's own accent.
- *   Tones     Each row's identity colour is that project's own brand token,
- *             including its own light/dark pair. Nothing is invented.
+ *   Type      Inter is in all five frontends; Geist + Geist Mono are the faces
+ *             of the two newest. All three are self-hosted here.
+ *   Radii     The family's own named pair, verbatim: containers 14px, controls
+ *             6px. This page has almost no containers left to spend 14px on.
+ *   Surfaces  Module Picker's --bg is the most neutral of the five, so the
+ *             ground is zinc rather than a tinted white.
+ *   Tones     Each row's numeral is that project's own brand token, including
+ *             its own light/dark pair. Nothing is invented.
  *
  * Locked decisions:
- *   Shape    containers 14px, controls 6px.
- *   Colour   one accent for every interactive element. Per-row brand colour
- *            appears only on the index numeral and the left edge key.
- *   Layout   a numbered registry, not a card grid: this is a launcher, and a
- *            list of four links belongs in a list. No card containers, so
- *            nothing here reads as a template tile. One search box, and no
- *            status chrome of any kind: a row is a link, and whether it works
- *            is the browser's answer to give, not a badge's.
- *   Theme    light and dark are both first class, driven by [data-theme].
- *   Motion   transform and opacity only, all of it off under
+ *   Layout   A specification index, not a card list: column labels, hairline
+ *            rules between entries, and no container around them. The list is
+ *            flush with the page because that is what an index is.
+ *   Shape    Controls 6px, preview frame 4px. No 14px-radius card, no drop
+ *            shadow, no gradient ambience, no backdrop blur. A large radius on
+ *            a soft-shadowed panel is the single most recognisable template
+ *            shape there is, and it was carrying no meaning.
+ *   Type     Mono for every piece of metadata — numerals, column labels, hosts,
+ *            stacks, the bar's wordmark. The display face carries the title and
+ *            the row names, which is the only place type raises its voice.
+ *   Theme    Both first class, driven by [data-theme].
+ *   Motion   Transform and opacity only, all of it off under
  *            prefers-reduced-motion.
- *   Figures  a figure read live is a .fig with its source and read time in the
- *            hover text; a recorded one carries .fig-stale so the two are
- *            never mistaken for each other.
- *   Preview  opens inside the row it belongs to, never as an overlay.
+ *   Figures  A figure read live is a .fig; a recorded one carries .fig-stale so
+ *            the two can never be mistaken for each other.
+ *   Preview  Opens inside the row it belongs to, never as an overlay.
+ *
+ * Column geometry is declared once, in --grid-cols, and consumed by both the
+ * header band and every row. Two grids that must line up but are defined in two
+ * places is how a table drifts.
  * ------------------------------------------------------------------------ */
 
 /* Self-hosted variable fonts. Same declarations the sister projects use, so
@@ -82,153 +98,122 @@
 /* --------------------------------------------------------------- tokens -- */
 
 :root {
-  /* Ground: Module Picker's --bg, the most neutral of the five. */
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --surface-sunken: #f7f8fa;
-  --surface-hover: #f6f7f9;
-  --border: #e2e4ea;
-  --border-strong: #c8ccd6;
+  /* Ground. Module Picker's --bg (#f4f5f7) is the most neutral of the five;
+     this keeps its zinc character and drops the blue cast, so the only chroma
+     on the page is the tone numerals. */
+  --bg: #ffffff;
+  --bg-sunken: #fafafa;
+  --line: #e7e7ea;
+  --line-strong: #d0d0d6;
 
-  /* Ink: Module Picker's --text / --text-2 / --text-3, darkened slightly on
-     the soft step so small mono metadata clears 4.5:1 on every surface. */
-  --text: #17181c;
-  --text-mid: #4c525c;
-  --text-soft: #62676f;
-
-  /* The family runs green. Irish Visa's --green / --green-text is the pair
-     most recently designed, so the house accent is its descendant. */
-  --accent: #0f7a4f;
-  --accent-soft: #e6f3ec;
-  --accent-ring: rgba(15, 122, 79, 0.3);
-  /* Ink for text sitting ON the accent. The scraped projects both name this
-     explicitly (Module Picker --accent-text, RBI --on-brand), and it has to
-     flip with the theme: the dark accent is a light mint, so white on it is
-     only 1.9:1. */
-  --on-accent: #ffffff;
-
-  /* One advisory colour, used only by the preview's "cannot be framed" note.
-     It used to carry a second role as the unconfirmed-link amber; that badge
-     is gone, so there is no green/amber/grey trio to keep in step any more. */
-  --warn: #8a5205;
-
-  /* Tinted toward the ink hue, as Content Tracker does. */
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.03);
-
-  /* Ambient tint behind the page: RBI's --bg-tint-1 / --bg-tint-2 device. */
-  --ambient-1: radial-gradient(1000px 460px at 86% -170px, rgba(15, 122, 79, 0.1), transparent 62%);
-  --ambient-2: radial-gradient(820px 520px at -10% 2%, rgba(29, 78, 216, 0.05), transparent 58%);
+  /* Ink. One ramp, three steps, contrast measured on --bg and --bg-sunken. */
+  --ink: #0e0e11; /* 19.0:1 */
+  --ink-mid: #55565e; /* 7.6:1 */
+  --ink-soft: #6b6c75; /* 5.2:1 — the worst case, on 10px mono labels */
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-display: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* The family's own named pair, taken verbatim. */
+  /* The family's own named pair, taken verbatim, plus one frame step for the
+     preview. There is deliberately no container radius. */
   --r-container: 14px;
   --r-control: 6px;
+  --r-frame: 4px;
 
   --ease: var(--ease-3);
-  --dur: 165ms;
+  --dur: 150ms;
 
   --maxw: 1080px;
-  --nav-h: 58px;
+  --bar-h: 52px;
+
+  /* The index grid: numeral / subject / host / actions. Read by the header band
+     and by every row, so the two can never drift apart. */
+  --grid-cols: 28px minmax(0, 1fr) 200px 88px;
+  --grid-gap: 24px;
+  /* Hover fills bleed past the text without moving any column. */
+  --bleed: 12px;
 }
 
 :root[data-theme='dark'] {
-  /* Ground: Module Picker's dark --bg. */
-  --bg: #101216;
-  --surface: #171a20;
-  --surface-sunken: #14171c;
-  --surface-hover: #1c2027;
-  --border: #262b33;
-  --border-strong: #3a4150;
+  --bg: #0e0e11;
+  --bg-sunken: #17171b;
+  --line: #26262c;
+  --line-strong: #3a3a42;
 
-  --text: #e8eaf0;
-  --text-mid: #a7aebb;
-  --text-soft: #949cab;
-
-  --accent: #34d399;
-  --accent-soft: rgba(52, 211, 153, 0.13);
-  --accent-ring: rgba(52, 211, 153, 0.34);
-  --on-accent: #0b1220;
-
-  --warn: #e9b949;
-
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32);
-
-  --ambient-1: radial-gradient(1100px 500px at 88% -150px, rgba(52, 211, 153, 0.075), transparent 62%);
-  --ambient-2: radial-gradient(900px 560px at -12% 4%, rgba(96, 165, 250, 0.045), transparent 58%);
+  --ink: #f4f4f6; /* 17.5:1 */
+  --ink-mid: #a9a9b2; /* 8.3:1 */
+  --ink-soft: #83838d; /* 5.7:1 */
 }
 
 /* ------------------------------------------------------------------ tones --
- * Each tone is one dashboard's own brand token, with that project's own
- * light/dark pair wherever it defines one. All four pairs below are quoted
- * straight from the scrape; none is invented.
+ * Each tone is one dashboard's own brand token, quoted straight from the
+ * scrape. There is a single --tone per row rather than a --tone/--tone-ink
+ * pair: the previous pair existed because a tone had to work both as a fill and
+ * as small text, and the values diverged. Colour is now used on exactly one
+ * small text element (the numeral) and one glyph, so only the text-safe variant
+ * is ever needed — which removes the whole class of bug where the fill leaks
+ * into text.
  *
  *   forest   Content Tracker      --green       #245c42 / #7cc4a0
  *   emerald  Irish Visa Tracker   --green-text  #166534 / #6ee7b7
- *   amber    RBI Weekly           --brand       #9a5e06 / #e9b949
+ *   amber    RBI Weekly           --brand       #8a5205 / #e9b949
  *   cobalt   CSNL Module Picker   --accent      #1d4ed8 / #60a5fa
  *
- * --tone is the identity source (numeral, edge key, hover border).
- * --tone-ink is the variant that clears AA as small text on --surface, which
- * is why emerald and amber use the project's *text* token rather than its
- * fill token: #059669 and #e9b949 are fills, not legible small text.
+ * The light amber is the project's *text* token, not its fill: #e9b949 is a
+ * fill and clears only 1.5:1 as small text.
  */
 [data-tone='forest'] {
   --tone: #245c42;
-  --tone-ink: #245c42;
 }
 
 [data-tone='emerald'] {
-  --tone: #059669;
-  --tone-ink: #166534;
+  --tone: #166534;
 }
 
 [data-tone='amber'] {
-  --tone: #e9b949;
-  --tone-ink: #8a5205;
+  --tone: #8a5205;
 }
 
 [data-tone='cobalt'] {
   --tone: #1d4ed8;
-  --tone-ink: #1d4ed8;
 }
 
 :root[data-theme='dark'] [data-tone='forest'] {
   --tone: #7cc4a0;
-  --tone-ink: #7cc4a0;
 }
 
 :root[data-theme='dark'] [data-tone='emerald'] {
-  --tone: #34d399;
-  --tone-ink: #6ee7b7;
+  --tone: #6ee7b7;
 }
 
 :root[data-theme='dark'] [data-tone='amber'] {
   --tone: #e9b949;
-  --tone-ink: #e9b949;
 }
 
 :root[data-theme='dark'] [data-tone='cobalt'] {
   --tone: #60a5fa;
-  --tone-ink: #60a5fa;
 }
 
 /* ----------------------------------------------------------------- base -- */
 
 body {
   min-height: 100dvh;
-  background-color: var(--bg);
-  background-image: var(--ambient-1), var(--ambient-2);
-  background-repeat: no-repeat;
-  color: var(--text);
+  background: var(--bg);
+  color: var(--ink);
   font-family: var(--font-sans);
-  font-size: var(--font-size-1);
+  font-size: 1rem;
   line-height: var(--font-lineheight-3);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-feature-settings: 'cv11' 1, 'ss01' 1; /* Inter's more open a/g */
+}
+
+/* Ink on ground, inverted. A selection highlight is the one place the interface
+   can afford to be loud, because nothing else on the page is competing. */
+::selection {
+  background: var(--ink);
+  color: var(--bg);
 }
 
 /* `display: grid`/`flex` below would otherwise beat the user agent's
@@ -254,31 +239,33 @@ body {
   border: 0;
 }
 
-/* No border-radius here: an outline already follows the element's own radius,
-   and Open Props' --radius-2 (5px) is not this project's control radius. */
+/* One focus treatment for the entire page: 2px of ink, offset so it reads as a
+   ring around the control rather than a border on it. Nothing overrides it —
+   the search field used to replace it with a tinted glow, which made the one
+   control you type into the only control that looked different when focused. */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
 /* The skip link's target is a container, not a control, so it takes focus (it
    needs tabindex="-1" to be focusable at all) without painting a ring around
-   the entire list. */
-#dashboards:focus-visible {
+   the entire index. */
+#index:focus-visible {
   outline: none;
 }
 
 .skip-link {
   position: absolute;
-  left: var(--size-3);
+  left: var(--size-4);
   top: -4rem;
   z-index: 20;
   padding: var(--size-2) var(--size-4);
   border-radius: var(--r-control);
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--ink);
+  color: var(--bg);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
   transition: top var(--dur) var(--ease);
 }
@@ -287,85 +274,79 @@ body {
   top: var(--size-2);
 }
 
-/* --------------------------------------------------------------- topbar -- */
+/* ------------------------------------------------------------------ bar --
+ * Solid rather than blurred. The blur was a compositor layer and a tell; a
+ * hairline under an opaque bar does the same job with none of the cost.
+ */
 
-.topbar {
+.bar {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  backdrop-filter: blur(14px) saturate(160%);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
 }
 
-.topbar-inner {
+.bar-inner {
   max-width: var(--maxw);
-  min-height: var(--nav-h);
+  min-height: var(--bar-h);
   margin: 0 auto;
   padding: 0 var(--size-5);
   display: flex;
   align-items: center;
-  gap: var(--size-2);
+  gap: var(--size-4);
+  /* Every child below can shrink, so the bar can never be wider than the
+     viewport. Without this the bar's fixed contents overflowed a 323px screen
+     by 1px, which was enough to give the whole page a horizontal scrollbar. */
+  min-width: 0;
 }
 
-.brand {
+/* The site name, set as a label rather than a headline: the document's heading
+   is below, and two titles competing in the first 100px is how a page ends up
+   looking assembled rather than designed. */
+.wordmark {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+  /* Never shrinks. It is the site's own name, and the field beside it gives up
+     its width far more gracefully than a truncated wordmark reads. */
+  flex: none;
+}
+
+.bar-tools {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: var(--size-2);
   min-width: 0;
 }
 
-.brand-mark {
+.icon-btn {
   flex: none;
   width: 28px;
   height: 28px;
   display: grid;
   place-items: center;
+  border: 1px solid transparent;
   border-radius: var(--r-control);
-  background: var(--accent-soft);
-  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-}
-
-.brand-name {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-/* Boundary rule, applied consistently: hairline --border for surfaces the user
-   reads, stronger --border-strong for controls the user operates. */
-.icon-btn {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-control);
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--text-mid);
+  background: none;
+  color: var(--ink-soft);
   text-decoration: none;
+  cursor: pointer;
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
-    background-color var(--dur) var(--ease), transform 110ms var(--ease);
+    background-color var(--dur) var(--ease);
 }
 
+/* Outlined on hover, not filled. A fill needs a surface to sit on and there is
+   no second surface here: every ground is either the page or a hovered row. */
 .icon-btn:hover {
-  color: var(--text);
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.icon-btn:active {
-  transform: scale(0.95);
+  color: var(--ink);
+  border-color: var(--line-strong);
 }
 
 .theme-glyph {
@@ -380,61 +361,64 @@ body {
 
 /* --------------------------------------------------------------- search -- */
 
+/* Shrinks before anything else does: it is the one control whose contents
+   survive being narrow, and the alternative is a bar that does not fit. */
 .field {
   position: relative;
   display: flex;
   align-items: center;
-}
-
-.topbar .field {
-  flex: 0 1 260px;
-  margin-left: auto;
+  /* Gives up its width first, down to a floor that keeps it usable: below this
+     the bar would be narrower than any phone and the field anyway too small to
+     read what you typed. */
+  flex: 0 1 15rem;
+  min-width: 4rem;
 }
 
 .field-ico {
   position: absolute;
-  left: 9px;
+  left: 8px;
   display: grid;
   place-items: center;
-  color: var(--text-soft);
+  color: var(--ink-soft);
   pointer-events: none;
 }
 
 .field-input {
   width: 100%;
-  height: 30px;
-  padding: 0 var(--size-7) 0 31px;
+  height: 28px;
+  padding: 0 var(--size-6) 0 28px;
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-control);
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--text);
+  background: var(--bg);
+  color: var(--ink);
   font-family: inherit;
   font-size: 13px;
-  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  transition: border-color var(--dur) var(--ease);
 }
 
 .field-input::placeholder {
-  color: var(--text-soft);
+  color: var(--ink-soft);
 }
 
 .field-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
+  border-color: var(--ink);
 }
 
+/* The key hint, set like a key: hairline, mono, small. It fades out on focus
+   because at that point the shortcut is already known. */
 .field-hint {
   position: absolute;
-  right: 7px;
+  right: 6px;
   padding: 0 4px;
+  border: 1px solid var(--line);
   border-radius: 3px;
-  border: 1px solid var(--border);
-  background: var(--surface-sunken);
-  color: var(--text-soft);
+  background: var(--bg-sunken);
+  color: var(--ink-soft);
   font-family: var(--font-mono);
   font-size: 10px;
-  line-height: 15px;
+  line-height: 14px;
   pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
 }
 
 .field-input:focus ~ .field-hint {
@@ -449,121 +433,125 @@ body {
   appearance: none;
 }
 
-/* ---------------------------------------------------------- index header --
- * One band, never two: the health/count line on the left, the filter on the
- * right. Keeping these on a single row is what stops the chrome from pushing
- * the dashboards below the fold.
- */
+/* ----------------------------------------------------------------- page -- */
 
-.shell {
+.page {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: var(--size-5) var(--size-5) var(--size-8);
+  padding: 0 var(--size-5) var(--size-8);
 }
 
-/* The band above the registry, now down to a single line of text. It used to
-   be a row holding the count on the left and the availability chips on the
-   right; with the chips gone there is nothing to lay out, only the gap between
-   the bar and the first row. */
-.ledger-head {
-  padding-bottom: var(--size-3);
+/* A document opening: eyebrow, title, lede. Three sizes doing three jobs, which
+   is the whole reason the index below can stay as quiet as it is. The padding
+   is deliberately tighter than the rhythm below it: a masthead that breathes
+   pushes the first entry — the thing you came for — down the page. */
+.masthead {
+  padding: var(--size-6) 0 var(--size-4);
 }
 
-.meta {
+.eyebrow,
+.index-head span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.eyebrow {
+  margin: 0 0 var(--size-2);
+}
+
+.title {
   margin: 0;
-  color: var(--text-soft);
-  font-size: 12.5px;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
 }
 
-.meta strong {
-  color: var(--text-mid);
-  font-weight: 600;
+.lede {
+  margin: var(--size-2) 0 0;
+  max-width: 52ch;
+  color: var(--ink-mid);
+  font-size: 13.5px;
+}
+
+.lede strong {
+  color: var(--ink);
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
-/* -------------------------------------------------------------- registry --
- * The content itself: a numbered index, not a grid of tiles. One container
- * with hairline row dividers, which is the grouping the house style uses in
- * place of elevation.
+/* ------------------------------------------------------------ the index --
+ * Column labels over the columns they name. The header band and every row
+ * consume the same --grid-cols and the same --bleed, which is what makes the
+ * labels sit exactly over their columns at any width.
  */
+
+.index-head,
+.row {
+  display: grid;
+  grid-template-columns: var(--grid-cols);
+  column-gap: var(--grid-gap);
+  padding-inline: var(--bleed);
+  margin-inline: calc(var(--bleed) * -1);
+}
+
+.index-head {
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--line);
+}
 
 .registry {
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid var(--border);
-  border-radius: var(--r-container);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-  overflow: hidden; /* clips row hover fills to the radius */
+  /* Closes the table. Between-row rules alone would leave the last entry open. */
+  border-bottom: 1px solid var(--line);
 }
 
 .row {
   position: relative;
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) auto;
   align-items: start;
-  gap: var(--size-4);
-  padding: var(--size-4);
+  padding-block: var(--size-4);
   transition: background-color var(--dur) var(--ease);
 }
 
 .row + .row {
-  border-top: 1px solid var(--border);
-}
-
-/* This dashboard's brand colour, as a key on the leading edge. It is the only
-   ornament in the list, and it is what makes four rows scannable at a glance
-   without turning them into four coloured boxes. */
-.row::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: var(--size-4);
-  bottom: var(--size-4);
-  width: 2px;
-  border-radius: 0 2px 2px 0;
-  background: var(--tone, var(--accent));
-  opacity: 0.45;
-  transition: opacity var(--dur) var(--ease);
+  border-top: 1px solid var(--line);
 }
 
 .row:hover {
-  background: var(--surface-hover);
+  background: var(--bg-sunken);
 }
 
-.row:hover::before {
-  opacity: 1;
-}
-
-/* An INSET ring on the row, because the anchor itself is our stretched-link
-   overlay: an outline on it would trace the <a> box, not the row. */
+/* An INSET ring on the row, because the anchor inside it is a stretched-link
+   overlay: an outline on the anchor would trace the <a> box, not the row. */
 .row:focus-within {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ink);
   outline-offset: -2px;
 }
 
-/* An entry with no deploy URL yet: still listed, visibly not a link. */
-.row.is-pending {
-  background: var(--surface-sunken);
+/* An entry with no deploy URL: still listed, visibly not a link. */
+.row.is-pending .row-title,
+.row.is-pending .row-index {
+  color: var(--ink-mid);
 }
 
-.row.is-pending::before {
-  opacity: 0.18;
-}
-
-.row.is-pending .row-title {
-  color: var(--text-mid);
-}
-
+/* The numeral is the only colour in the index. It carries the row's identity,
+   which is what the four tones were always for — and at 11px it reads as a tab
+   number rather than a status light. */
 .row-index {
-  padding-top: 3px;
-  color: var(--tone-ink, var(--accent));
+  padding-top: 2px;
+  color: var(--tone, var(--ink-soft));
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em;
 }
 
 .row-main {
@@ -572,22 +560,23 @@ body {
 
 /* `overflow-wrap: anywhere` on both text blocks, because the manifest is
    hand-written and a description can contain a long unbroken token (a URL, a
-   hash). Without it the token exceeded the row and was silently clipped by the
-   registry's `overflow: hidden` — no scrollbar, no ellipsis, content simply
-   gone. `anywhere` rather than `break-word` so it also reduces the grid track's
-   min-content size, which is what lets the column actually shrink. */
+   hash). Without it the token exceeded the row and was silently clipped — no
+   scrollbar, no ellipsis, content simply gone. `anywhere` rather than
+   `break-word` so it also reduces the grid track's min-content size, which is
+   what lets the column actually shrink. */
 .row-title,
-.row-desc {
+.row-desc,
+.row-tags {
   overflow-wrap: anywhere;
 }
 
 .row-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.022em;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .row-title a {
@@ -598,11 +587,11 @@ body {
 .row-title a:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-thickness: 1.5px;
+  text-decoration-thickness: 1px;
 }
 
 /* Stretched link: the whole row opens the dashboard, but only the title is the
-   anchor, so the repo button stays independently clickable and focus order
+   anchor, so the action buttons stay independently clickable and focus order
    stays sane. */
 .row-title a::after {
   content: '';
@@ -616,93 +605,93 @@ body {
 }
 
 .row-desc {
-  margin: 3px 0 0;
-  max-width: 66ch;
-  color: var(--text-mid);
+  margin: var(--size-1) 0 0;
+  max-width: 68ch;
+  color: var(--ink-mid);
   font-size: 13.5px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 /* A figure read from the dashboard's own data. Tabular figures stop the
-   sentence from reflowing when the number changes, and the dotted underline on
-   a recorded one is the whole signal that it is not the live value — the hover
-   text says the rest. */
+   sentence reflowing when the number changes, and the dotted rule on a recorded
+   one is the whole signal that it is not the live value — the hover text says
+   the rest. Mono rather than the display face: these are readings. */
 .fig {
-  color: var(--text);
-  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
 .fig-stale {
-  border-bottom: 1px dotted var(--text-soft);
+  border-bottom: 1px dotted var(--ink-soft);
   cursor: help;
 }
 
-.row-meta {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 5px;
-  max-width: 15rem;
-  /* Optical nudge (Open Props' ramp has no 12px step): the 26px controls need
-     a shade over the title's 21px line box to sit visually level with it. */
-  padding-top: 2px;
+.row-tags {
+  margin: var(--size-2) 0 0;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
 }
 
-.row-foot {
+/* The host is a column, not a caption: left-aligned so it sits under its own
+   label, truncated rather than wrapped so a long token cannot change the row's
+   height, with the full value in the tooltip. */
+.row-host {
+  align-self: start;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Optical nudge: 10.5px mono needs a little more than nothing to sit level
+     with the 17px title's cap line. Open Props' ramp has no 4px step below
+     --size-1 for this purpose, so it is a literal. */
+  padding-top: 3px;
+}
+
+.row-actions {
   position: relative; /* above the stretched-link overlay */
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: var(--size-2);
-  max-width: 100%;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
-/* Smaller than the bar's buttons: these sit inside a row, where the three-band
-   rail is what sets the row's height. Still above the 24px WCAG target floor. */
+/* Smaller than the bar's buttons: these sit inside a row, where the text column
+   sets the height. Still above the 24px WCAG target floor. */
 .row .icon-btn {
   width: 26px;
   height: 26px;
 }
 
-.row-host {
-  min-width: 0;
-  color: var(--text-soft);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.row-tags {
-  margin: 0;
-  max-width: 100%;
-  color: var(--text-soft);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* The open state is the one filled control on the page, which is what makes it
+   read as a state rather than a hover. */
+.preview-btn.is-open {
+  color: var(--bg);
+  background: var(--ink);
+  border-color: var(--ink);
 }
 
 .row-go {
   flex: none;
   display: grid;
   place-items: center;
-  color: var(--text-soft);
+  color: var(--ink-soft);
   pointer-events: none; /* must not swallow the stretched link's click */
   transition: color var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 
 .row:hover .row-go {
-  color: var(--accent);
+  color: var(--ink);
   transform: translate(2px, -2px);
-}
-
 }
 
 /* -------------------------------------------------------------- preview --
@@ -719,26 +708,26 @@ body {
      of the entire row and would otherwise swallow every click in the frame. */
   position: relative;
   z-index: 1;
-  margin-top: var(--size-3);
+  margin-top: var(--size-4);
 }
 
 /* The width the preview is laid out at, scaled down to fit. Kept in step with
    PREVIEW_DOC_W in app.js; the ratio here must match the frame's 1280 x 800. */
 .preview-viewport {
   position: relative;
-  max-width: 38rem;
+  max-width: 36rem;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--r-container);
-  background: var(--surface-sunken);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-frame);
+  background: var(--bg-sunken);
 }
 
 .preview-doc {
   width: 1280px;
   height: 800px;
   border: 0;
-  background: var(--surface);
+  background: var(--bg);
   transform: scale(var(--preview-scale, 0.4));
   transform-origin: 0 0;
 }
@@ -751,31 +740,31 @@ body {
   inset: 0;
   display: grid;
   place-items: center;
-  background: var(--surface-sunken);
-  color: var(--text-soft);
+  background: var(--bg-sunken);
+  color: var(--ink-soft);
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.02em;
 }
 
 .preview-cap {
-  max-width: 38rem;
+  max-width: 36rem;
   margin: var(--size-2) 0 0;
-  color: var(--text-soft);
+  color: var(--ink-soft);
   font-family: var(--font-mono);
   font-size: 10.5px;
 }
 
 .preview-open {
-  color: var(--text-mid);
+  color: var(--ink-mid);
   text-decoration: none;
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--line-strong);
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .preview-open:hover {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--ink);
+  border-bottom-color: var(--ink);
 }
 
 /* Shown instead of a frame when there is nothing a frame could display: either
@@ -787,31 +776,28 @@ body {
   max-width: 62ch;
   margin: 0;
   padding: var(--size-3) var(--size-4);
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--r-container);
-  background: var(--surface-sunken);
-  color: var(--text-mid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-frame);
+  color: var(--ink-mid);
   font-size: 12.5px;
-  line-height: 1.5;
+  line-height: 1.55;
   overflow-wrap: anywhere;
 }
 
 .preview-note strong {
-  color: var(--text);
+  color: var(--ink);
+  font-weight: 500;
 }
 
+/* The second and last use of a tone colour: the note is about this dashboard,
+   so it wears that dashboard's identity rather than introducing a warning hue
+   the page does not otherwise have. */
 .preview-note-ico {
   flex: none;
   display: grid;
   place-items: center;
   margin-top: 1px;
-  color: var(--warn);
-}
-
-.preview-btn.is-open {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
-  background: var(--accent-soft);
+  color: var(--tone, var(--ink-soft));
 }
 
 /* -------------------------------------------------------- empty / notes -- */
@@ -822,21 +808,19 @@ body {
   align-items: center;
   gap: var(--size-2);
   padding: var(--size-8) var(--size-5);
-  border: 1px dashed var(--border-strong);
+  border: 1px solid var(--line);
   border-radius: var(--r-container);
-  background: var(--surface-sunken);
   text-align: center;
 }
 
 .empty-ico {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
   border-radius: var(--r-control);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-soft);
+  color: var(--ink-soft);
 }
 
 .empty-title {
@@ -847,8 +831,8 @@ body {
 }
 
 .empty-body {
-  max-width: 42ch;
-  color: var(--text-soft);
+  max-width: 44ch;
+  color: var(--ink-soft);
   font-size: 13px;
   overflow-wrap: anywhere;
 }
@@ -857,55 +841,56 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--size-1);
-  min-height: 32px;
+  min-height: 30px;
   margin-top: var(--size-1);
   padding: 0 var(--size-4);
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-control);
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--text);
+  background: none;
+  color: var(--ink);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
   text-decoration: none;
-  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
 }
 
 .btn:hover {
-  background: var(--surface-hover);
-  border-color: var(--text-soft);
+  border-color: var(--ink);
 }
 
 /* --------------------------------------------------------------- footer -- */
 
 .footer {
-  margin-top: var(--size-8);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
 }
 
 .footer-inner {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: var(--size-4) var(--size-5);
+  padding: var(--size-5);
   display: flex;
   align-items: center;
   gap: var(--size-4);
   flex-wrap: wrap;
-  color: var(--text-soft);
-  font-size: 12.5px;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
 }
 
 .footer-inner a {
-  color: var(--text-mid);
+  color: var(--ink-mid);
   text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .footer-inner a:hover {
-  color: var(--accent);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  color: var(--ink);
+  border-bottom-color: var(--line-strong);
 }
 
 /* --------------------------------------------------------------- motion -- */
@@ -915,30 +900,30 @@ body {
    flickered while filtering. */
 @media (prefers-reduced-motion: no-preference) {
   .is-intro .row {
-    animation: row-in 300ms var(--ease) both;
+    animation: row-in 260ms var(--ease) both;
   }
 
   /* A short stagger down the index, capped so a long list never crawls. */
   .is-intro .row:nth-child(2) {
-    animation-delay: 35ms;
+    animation-delay: 30ms;
   }
   .is-intro .row:nth-child(3) {
-    animation-delay: 70ms;
+    animation-delay: 60ms;
   }
   .is-intro .row:nth-child(4) {
-    animation-delay: 105ms;
+    animation-delay: 90ms;
   }
   .is-intro .row:nth-child(5) {
-    animation-delay: 140ms;
+    animation-delay: 120ms;
   }
   .is-intro .row:nth-child(n + 6) {
-    animation-delay: 175ms;
+    animation-delay: 150ms;
   }
 
   @keyframes row-in {
     from {
       opacity: 0;
-      transform: translateY(6px);
+      transform: translateY(4px);
     }
     to {
       opacity: 1;
@@ -961,88 +946,101 @@ body {
   }
 }
 
-/* ---------------------------------------------------------- responsive -- */
+/* ----------------------------------------------------------- responsive --
+ * Below 760px the four columns cannot hold their labels, so the header band is
+ * dropped and each row re-flows to three bands: title beside the actions, then
+ * the description, then stack and host on one meta line.
+ */
 
-/* The search drops to its own line inside the sticky bar rather than
-   disappearing, so filtering stays reachable on a phone. */
-@media (max-width: 700px) {
-  .topbar-inner {
-    flex-wrap: wrap;
-    padding: var(--size-2) var(--size-3);
-    row-gap: var(--size-2);
+@media (max-width: 760px) {
+  .bar-inner {
+    padding: 0 var(--size-4);
   }
 
-  .topbar .field {
-    order: 3;
-    flex: 1 1 100%;
-    margin-left: 0;
+  .wordmark {
+    font-size: 10px;
+    letter-spacing: 0.1em;
   }
 
-  .shell {
-    padding: var(--size-4) var(--size-3) var(--size-7);
+  .page {
+    padding: 0 var(--size-4) var(--size-7);
   }
 
-  .footer-inner {
-    padding: var(--size-4) var(--size-3);
+  .masthead {
+    padding: var(--size-6) 0 var(--size-4);
   }
 
-  /* Rows re-flow instead of stacking into four bands: the two wrappers
-     dissolve, so their children are placed directly on the row grid. The rail
-     is one band now rather than the two it was while a badge sat above the
-     host, which is a whole line given back to the row. */
-  .row {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-      'title title'
-      'desc desc'
-      'tags tags'
-      'foot foot';
-    column-gap: var(--size-3);
-    row-gap: 6px;
-    padding: var(--size-3);
+  .title {
+    font-size: 27px;
   }
 
-  .row::before {
-    top: var(--size-3);
-    bottom: var(--size-3);
-  }
-
-  .row-main,
-  .row-meta {
-    display: contents;
-  }
-
-  /* The numeral is dropped rather than crammed in. */
-  .row-index {
+  /* No columns to label once the row re-flows, so the band would be lying. */
+  .index-head {
     display: none;
   }
 
-  /* The title keeps the full width rather than sharing a line with the rail. */
+  .registry {
+    border-top: 1px solid var(--line);
+  }
+
+  .row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'num    title  actions'
+      'desc   desc   desc'
+      'tags   tags   host';
+    column-gap: var(--size-3);
+    row-gap: var(--size-2);
+    padding-block: var(--size-4);
+  }
+
+  /* The numeral stays. It is the only colour on the page, and it is what makes
+     four rows scannable — dropping it here would leave the whole mobile layout
+     monochrome for no gain, since it costs one 11px column. */
+  .row-index {
+    grid-area: num;
+  }
+
+  /* The two wrappers dissolve, so their children can be placed on the row grid
+     directly instead of needing a band of their own each. */
+  .row-main {
+    display: contents;
+  }
+
   .row-title {
     grid-area: title;
   }
 
   .row-desc {
     grid-area: desc;
-    max-width: none;
-  }
-
-  .row-foot {
-    grid-area: foot;
-    min-width: 0;
-    justify-content: flex-end;
   }
 
   .row-tags {
     grid-area: tags;
+    margin-top: 0;
+    align-self: center;
   }
 
-  /* Redundant with the row being a link in the first place — but only then.
-     A row with no URL is not a link, so its host line is the one thing saying
-     why ("No deploy URL recorded", or the offending value of a url that was
+  .row-actions {
+    grid-area: actions;
+  }
+
+  /* Redundant with the row being a link in the first place — but only then. A
+     row with no URL is not a link, so its host line is the one thing saying why
+     ("No deploy URL recorded", or the offending value of a url that was
      refused), and hiding it left the dimmed row with no explanation at all. */
+  .row-host {
+    grid-area: host;
+    padding-top: 0;
+    text-align: right;
+  }
+
   .row:not(.is-pending) .row-host {
     display: none;
   }
-}
 
+  .preview-viewport,
+  .preview-cap {
+    max-width: none;
+  }
+}

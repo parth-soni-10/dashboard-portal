@@ -49,6 +49,9 @@
  *      is what stops a development file from quietly shipping the next time one
  *      is added, and what stops a rule that Netlify would shadow from passing
  *      as a block.
+ *  17. The stylesheet's braces balance, so its nesting matches what it reads
+ *      as. An extra `}` is skipped by the browser and renders fine, which is
+ *      precisely why nothing else catches it.
  */
 
 import { readdir, readFile } from 'node:fs/promises';
@@ -488,6 +491,54 @@ for (const file of await walk(root)) {
   note(
     'published-dev-file',
     `${file} is published at /${file} — allow it in the audit or block it in _redirects`
+  );
+}
+
+/* -- 17. The stylesheet's nesting is what it reads as --------------------- */
+
+// A stray `}` does not break rendering: a CSS parser skips the token and
+// carries on, so every rule around it still applies and the page looks
+// perfect. That is exactly why one survives: this file carried a spare `}` for
+// a while, left behind by deleting a keyframes block, and twelve other checks
+// plus a browser ran over it without a murmur. It matters because the file's
+// nesting is then not what it reads as, and any minifier, linter or editor
+// folding that trusts structure will disagree with the browser.
+//
+// Comments and strings are stripped first: both may legitimately contain
+// braces that are not syntax.
+function braceDepth(source) {
+  const stripped = source
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/'(?:\\.|[^'\\])*'/g, "''");
+  let depth = 0;
+  let lowest = 0;
+  let line = 1;
+  let lowestLine = 1;
+  for (const char of stripped) {
+    if (char === '\n') line++;
+    if (char === '{') depth++;
+    else if (char === '}') {
+      depth--;
+      if (depth < lowest) {
+        lowest = depth;
+        lowestLine = line;
+      }
+    }
+  }
+  return { depth, lowest, lowestLine };
+}
+
+const cssDepth = braceDepth(css);
+if (cssDepth.lowest < 0) {
+  note(
+    'stray-brace',
+    `styles.css closes a block that was never opened, around line ${cssDepth.lowestLine}`
+  );
+} else if (cssDepth.depth !== 0) {
+  note(
+    'unbalanced-css',
+    `styles.css ends ${cssDepth.depth > 0 ? 'inside' : 'outside'} a block (depth ${cssDepth.depth})`
   );
 }
 

@@ -23,7 +23,8 @@ and Netlify redeploys it. Nothing else needs touching.
 }
 ```
 
-`tone` is optional; omit it and the row falls back to the house accent.
+`tone` is optional; omit it and the numeral falls back to the interface ink,
+which is what the whole interface is drawn in.
 
 `embed` declares whether the dashboard can be shown in a frame. It defaults to
 true; set it to `false` for a site that ships `X-Frame-Options: DENY` or a
@@ -71,9 +72,9 @@ with no build step and nothing to install:
 
 | Library | Version | Role |
 |---|---|---|
-| [Open Props](https://open-props.style) (MIT) | 1.7.17 | Scale tokens: spacing, type ramp, radii, shadows, easings |
+| [Open Props](https://open-props.style) (MIT) | 1.7.17 | Scale tokens: spacing, type ramp, easings |
 | [modern-normalize](https://github.com/sindresorhus/modern-normalize) (MIT) | 3.0.1 | Cross-browser baseline |
-| [Lucide](https://lucide.dev) (ISC) | 0.462.0 | Icons, tree-shaken to the 7 glyphs the page renders |
+| [Lucide](https://lucide.dev) (ISC) | 0.462.0 | Icons, tree-shaken to the 8 glyphs the page renders |
 | Inter, Geist, Geist Mono | variable | Self-hosted type, same files the sibling dashboards use |
 
 **Why Open Props and not Tailwind or Shoelace.** Tailwind produces great results
@@ -82,18 +83,22 @@ repo in the set that cannot be drag-dropped onto Netlify. Shoelace / Web Awesome
 would supply accessible components, but its default language is a generic
 web-component look that fights the house style, and four rows do not need a
 component runtime. Open Props supplies the part that actually improves a design
-at this size — a proven spacing/type/shadow scale — with zero runtime. If you
+at this size — a proven spacing and type scale — with zero runtime. If you
 would rather have the utility-class workflow, it can be swapped in; nothing else
 depends on this choice.
 
 The two token layers are kept deliberately separate:
 
-- **Scale** comes from Open Props (`--size-*`, `--radius-*`, `--shadow-*`,
-  `--font-size-*`, `--ease-*`). Do not hand-roll replacements. Note its spacing
-  ramp skips 12px: 4 / 8 / 16 / 20 / 24 / 28 / 32 / 48 / 64. Where a 12px
-  optical nudge is genuinely needed it is written as a literal in `styles.css`.
+- **Scale** comes from Open Props (`--size-*`, `--font-size-*`, `--ease-*`). Do
+  not hand-roll replacements. Note its spacing ramp skips 12px: 4 / 8 / 16 / 20 /
+  24 / 28 / 32 / 48 / 64. Where another value is genuinely needed — the 3px
+  optical nudge on the host line, the 12px hover bleed — it is a literal,
+  called out at the rule that needs it.
 - **Colour** is hand-tuned and contrast-verified, because it has to match the
-  sibling dashboards exactly. Do not take colour from Open Props.
+  sibling dashboards exactly. Do not take colour from Open Props. Two things are
+  no longer borrowed from it: the `--shadow-*` ramp (this design has no
+  elevation) and the `--radius-*` ramp (its 1rem step is not this project's
+  container radius).
 
 ## Where the design comes from
 
@@ -110,11 +115,33 @@ What it established, and how it shaped `styles.css`:
 | Found | Used for |
 |---|---|
 | Inter in all five frontends; Geist + Geist Mono in the two newest | The three self-hosted faces |
-| `--r-container: 14px` / `--r-control: 6px` (Irish Visa, RBI) | The radius pair, verbatim, no invented scale |
-| Module Picker's `--bg #f4f5f7 / #101216` — the most neutral of the five | The portal's own ground and surface |
-| Content Tracker's shadows tinted `rgba(16,35,26,.05)`, never black | Every shadow here is tinted toward the ink hue |
-| RBI's `--bg-tint-1` / `--bg-tint-2` radial gradients | The ambient wash behind the page, in the portal's accent |
+| Module Picker's stated language: "neutral zinc, one disciplined blue accent, restrained motion" | The direction of the whole page, accent included — the accent is ink (below) |
+| `--r-container: 14px` / `--r-control: 6px` (Irish Visa, RBI) | The radius pair, verbatim — and the reason there is no invented radius scale |
+| Module Picker's `--bg #f4f5f7 / #101216` — the most neutral of the five | The ground, with its blue cast dropped |
 | Each project's own brand token, light + dark | The per-row tone system (below) |
+| RBI's `--bg-tint-1` / `--bg-tint-2` radial gradients | **Not used.** See "What the redesign removed" |
+
+### What the redesign removed
+
+The first version of this page was assembled from the scrape above and still
+read as generated. The tells were measurable, and each went for a reason:
+
+| Removed | Why |
+|---|---|
+| A 14px-radius card around the whole list, with a drop shadow | The single most recognisable template shape there is, grouping four rows that four hairlines group more honestly |
+| `--ambient-1` / `--ambient-2` radial gradients behind the page | Decoration that carried no information, and a flat ground reads as a document |
+| A backdrop-blurred sticky bar | A compositor layer bought to say "app" |
+| A tinted rounded-square `DP` monogram, in the bar and in the favicon | Initials in a rounded tinted square is the default mark of every generated project |
+| A coloured interface accent | Every candidate collided with a row's own identity colour. Ink cannot. See below |
+| Three uniform bordered icon buttons per row | Borderless until hovered, so the index is text and rules rather than 12 little boxes |
+
+### Why the accent is ink
+
+The page has no accent colour, which is the one deviation from Module Picker's
+"one disciplined blue accent". A blue would have been read as Module Picker and
+a green as Irish Visa — the accent would have said "this row is special" when it
+meant "this control is clickable". So links, focus rings, selection and the open
+state are all ink on ground, and the four tones are the only colour on the page.
 
 ### Tones
 
@@ -129,9 +156,15 @@ own light/dark pair. Nothing here is invented.
 | `cobalt` | CSNL Module Picker | `#1d4ed8` | `#60a5fa` | `--accent` |
 
 `emerald` and `amber` deliberately use their project's *text* token rather than
-its fill token: `#059669` and `#e9b949` are fills, and fail as small text. The
-tone appears only on the row's leading edge key and its index numeral; every
-interactive element stays on the single house accent.
+its fill token: `#059669` and `#e9b949` are fills, and fail as small text.
+
+There is one `--tone` per row, not the `--tone` / `--tone-ink` pair the first
+version carried. That pair existed because a tone had to serve as both a fill
+and as small text, and the two values diverged. Colour now lands on exactly two
+things — the index numeral, and the icon on a preview that cannot be framed — so
+only the text-safe variant is ever needed. That deletes a whole class of bug
+where the fill leaks into text, and the numerals measure **7.1:1 to 9.4:1**
+against the ground in both themes.
 
 ## No status indicator, deliberately
 
@@ -334,7 +367,7 @@ above was confirmed by breaking the thing it guards and watching it report.
 ## Files
 
 ```
-index.html                    Page shell: bar, index header, registry, footer
+index.html                    Page shell: bar, masthead, column header, footer
 styles.css                    Colour tokens, layout, every rule
 app.js                        Rendering, search, link checks, live figures,
                               previews, theme handling
@@ -345,7 +378,7 @@ vendor/open-props.min.css     Open Props 1.7.17 (MIT)
 vendor/modern-normalize.css   modern-normalize 3.0.1 (MIT)
 fonts/                        Inter, Geist Sans and Geist Mono (variable)
 netlify/functions/            watchlist-count.js — the only server-side piece
-favicon.svg                   Monogram mark
+favicon.svg                   Index-numeral mark (ink stamp, no tint)
 
 _headers                      CSP, caching, security headers (all deploy modes)
 _redirects                    404s that keep development files off the site
@@ -370,18 +403,23 @@ tools/design-report.json      What it found, per dashboard
   different from a live one. A number whose provenance is invisible is a number
   nobody can trust.
 
-- **A registry, not a card grid.** Four links to internal tools belong in a
-  list. One bordered container with hairline row dividers does the grouping
-  that four elevated cards were doing, so nothing reads as a template tile.
-- **One band of chrome.** The page opens with a single sticky bar (brand,
-  search, theme) and one line carrying the count. The first row starts 119px
-  down the page at 1280px; the version this replaced started it at 359px, below
-  the fold.
-- **The whole set fits one screen.** Four rows measure 105px each, so the
-  registry is 425px and the page needs no scrolling at desktop heights.
-- **Shape is locked.** Containers 14px, controls 6px.
-- **Boundary rule.** Hairline `--border` for surfaces you read, stronger
-  `--border-strong` for controls you operate.
+- **A specification index, not a card list.** Column labels, hairline rules
+  between entries, and no container around them. The list is flush with the page
+  because that is what an index is, and the labels are the same grid as a row —
+  measured at 1280px, the header cells and the row cells begin at identical x
+  (124 / 176 / 844 / 1068). Two grids that must line up but are defined in two
+  places is how a table drifts, so both consume one `--grid-cols`.
+- **One band of chrome.** A 52px sticky bar carrying the wordmark, the filter
+  and the theme control — solid, not blurred. The document heading lives in the
+  page below it rather than in the bar, so two titles never compete in the first
+  100px.
+- **The whole set fits one screen.** The first row starts 215px down at 1280px,
+  each row measures 131px, and the index is 527px tall — so the content is under
+  one viewport high and the page needs no scrolling at desktop heights.
+- **Shape is locked.** Controls 6px, the preview frame 4px. There is no
+  container radius left to spend the family's 14px on.
+- **Boundary rule.** Hairline `--line` for structure, stronger `--line-strong`
+  for controls you operate.
 - **Fonts:** Inter and Geist are preloaded; Geist Mono deliberately is not.
   Resource Timing confirms each face is fetched exactly once per load, with
   `initiatorType: "link"` for the two preloaded ones — so the preload is what
@@ -403,32 +441,39 @@ tools/design-report.json      What it found, per dashboard
   an outline on it would trace the wrong box), and `/` focuses the filter from
   anywhere.
 - **Long tokens wrap, they do not vanish.** `.row-title`, `.row-desc`,
-  `.preview-note` and `.empty-body` set `overflow-wrap: anywhere`, because the
-  manifest is hand-written and a description can hold a long unbroken URL. The
-  registry's `overflow: hidden` would otherwise clip it silently — no scrollbar,
-  no ellipsis, content just gone. `anywhere` rather than `break-word` so the
-  grid track's min-content size shrinks too, which is what lets the column
-  actually narrow.
-- **Contrast:** every text element clears WCAG AA 4.5:1 in both themes,
-  including the tone numerals, verified by compositing the translucent tints
-  rather than eyeballing. Text on the accent uses `--on-accent`, which has to
-  flip with the theme because the dark accent is a light mint.
+  `.row-tags`, `.preview-note` and `.empty-body` set `overflow-wrap: anywhere`,
+  because the manifest is hand-written and a description can hold a long
+  unbroken URL. The host column is the one exception: it truncates with an
+  ellipsis, because wrapping there would change a row's height. `anywhere`
+  rather than `break-word` so the grid track's min-content size shrinks too,
+  which is what lets the column actually narrow.
+- **Contrast:** measured, not eyeballed. A sweep of every text-bearing element
+  in both themes — 34 of them — finds **zero** below AA. The tightest pair is
+  the `/` key hint: 5.00:1 light, 4.76:1 dark. The tone numerals run 7.1:1 to
+  9.4:1. The sweep was verified by painting a label nearly invisible and
+  confirming it reports 1.14:1, because a contrast check that cannot fail is
+  not evidence.
 - **Icons** come from Lucide and are inlined by glyph. Do not hand-draw
   replacements.
+- **The bar can never be wider than the viewport.** The wordmark does not
+  shrink; the filter field gives up its width first, down to a 4rem floor. The
+  first version of this bar overflowed a 323px screen by 1px — enough to give
+  the entire page a horizontal scrollbar — because the old bar wrapped instead.
 
-### Responsive
+### ResponsiveTwo layouts, both declared in the same component:
 
-Two layouts, both declared in the same component:
+- **≥760px:** four columns — a 28px numeral, the subject, a 200px host column
+  and an 88px actions column, under a header row that labels the first three.
+- **<760px:** three columns and three bands:
+  `num+title+actions / description / tags+host`. The header band is dropped
+  (there are no columns left for it to label), `.row-main` dissolves with
+  `display: contents` so its children land on the row grid directly, and the
+  hostname is hidden as redundant with the row being a link — except on a row
+  that is *not* a link, where it is the only thing explaining why.
 
-- **≥700px:** a three-column row — 26px index numeral, text column, right rail
-  carrying the host, the controls and the tags.
-- **<700px:** the row re-flows to `title / description / tags / actions`. The
-  two wrappers dissolve with `display: contents` so their children can be
-  placed on the row grid directly, the numeral is dropped, and the hostname is
-  hidden as redundant with the row being a link.
-
-Below 700px the filter wraps to a second line inside the sticky bar rather than
-disappearing, so it stays reachable on a phone.
+**The numeral stays at every width.** It is the only colour on the page, so
+dropping it on mobile would have left the whole small-screen layout monochrome
+for the sake of one 11px column.
 
 ## Local preview
 

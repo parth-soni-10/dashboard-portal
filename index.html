@@ -6,16 +6,16 @@
     <title>Dashboard Portal</title>
     <meta
       name="description"
-      content="One page for every deployed dashboard: media analytics, visa decisions, RBI data and UCD timetables."
+      content="One index for every deployed dashboard: media analytics, visa decisions, RBI data and UCD timetables."
     />
-    <meta name="theme-color" content="#101216" />
+    <meta name="theme-color" content="#0e0e11" />
     <meta name="color-scheme" content="dark light" />
 
     <!-- Runs before first paint so the stored theme applies without a flash. -->
     <script src="theme-init.js"></script>
 
-    <!-- Both faces are first-paint critical: Geist sets the wordmark and every
-         row title, Inter sets everything else. -->
+    <!-- Both faces are first-paint critical: Geist sets the index title and
+         every row title, Inter sets the running text. -->
     <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin />
 
@@ -29,51 +29,70 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <a class="skip-link" href="#dashboards">Skip to dashboards</a>
+    <a class="skip-link" href="#index">Skip to the index</a>
 
-    <header class="topbar">
-      <div class="topbar-inner">
-        <div class="brand">
-          <div class="brand-mark" aria-hidden="true">DP</div>
-          <h1 class="brand-name">Dashboard Portal</h1>
+    <!-- A working bar, not a title block: the page's own heading lives in the
+         document below, so the two never compete. Solid background rather than
+         a blurred one — the blur said "app" and cost a compositor layer. -->
+    <header class="bar">
+      <div class="bar-inner">
+        <p class="wordmark">Dashboard Portal</p>
+
+        <div class="bar-tools">
+          <div class="field">
+            <label class="sr-only" for="filter">Filter dashboards</label>
+            <span class="field-ico" data-icon="search" aria-hidden="true"></span>
+            <input
+              id="filter"
+              class="field-input"
+              type="search"
+              placeholder="Filter"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <kbd class="field-hint" aria-hidden="true">/</kbd>
+          </div>
+
+          <button
+            id="theme-toggle"
+            class="icon-btn"
+            type="button"
+            title="Switch to light mode"
+            aria-label="Switch to light mode"
+            aria-pressed="false"
+          >
+            <span class="theme-glyph theme-glyph-sun" aria-hidden="true"></span>
+            <span class="theme-glyph theme-glyph-moon" aria-hidden="true"></span>
+          </button>
         </div>
-
-        <!-- Filtering lives in the bar so it costs no vertical space. Below
-             700px it wraps to a second line instead of being hidden. -->
-        <div class="field">
-          <label class="sr-only" for="filter">Filter dashboards</label>
-          <span class="field-ico" data-icon="search" aria-hidden="true"></span>
-          <input
-            id="filter"
-            class="field-input"
-            type="search"
-            placeholder="Filter dashboards"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <kbd class="field-hint" aria-hidden="true">/</kbd>
-        </div>
-
-        <button
-          id="theme-toggle"
-          class="icon-btn"
-          type="button"
-          title="Switch to light mode"
-          aria-label="Switch to light mode"
-          aria-pressed="false"
-        >
-          <span class="theme-glyph theme-glyph-sun" aria-hidden="true"></span>
-          <span class="theme-glyph theme-glyph-moon" aria-hidden="true"></span>
-        </button>
       </div>
     </header>
 
-    <main class="shell">
+    <main class="page">
+      <!-- The document heading. The bar carries the site name, so this carries
+           the subject, and the count sits under it as the lede rather than
+           floating in its own band. -->
+      <div class="masthead">
+        <p class="eyebrow">Index</p>
+        <h1 class="title">Dashboards</h1>
+        <p id="meta" class="lede" aria-live="polite"></p>
+      </div>
+
+      <!-- Column labels for the index below. They are the same grid as a row,
+           so each label sits over the column it names: this is what makes the
+           list read as a specification rather than a stack of cards. -->
+      <div class="index-head" aria-hidden="true">
+        <span>#</span>
+        <span>Dashboard</span>
+        <span>Host</span>
+        <span></span>
+      </div>
+
       <!-- The list is built in the browser from data/dashboards.js. Without
            scripting there would otherwise be a blank page and no explanation. -->
       <noscript>
         <p class="empty">
-          <span class="empty-title">This portal builds its list in the browser</span>
+          <span class="empty-title">This index is built in the browser</span>
           <span class="empty-body"
             >With JavaScript disabled there is nothing to show. The repository and the
             portfolio are linked in the footer.</span
@@ -81,24 +100,10 @@
         </p>
       </noscript>
 
-      <!-- One band, one line: the count while a search is active, and otherwise
-           just how many dashboards there are.
-
-           Two things used to live around this line and are gone. The
-           availability chips (All / Deployed / Not linked) sat on the right,
-           and filtering rows by their state mostly succeeded in hiding the
-           answer. The health summary ("4 dashboards, 4 reachable, checked
-           09:58") was the per-row badge said again in a sentence, and went
-           with it. The search box remains: searching by name is a different
-           job from filtering by state. -->
-      <div class="ledger-head">
-        <p id="meta" class="meta" aria-live="polite"></p>
-      </div>
-
       <!-- tabindex="-1" on the skip link's target so a keyboard user actually
            lands here; the heading alone is not focusable. -->
-      <section id="dashboards" tabindex="-1" aria-labelledby="dashboards-heading">
-        <h2 id="dashboards-heading" class="sr-only">Dashboards</h2>
+      <section id="index" tabindex="-1" aria-labelledby="index-title">
+        <h2 id="index-title" class="sr-only">Deployed dashboards</h2>
 
         <ul id="grid" class="registry">
           <!-- Rows are rendered from data/dashboards.js -->
@@ -107,18 +112,20 @@
         <p id="empty" class="empty" hidden>
           <span class="empty-ico" data-icon="search" aria-hidden="true"></span>
           <span id="empty-title" class="empty-title">Nothing matches that filter</span>
-          <span id="empty-body" class="empty-body">Try a different word, or clear the search to see every dashboard.</span>
+          <span id="empty-body" class="empty-body"
+            >Try a different word, or clear the search to see every dashboard.</span
+          >
           <button id="empty-reset" class="btn" type="button">Clear search</button>
         </p>
       </section>
     </main>
 
     <footer class="footer">
-      <p class="footer-inner">
+      <div class="footer-inner">
         <span>Built for personal use</span>
         <a href="https://parth-portfolio-wb.netlify.app/" rel="noopener">Portfolio</a>
         <a href="https://github.com/parth-soni-10/dashboard-portal" rel="noopener">Source</a>
-      </p>
+      </div>
     </footer>
 
     <script src="data/dashboards.js"></script>

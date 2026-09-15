@@ -521,13 +521,16 @@
     // then explain why there is no preview instead of offering nothing at all.
     var preview = live ? previewButton(item) : '';
 
+    // Four cells, in the order index-head labels them: numeral, subject, host,
+    // actions. The host is its own column rather than a caption under the title,
+    // which is what lets the header above the list actually line up with it.
     return (
       '<li class="row' +
       (live ? '' : ' is-pending') +
       '" data-id="' +
       esc(item.id) +
       '"' +
-      // An entry with no tone falls back to the house accent in CSS.
+      // An entry with no tone falls back to the interface ink in CSS.
       (item.tone ? ' data-tone="' + esc(item.tone) + '"' : '') +
       '>' +
       '<span class="row-index" aria-hidden="true">' +
@@ -540,20 +543,6 @@
       '<p class="row-desc">' +
       renderDescription(item) +
       '</p>' +
-      '</div>' +
-      '<div class="row-meta">' +
-      '<div class="row-foot">' +
-      // The tooltip holds the full host, which is the only reason to have one:
-      // the visible text has had the netlify.app suffix stripped.
-      '<span class="row-host" title="' +
-      esc(host || String(item.url || '')) +
-      '">' +
-      esc(hostText) +
-      '</span>' +
-      preview +
-      repo +
-      (live ? '<span class="row-go" aria-hidden="true">' + icon('arrow-up-right', 15) + '</span>' : '') +
-      '</div>' +
       (tagList.length
         ? '<p class="row-tags" title="' +
           esc(tagList.join(', ')) +
@@ -561,6 +550,18 @@
           esc(tagList.join(' \u00b7 ')) +
           '</p>'
         : '') +
+      '</div>' +
+      // The tooltip holds the full host, which is the only reason to have one:
+      // the visible text has had the netlify.app suffix stripped.
+      '<span class="row-host" title="' +
+      esc(host || String(item.url || '')) +
+      '">' +
+      esc(hostText) +
+      '</span>' +
+      '<div class="row-actions">' +
+      preview +
+      repo +
+      (live ? '<span class="row-go" aria-hidden="true">' + icon('arrow-up-right', 15) + '</span>' : '') +
       '</div>' +
       // Empty until opened. Living inside the row is what keeps the preview
       // from covering anything or needing to be re-anchored on scroll.
@@ -619,11 +620,12 @@
     };
   }
 
-  /* --------------------------------------------------------------- the meta line
-   * One line of chrome, kept to a single row: the search count while a query is
-   * active, and otherwise just how many dashboards there are. It used to carry
-   * a health summary — how many links answered, and when — which was the
-   * reachability badge again in sentence form, and went with it. */
+  /* ---------------------------------------------------------------- the lede
+   * The line under the title: the search count while a query is active, and
+   * otherwise how many there are and that each is its own deployment. It used
+   * to carry a health summary — how many links answered, and when — which was
+   * the reachability badge again in sentence form, and went with it. Kept to
+   * one line at every width, which is why the wording is this short. */
   function renderMeta() {
     var total = dashboards.length;
     if (!total) {
@@ -638,7 +640,7 @@
       return;
     }
 
-    el.meta.innerHTML = '<strong>' + total + '</strong> dashboards';
+    el.meta.innerHTML = '<strong>' + total + '</strong> dashboards, each deployed separately.';
   }
 
   var introPlayed = false;
