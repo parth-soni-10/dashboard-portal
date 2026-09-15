@@ -37,7 +37,8 @@
  *            appears only on the index numeral and the left edge key.
  *   Layout   a numbered registry, not a card grid: this is a launcher, and a
  *            list of four links belongs in a list. No card containers, so
- *            nothing here reads as a template tile.
+ *            nothing here reads as a template tile. One search box, and no
+ *            status chips: the rows already state their own status.
  *   Theme    light and dark are both first class, driven by [data-theme].
  *   Motion   transform and opacity only, all of it off under
  *            prefers-reduced-motion.
@@ -463,18 +464,15 @@ body {
   padding: var(--size-5) var(--size-5) var(--size-8);
 }
 
+/* The band above the registry, now down to a single line of text. It used to
+   be a row holding the count on the left and the availability chips on the
+   right; with the chips gone there is nothing to lay out, only the gap between
+   the bar and the first row. */
 .ledger-head {
-  display: flex;
-  align-items: center;
-  gap: var(--size-4);
-  flex-wrap: wrap;
-  min-height: 30px;
   padding-bottom: var(--size-3);
 }
 
 .meta {
-  flex: 1 1 auto;
-  min-width: 0;
   margin: 0;
   color: var(--text-soft);
   font-size: 12.5px;
@@ -484,39 +482,6 @@ body {
   color: var(--text-mid);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-}
-
-.chips {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--r-control);
-  border: 1px solid var(--border);
-  background: var(--surface-sunken);
-}
-
-.chip {
-  height: 24px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-mid);
-  font-size: 12px;
-  font-weight: 500;
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
-}
-
-.chip:hover {
-  color: var(--text);
-}
-
-.chip.is-on {
-  background: var(--surface);
-  color: var(--accent);
-  box-shadow: var(--shadow-card);
 }
 
 /* -------------------------------------------------------------- registry --
@@ -1153,12 +1118,3 @@ body {
   }
 }
 
-@media (max-width: 420px) {
-  .chips {
-    flex: 1 1 100%;
-  }
-
-  .chip {
-    flex: 1 1 auto;
-  }
-}

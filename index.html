@@ -91,24 +91,15 @@
         </p>
       </noscript>
 
-      <!-- One band: counts or health on the left, filter on the right. -->
+      <!-- One band, one line: the count, or the health summary.
+
+           The availability chips (All / Deployed / Not linked) used to sit on
+           the right of this line. They are gone: every row already says what
+           it is in its own status pill, so filtering rows by that status mostly
+           succeeded in hiding the answer. The search box remains, because
+           searching by name is a different job from filtering by state. -->
       <div class="ledger-head">
         <p id="meta" class="meta" aria-live="polite"></p>
-
-        <div class="chips" role="group" aria-label="Filter by availability">
-          <button class="chip is-on" type="button" data-scope="all" aria-pressed="true">
-            All
-          </button>
-          <!-- "Deployed", not "Reachable": this filter is about whether an
-               entry has a usable link, which is not the same question as
-               whether the probe could confirm it. -->
-          <button class="chip" type="button" data-scope="deployed" aria-pressed="false">
-            Deployed
-          </button>
-          <button class="chip" type="button" data-scope="unlinked" aria-pressed="false">
-            Not linked
-          </button>
-        </div>
       </div>
 
       <!-- tabindex="-1" on the skip link's target so a keyboard user actually
@@ -123,8 +114,8 @@
         <p id="empty" class="empty" hidden>
           <span class="empty-ico" data-icon="search" aria-hidden="true"></span>
           <span id="empty-title" class="empty-title">Nothing matches that filter</span>
-          <span id="empty-body" class="empty-body">Try a different word, or reset the filter to see every dashboard.</span>
-          <button id="empty-reset" class="btn" type="button">Reset filter</button>
+          <span id="empty-body" class="empty-body">Try a different word, or clear the search to see every dashboard.</span>
+          <button id="empty-reset" class="btn" type="button">Clear search</button>
         </p>
       </section>
 

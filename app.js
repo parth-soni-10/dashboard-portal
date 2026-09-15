@@ -747,16 +747,16 @@
     if (pill) pill.outerHTML = statusMarkup(state, item);
   }
 
-  /* --------------------------------------------------------------- filters -- */
+  /* --------------------------------------------------------------- filters --
+   * One filter, the search box. The availability chips that used to sit beside
+   * the count are gone: each row already states its own status in a pill, so
+   * choosing to hide rows by that status mostly managed to hide the answer.
+   */
 
-  var scope = 'all';
   var query = '';
   var checkedAt = '';
 
   function matches(item) {
-    if (scope === 'deployed' && !hasDeploy(item)) return false;
-    if (scope === 'unlinked' && hasDeploy(item)) return false;
-
     if (!query) return true;
     var haystack = [item.name, item.description, plainDescription(item), (item.tags || []).join(' ')]
       .join(' ')
@@ -768,10 +768,6 @@
       .every(function (term) {
         return haystack.indexOf(term) !== -1;
       });
-  }
-
-  function filtering() {
-    return !!query || scope !== 'all';
   }
 
   /** Only entries that actually have a checkable address. */
@@ -798,43 +794,12 @@
     );
   }
 
-  /**
-   * Keep each chip's visual state and its announced state in step. Without
-   * aria-pressed a screen reader cannot tell which filter is active.
-   */
-  function setScope(next) {
-    scope = next;
-    document.querySelectorAll('.chip').forEach(function (chip) {
-      var on = chip.dataset.scope === next;
-      chip.classList.toggle('is-on', on);
-      chip.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
-  }
-
-  /**
-   * Empty-state copy has to explain the right reason. "Nothing matches" is
-   * wrong when the cause is a scope filter rather than a search word.
-   */
+  /** Two causes are left: a word that matches nothing, and an empty manifest. */
   function emptyCopy() {
     if (query) {
       return {
         title: 'Nothing matches "' + query + '"',
-        body: 'Try a different word, or reset the filter to see every dashboard.'
-      };
-    }
-    if (scope === 'unlinked') {
-      return {
-        title: 'Everything is linked',
-        body:
-          'All ' +
-          dashboards.length +
-          ' dashboards have a usable link. Switch back to All to browse them.'
-      };
-    }
-    if (scope === 'deployed') {
-      return {
-        title: 'Nothing has a usable link',
-        body: 'Add a valid url to an entry in data/dashboards.js.'
+        body: 'Try a different word, or clear the search to see every dashboard.'
       };
     }
     return {
@@ -844,8 +809,8 @@
   }
 
   /* --------------------------------------------------------------- the meta line
-   * One line of chrome that carries either the filter count or the health
-   * summary, never both, so it always fits on a single row. */
+   * One line of chrome that carries either the search count or the health
+   * summary, never both, so it always stays on a single row. */
   function renderMeta() {
     var total = dashboards.length;
     if (!total) {
@@ -853,7 +818,7 @@
       return;
     }
 
-    if (filtering()) {
+    if (query) {
       var shown = dashboards.filter(matches).length;
       el.meta.innerHTML =
         'Showing <strong>' + shown + '</strong> of <strong>' + total + '</strong> dashboards';
@@ -1057,13 +1022,6 @@
     }
   });
 
-  document.querySelectorAll('.chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      setScope(chip.dataset.scope);
-      render();
-    });
-  });
-
   /* Preview buttons are wired by delegation, because the rows are rebuilt on
      every keystroke and would throw a per-button listener away with them. */
   el.grid.addEventListener('click', function (event) {
@@ -1096,7 +1054,6 @@
     cancelPendingFilter();
     query = '';
     el.filter.value = '';
-    setScope('all');
     render();
     el.filter.focus();
   });
@@ -1179,9 +1136,6 @@
   hydrateIcons(document);
   fillThemeGlyphs();
   applyTheme(root.dataset.theme === 'light' ? 'light' : 'dark', false);
-  // Derive the chips' pressed state from the variable rather than trusting the
-  // markup to agree with it.
-  setScope(scope);
   render();
   checkAll(false);
 

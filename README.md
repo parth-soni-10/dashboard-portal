@@ -1,7 +1,7 @@
 # Dashboard Portal
 
 One page that links every deployed dashboard, previews each one live inside its
-own row, checks whether it still answers, and keeps the set filterable. Static
+own row, and checks whether it still answers. Static
 HTML, CSS and JavaScript with no build step, matching the other dashboards —
 the one piece that needs a server (reading the Content Tracker's figures) is a
 single Netlify Function, because that dashboard's data endpoint cannot be read
@@ -152,13 +152,14 @@ interactive element stays on the single house accent.
 | Not deployed | Grey | No `url` recorded yet. |
 | Checking | Grey | A check is in flight. |
 
-The other filter is **Deployed** / **Not linked**, deliberately not "Reachable":
-those chips answer whether an entry has a *usable link*, which is a different
-question from whether the probe could confirm it. An entry with a URL that could
-not be verified is still Deployed.
+**There are no status chips, deliberately.** A row's own pill already says what
+that row is, so a filter that hides rows by status mostly managed to hide the
+answer — the state is visible in place, one line per dashboard. The search box
+stays, because finding a dashboard by name is a different job from filtering by
+state, and it searches the tags and the live figures as well as the name.
 
-The wording is deliberately hedged, because a cross-origin check cannot tell the
-difference between a dead host and a host that refuses to be checked.
+That is also why the link check never says "down": a cross-origin check cannot
+tell a dead host from a host that refuses to be checked.
 
 The check is a `HEAD` request with `mode: 'no-cors'`. The response is opaque, so
 its body can never be read: a `GET` would invite a transfer of the whole page of
@@ -338,7 +339,7 @@ above was confirmed by breaking the thing it guards and watching it report.
 ```
 index.html                    Page shell: bar, index header, registry, footer
 styles.css                    Colour tokens, layout, every rule
-app.js                        Rendering, filtering, link checks, live figures,
+app.js                        Rendering, search, link checks, live figures,
                               previews, theme handling
 theme-init.js                 Pre-paint theme bootstrap (external, keeps CSP strict)
 icons.js                      Tree-shaken Lucide 0.462.0 paths
@@ -375,7 +376,7 @@ tools/design-report.json      What it found, per dashboard
   list. One bordered container with hairline row dividers does the grouping
   that four elevated cards were doing, so nothing reads as a template tile.
 - **One band of chrome.** The page opens with a single sticky bar (brand,
-  filter, refresh, theme) and one line carrying the count or the health
+  search, refresh, theme) and one line carrying the count or the health
   summary. At 1080px the first row starts 130px down the page; the version this
   replaced started it at 359px, below the fold.
 - **The whole set fits one screen.** Four rows measure 117px each, so the
@@ -397,7 +398,7 @@ tools/design-report.json      What it found, per dashboard
 
 - **Motion:** transform and opacity only, all of it switched off under
   `prefers-reduced-motion`. The entrance stagger is gated on a class applied to
-  the first render only, so filtering does not replay it on every keystroke.
+  the first render only, so searching does not replay it on every keystroke.
 - **Accessibility:** the filter has a real label (visually hidden), status
   changes announce through `aria-live`, the row focus ring is inset (`:focus-within`
   on the row, since the anchor is a stretched-link overlay and an outline on it
