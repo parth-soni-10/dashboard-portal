@@ -197,8 +197,6 @@ const parsed = redirectRules
     return { from, to, status: Number((status || '').replace('!', '')) || 301 };
   });
 
-const blockedRules = parsed.filter((rule) => rule.status === 404);
-
 /** Distinctive text from a local file, to prove the live body is not it. */
 function fingerprint(source) {
   const lines = source
