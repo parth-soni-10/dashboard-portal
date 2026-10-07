@@ -41,6 +41,10 @@
     <link rel="stylesheet" href="vendor/open-props.min.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <!-- iOS ignores SVG favicons and the manifest entirely, so without this it
+         substitutes a screenshot of the page for the home-screen icon. The
+         raster is favicon.svg's "01" mark, full-bleed. -->
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   </head>
   <body>
     <a class="skip-link" href="#index">Skip to the index</a>

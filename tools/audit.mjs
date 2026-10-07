@@ -462,6 +462,7 @@ const publicFiles = new Set([
   'icons.js',
   'theme-init.js',
   'favicon.svg',
+  'apple-touch-icon.png',
   'data/dashboards.js',
   'LICENSE',
   'robots.txt'
