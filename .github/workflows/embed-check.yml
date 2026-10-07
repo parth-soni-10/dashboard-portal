@@ -1,0 +1,30 @@
+name: Embed policy check
+
+# Whether a dashboard may be framed is decided by that dashboard's own response
+# headers, so this can only be answered against the live deploys — which is why
+# it is scheduled rather than run on push, and why an unreachable dashboard is
+# reported as unchecked rather than as a failure.
+#
+# It exists to catch a dashboard silently changing its frame policy, which would
+# otherwise turn its row in the portal into a browser error message with nothing
+# in this repo to explain why.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays, 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  embed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check each manifest entry against its live headers
+        run: node tools/check-embed.mjs

@@ -447,6 +447,14 @@ if (/<iframe\b/.test(app)) {
 // `netlify.toml` are deliberately *absent* from the list, because a rule exists
 // for each — relying on Netlify to withhold its own control files is the kind
 // of assumption that holds right up until it does not.
+// Files that are *supposed* to be reachable on the deployed site. Everything
+// else in the publish root needs a 404 rule in _redirects, because the site is
+// served from the repository root and Netlify uploads the whole directory.
+//
+// LICENSE and robots.txt are here deliberately, not by omission: a licence
+// notice is meant to be readable, and robots.txt only works if a crawler can
+// fetch it — blocking either would defeat the file. Both are static text with
+// nothing in them that is not already in the repository.
 const publicFiles = new Set([
   'index.html',
   'styles.css',
@@ -454,7 +462,9 @@ const publicFiles = new Set([
   'icons.js',
   'theme-init.js',
   'favicon.svg',
-  'data/dashboards.js'
+  'data/dashboards.js',
+  'LICENSE',
+  'robots.txt'
 ]);
 const publicDirs = ['fonts/', 'vendor/'];
 

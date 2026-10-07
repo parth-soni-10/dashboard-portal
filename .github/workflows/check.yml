@@ -1,0 +1,34 @@
+name: Check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # No build step, no package.json: the repo root IS the publish directory,
+      # so "does it still parse" is the whole of a static check.
+      # tools/audit.mjs is zero-dependency and exits non-zero on a finding, so it
+      # is the whole regression suite: dead selectors, unused tokens, missing
+      # icon glyphs, unbalanced markup, manifest fields nothing renders, CSP
+      # shape, and that no file in the repo is published by accident.
+      - name: Static hygiene audit
+        run: node tools/audit.mjs
+
+      - name: Syntax-check the site, tools and function
+        run: |
+          set -e
+          for f in app.js icons.js theme-init.js tools/*.mjs netlify/functions/*.js; do
+            node --check "$f"
+          done

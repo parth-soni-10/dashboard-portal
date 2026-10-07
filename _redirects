@@ -58,3 +58,13 @@
 # inert rule costs nothing, an unfounded assumption costs the file.
 /_headers         /index.html   404!
 /_redirects       /index.html   404!
+
+# This repository's own CI configuration. Netlify publishes dot-directories when
+# the site is the repository root — the audit asserts that rather than assuming
+# Netlify withholds them — and a workflow file names the checks and the runner
+# image it uses. Neither is a secret, but neither is part of the site.
+#
+# Both rules are needed: `/.github` blocks the directory entry itself, and
+# `/.github/*` is what actually stops /.github/workflows/check.yml.
+/.github          /index.html   404!
+/.github/*        /index.html   404!

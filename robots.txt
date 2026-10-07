@@ -1,0 +1,5 @@
+# The whole site is one page and everything published is meant to be
+# crawled. No Sitemap line: this deploy's URL is not recorded anywhere in
+# the repo, and a sitemap naming a guessed host would be worse than none.
+User-agent: *
+Allow: /
