@@ -27,6 +27,11 @@ const dashboards = sandbox.DASHBOARDS || [];
 
 const TIMEOUT = 20000;
 
+// The portal's own deployed origin. A dashboard whose frame-ancestors names
+// this origin (or `*`) is frameable here, so its `embed: true` declaration
+// agrees with the live headers.
+const PORTAL_ORIGIN = 'https://dashboards-home.netlify.app';
+
 async function inspect(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT);
@@ -51,14 +56,16 @@ function verdict(headers) {
   if (xfo === 'deny') return { blocked: true, why: 'X-Frame-Options: DENY' };
   if (xfo === 'sameorigin') return { blocked: true, why: 'X-Frame-Options: SAMEORIGIN' };
 
-  // Only `*` is accepted, because the portal's own final origin is not known
-  // here — being conservative reports a dashboard as unembeddable when it might
-  // not be, which is the safe direction for a flag that only changes wording.
+  // A list naming the portal's own origin (or `*`) passes; anything else still
+  // reports blocked. Staying conservative remains the safe direction for a flag
+  // that only changes row wording.
   const csp = headers.get('content-security-policy') || '';
   const ancestors = csp.match(/frame-ancestors([^;]*)/i);
   if (ancestors) {
     const list = ancestors[1].trim();
-    if (!list.includes('*')) return { blocked: true, why: `frame-ancestors ${list}` };
+    if (!list.includes('*') && !list.includes(PORTAL_ORIGIN)) {
+      return { blocked: true, why: `frame-ancestors ${list}` };
+    }
   }
 
   return { blocked: false, why: xfo ? `X-Frame-Options: ${xfo}` : 'no framing restriction' };
