@@ -313,57 +313,59 @@ that returns the files' bytes under a 404, a weakened CSP, a `frame-src`
 missing two origins, a figures response with no timestamp, and a 502 that
 leaked the upstream's own error text.
 
-## Deploying to Netlify
+## Deploying
 
-Pure static, `publish = "."`, no build command. Either connect the repository or
-drag the folder onto Netlify Drop.
+The site is one Worker (`dashboards-home`): `worker.js` answers `/api/watchlist`,
+the repository root is the assets directory, and `_headers` carries the CSP and
+the rest of the response headers. A push to `main` deploys it — the repo is
+connected to the Worker in **Cloudflare Workers Builds** (production branch
+`main`, deploy command `npx wrangler deploy`, preview builds off, no build
+command) — and `npx wrangler deploy` locally publishes the same thing.
 
-A **repository-connected deploy is the one that matters**, because it is the
-only mode that processes the function — and without the function the Content
-Tracker row falls back to its recorded figures. It also means one push ships
-`_redirects`, `_headers` and the function together, which is what
-`tools/check-live.mjs` is there to confirm afterwards.
+One push ships `worker.js`, `_headers` and every asset together, which is what
+the Content Tracker row depends on: its live figures come from `/api/watchlist`,
+answered by the Worker through the `WATCHLIST` **service binding** in
+`wrangler.toml`. Without that route the row falls back to its recorded figures,
+so a deploy is worth confirming. `tools/check-live.mjs` is the tool meant to do
+that and **has not been ported yet** — it still reads the old `_redirects` and
+`netlify.toml` layout, so it throws instead of reporting. Until it is, confirm by
+hand against the list under "Everything the page needs still resolves" below.
 
-`publish = "."` is what lets this deploy with no build step, and it has a cost
-worth naming: **everything in the repository is uploaded, so every tracked file
-is a public URL.** Shipping the audit, this README, the manifest's worked
-examples and the function's own source does not leak a secret, but it is not
-something to discover later either. `_redirects` answers those paths with a 404,
-and `tools/audit.mjs` keeps the two lists honest — it fails when a file is added
-that is neither public on purpose nor blocked, so the next development file
-cannot quietly start shipping.
+`[assets] directory = "."` is what lets this deploy with no build step, and it
+has a cost worth naming: **everything in the repository is uploaded unless
+`.assetsignore` excludes it.** Shipping the audit, this README, the manifest's
+worked examples and the function's own source does not leak a secret, but it is
+not something to discover later either. `.assetsignore` is the list that keeps
+them off the upload — a file that was never uploaded cannot be served — and
+`tools/audit.mjs` keeps the two lists honest: it fails when a file is added that
+is neither public on purpose nor excluded.
 
-`_redirects` is also where one Netlify behaviour has to be known or the whole
-thing silently does nothing: **redirects shadow a URL that resolves to a file
-the site actually has, and that applies to custom 404s too.** Every path blocked
-there is listed precisely *because* a file sits at it, so each rule carries a
-`!` after the status — `404!` — which is Netlify's "even though the file
-exists". Without it the rule reads as a block and serves the file with a 200.
-The audit fails on a 404 rule missing its `!`, and `tools/dev-server.mjs` models
-the shadowing, so a rule that cannot fire 404s locally *and* reports itself
-rather than looking fixed until someone visits the deployed site.
+Cloudflare's `_redirects` has no 404 status, so the old Netlify rules are not the
+mechanism any more: they live in `netlify/_redirects` as the record of which repo
+files used to be blocked and why, while `.assetsignore` does the work. That file
+also names the trap it documents — Netlify's redirects shadow a URL that resolves
+to a file the site actually has, so every 404 rule needed its `!` after the
+status — which is Netlify-only syntax Cloudflare does not share.
 
 Everything the page needs still resolves: `/tools/…`, `/README.md`,
-`/.gitignore`, `/netlify/…`, `/netlify.toml`, `_headers`, `_redirects` and
-`/.git/…` return 404, while every asset returns 200 and the function still
-answers at `/api/watchlist`.
+`/.gitignore`, `/netlify/…`, `netlify.toml`, `_headers`, `wrangler.toml`,
+`worker.js`, `.assetsignore` and `/.git/…` return 404 — none of them is uploaded
+— while every asset returns 200 and `/api/watchlist` answers.
 
 `/.git` is the one that was actually reachable, and it is worth knowing why it
 went unnoticed. The audit's "nothing is published by accident" check walks the
 *tracked* files and skips `.git` while doing it, so the directory was covered by
 no check at all — `tools/dev-server.mjs` served `/.git/config` with a 200, and
 that file names the remote while the objects behind it are every blob ever
-committed, including anything added and later removed. There is now a rule for
-it, and a check that looks at the publish root rather than at the file list, so
-the next dot-directory is caught on the way in. `/.netlify` is the deliberate
-exception: that is where the function is served from, so a 404 rule over it
-would break `/api/watchlist`.
+committed, including anything added and later removed. The next dot-directory is caught on the way in. `.assetsignore` excludes `.git/`
+outright, and the audit looks at the publish root rather than at the file list,
+which is what the old 404 rule could not do.
 
-**Response headers live in `_headers`, not `netlify.toml`,** and that is
-deliberate. Netlify only reads `netlify.toml` for a repository-connected deploy;
-a drag-and-drop or API/zip deploy ignores it completely and would ship the site
-with no CSP at all while the repo still looked correct. `_headers` works in
-every deploy mode. `netlify.toml` keeps only the build config. Keep it that way.
+**Response headers live in `_headers`,** which Cloudflare's assets layer applies
+to every response it serves. `netlify.toml` is kept only as the record of the
+Netlify-era configuration (the function route, the build settings) and is
+excluded from the upload, so it documents rather than configures. Keep `_headers`
+the single source of the CSP.
 
 The CSP is `script-src 'self'` and `style-src 'self'` with no hashes, so there
 is no inline script or `style` attribute anywhere in the page. The theme
@@ -371,29 +373,16 @@ bootstrap that runs before first paint lives in `theme-init.js` precisely so it
 can stay an external file. **If you ever add an inline `<script>` or a `style`
 attribute, the CSP will block it.**
 
-What that does to Netlify's own injection was checked on the live site rather
-than assumed, and the answer is not what this file used to claim. Netlify
-injects a HUD — `<script async src="/.netlify/scripts/hud?variant=public">` plus
-two `<meta>` tags — into the HTML it serves. That script is **same-origin**, so
-`script-src 'self'` *permits* it and it runs. What refuses the badge itself is
-`style-src`: the HUD builds it inside a `srcdoc` iframe, and a `srcdoc`
-document inherits this policy, so the badge's own inline `<style>` and `<script>`
-are blocked. Measured on the deployed page, the frame ends up clipped to nothing
-— `clip-path: path("M 0 0 Z")`, so zero area, and `elementFromPoint` over its box
-returns the page's own link, so it does not intercept clicks either.
+Cloudflare injects nothing into the HTML it serves, so the badge Netlify used to
+inject — and the **two CSP console errors on every page load** it caused — went
+with the platform. The deployed page produces no console output now, and nothing
+in the policy needs an allowance for an injected same-origin script.
 
-So the badge does not appear. The cost is **two CSP console errors on every page
-load**, which are the only console output the deployed page produces — the local
-dev server cannot show them, because nothing injects a HUD into a local file.
-`tools/check-live.mjs` names the injected script, and `_redirects` can stop it
-loading at all with a `/.netlify/scripts/*` 404.
-
-One thing does need a deploy that processes functions — a repository-connected
-deploy, or `netlify deploy` — and that is the Content Tracker's live figures.
-`netlify.toml` rewrites `/api/watchlist` to
-`/.netlify/functions/watchlist-count`. An exact rewrite, not a wildcard: a
-greedy one is how an asset ends up served as `index.html` with a status of 200.
-If the function is missing, the row still works and shows its recorded figures.
+The figures do need the Worker: it owns `/api/watchlist` (the route `netlify.toml`
+used to rewrite), reading the Content Tracker dashboard through the `WATCHLIST`
+service binding — a Worker cannot fetch another Worker's `workers.dev` hostname,
+which is the hop that read would otherwise make. If the route or the binding is
+missing, the row still works and shows its recorded figures.
 
 ## Static audit
 
