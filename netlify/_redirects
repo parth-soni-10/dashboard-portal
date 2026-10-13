@@ -1,3 +1,7 @@
+# Historical record: the Netlify redirect rules. Superseded by .assetsignore
+# (see its header) — Cloudflare reads _redirects only at the assets root, and
+# the 404! rules below are Netlify-only syntax, so this lives here as the
+# explanation of which repo files used to be blocked and why.
 # Response headers live in `_headers`. This file does the other half of the job.
 #
 # The site is published from the repository root, because that is exactly what

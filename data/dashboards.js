@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------------
  * The dashboard manifest. This is the only file you edit to change the portal.
  *
- * Add an entry, commit, and Netlify redeploys it. Nothing else needs touching.
+ * Add an entry, commit, and Cloudflare redeploys it. Nothing else needs touching.
  *
  *   id          stable slug, used as the row's data-id in the DOM
  *   name        display name
@@ -12,7 +12,7 @@
  *               whole of a row's identity — not a status, and not decoration.
  *   description one sentence, plain language. Aim for under 130 characters:
  *               it is clamped to two lines in the row.
- *   url         live Netlify URL, or null when it has not been deployed yet
+ *   url         live URL, or null when it has not been deployed yet
  *   repo        GitHub repository URL, or null
  *   tags        short labels; also what the filter box matches against
  *   embed       whether the dashboard can be shown in a frame. Defaults to
@@ -44,12 +44,12 @@ window.DASHBOARDS = [
        visitor is never told a recorded number is a live one. */
     count: {
       endpoint: '/api/watchlist',
-      source: 'the watchlist Google Sheet',
+      source: 'the watchlist database',
       recorded: '2026-09-15',
       fallback: { titles: 363, shows: 277, movies: 86 }
     },
     embed: true,
-    url: 'https://contenttrackerdashboard.netlify.app/',
+    url: 'https://content-tracker-dashboard.soni-soni-parth.workers.dev/',
     repo: 'https://github.com/parth-soni-10/ContentTrackerDashboard',
     tags: ['Analytics', 'Google Sheets', 'Chart.js']
   },
@@ -64,7 +64,7 @@ window.DASHBOARDS = [
        the row explains that instead of showing an empty box, and asserted
        against the live headers by tools/check-embed.mjs. */
     embed: false,
-    url: 'https://irishvisaupdatetracker.netlify.app/',
+    url: 'https://irish-visa-tracker.soni-soni-parth.workers.dev/',
     repo: 'https://github.com/parth-soni-10/Irish-Visa-Tracker',
     tags: ['Python', 'GitHub Actions', 'Scraping']
   },
@@ -75,7 +75,7 @@ window.DASHBOARDS = [
     description:
       'Weekly Statistical Supplement figures with crude estimates, FII flows and external-debt rankings.',
     embed: true,
-    url: 'https://rbiweeklydashboard.netlify.app/',
+    url: 'https://rbi-weekly-dashboard.soni-soni-parth.workers.dev/',
     repo: 'https://github.com/parth-soni-10/RBI-Weekly-Data-Dashboard',
     tags: ['Scrapers', 'World Bank', 'Functions']
   },
@@ -86,7 +86,7 @@ window.DASHBOARDS = [
     description:
       "Builds a clash-free timetable from UCD's live module data, with assessment weights and exam options.",
     embed: true,
-    url: 'https://ucdcsnlmodulepicker.netlify.app/',
+    url: 'https://ucd-csnl-module-picker.soni-soni-parth.workers.dev/',
     repo: 'https://github.com/parth-soni-10/UCD-CSNL-Module_Picker',
     tags: ['UCD', 'Timetabling', 'Live data']
   }

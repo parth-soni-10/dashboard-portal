@@ -1,0 +1,52 @@
+# Cloudflare Workers config for the dashboard portal.
+#
+# The site is served from the repository root (same as Netlify's
+# `publish = "."`). Two Cloudflare-native pieces replace what Netlify used to
+# do around it:
+#
+#   * `.assetsignore` — repo files (tools/, netlify/, README, the configs
+#     themselves) are never uploaded, so they 404 by not existing. Netlify
+#     could only hide them with `force = true` 404 rules, and Cloudflare's
+#     `_redirects` has no 404 status; excluding the files is the stronger
+#     form of the same guarantee.
+#   * `worker.js` — answers the one live endpoint. Netlify routed
+#     `/api/watchlist` to a function in netlify.toml; here the Worker owns the
+#     path (see `run_worker_first` below) and the old function file stays in
+#     `netlify/functions/` as the record of the counting rules.
+#
+# `run_worker_first` is scoped to /api/* only, so static asset requests never
+# pay for a Worker invocation.
+#
+#   npx wrangler dev      → local test on http://localhost:8787
+#   npx wrangler deploy   → publish to <name>.<your-subdomain>.workers.dev
+
+name = "dashboards-home"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+# The Content Tracker row's live figures. The portal cannot read that
+# dashboard itself (its endpoint sends no CORS headers), so worker.js reads it
+# server-side. Netlify carried this as WATCHLIST_URL in the site's environment
+# settings; here it is a plain (non-secret) variable next to the code that
+# uses it. Update it if the dashboard ever moves again.
+[vars]
+WATCHLIST_URL = "https://content-tracker-dashboard.soni-soni-parth.workers.dev/.netlify/functions/watchlist"
+
+# ...but the reading itself goes over a service binding, not that URL.
+# Cloudflare refuses a Worker's subrequest to another Worker's workers.dev
+# hostname with error 1042 (the loop guard), so the public URL works from a
+# browser and from curl and fails from inside a Worker — which is exactly where
+# this read happens. A binding resolves the target Worker directly, in the same
+# account, with no public hop for the 84 KB payload to make.
+#
+# The path still comes from WATCHLIST_URL above, so there is one place that says
+# where the endpoint lives; the URL stays as the fallback for a local
+# `wrangler dev`, where the binding's target may not be running.
+[[services]]
+binding = "WATCHLIST"
+service = "content-tracker-dashboard"

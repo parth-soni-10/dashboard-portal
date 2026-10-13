@@ -1,0 +1,40 @@
+# Files in this repo that are NOT part of the published site.
+#
+# This is the Cloudflare half of what `_redirects` used to do. Netlify could
+# only hide a repo file with a forced 404 rule (`404!`) because a deploy from
+# the repository root uploads everything; Cloudflare's `_redirects` has no 404
+# status, and the stronger equivalent is not uploading the file at all. A path
+# that was never deployed cannot be served by mistake.
+#
+# `tools/audit.mjs` (check 16) asserts the pair stays complete: every tracked
+# file is either intentionally public or listed here, and every pattern here
+# matches something real — an ignore rule that matches nothing is a rule that
+# would have silently stopped being true the day the file it was meant for
+# returned. The tool-state patterns below are exempt from that second half:
+# they may not exist on a fresh clone.
+
+# Repository and tooling. The assets layer does not exclude dot-entries by
+# itself, so every one at the publish root is listed here.
+.git/
+.github/
+.assetsignore
+.gitignore
+
+# Local tool state and OS noise — may not exist on a fresh clone; listed so
+# that when they do exist they are never uploaded.
+.wrangler/
+.netlify/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+netlify/
+tools/
+
+README.md
+netlify.toml
+_headers
+wrangler.toml
+worker.js

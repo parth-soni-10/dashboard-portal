@@ -36,19 +36,21 @@
  *      recorded figure is printed somewhere, and a count block has both an
  *      endpoint and fallbacks. A mismatch here prints a literal "{shows}" on
  *      the page, which no other check would catch.
- *  14. Every live endpoint is routed by netlify.toml, and the function it is
- *      routed to exists. An unrouted endpoint works locally and 404s in
- *      production, which is the worst possible place to find out.
+ *  14. Every live endpoint is routed by the Worker that answers it:
+ *      wrangler.toml must run the Worker first for its path, and worker.js
+ *      must branch on it. An endpoint that is answered locally but not in
+ *      production (or the reverse) is the worst possible place to find out.
  *  15. Frames are declared deliberately: a title, a sandbox that cannot
  *      navigate this page away, and a frame-src in our own CSP. Without the
  *      last one the preview is blocked by this site's policy and looks like
  *      the other dashboard's fault.
- *  16. Every file in the repository is either intentionally public or blocked
- *      in `_redirects`, and every blocking rule actually fires. The site is
+ *  16. Every file in the repository is either intentionally public or listed
+ *      in `.assetsignore`, and every pattern there matches something real
+ *      (tool state that may not exist on a fresh clone is exempt). The site is
  *      published from the repo root, so an undeclared file is a live URL: this
- *      is what stops a development file from quietly shipping the next time one
- *      is added, and what stops a rule that Netlify would shadow from passing
- *      as a block.
+ *      is what stops a development file from quietly shipping the next time
+ *      one is added, and what stops an ignore rule that matches nothing from
+ *      reading as protection.
  *  17. The stylesheet's braces balance, so its nesting matches what it reads
  *      as. An extra `}` is skipped by the browser and renders fine, which is
  *      precisely why nothing else catches it.
@@ -61,7 +63,7 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(join(root, p), 'utf8');
 
-const [html, css, app, icons, themeInit, manifest, headerRules, toml, redirectRules] =
+const [html, css, app, icons, themeInit, manifest, headerRules, wrangler, worker] =
   await Promise.all([
     read('index.html'),
     read('styles.css'),
@@ -70,10 +72,9 @@ const [html, css, app, icons, themeInit, manifest, headerRules, toml, redirectRu
     read('theme-init.js'),
     read('data/dashboards.js'),
     read('_headers'),
-    read('netlify.toml'),
-    read('_redirects').catch(() => '')
+    read('wrangler.toml').catch(() => ''),
+    read('worker.js').catch(() => '')
   ]);
-const functionFiles = await readdir(join(root, 'netlify/functions')).catch(() => []);
 const js = [app, icons, themeInit].join('\n');
 
 const allSource = [html, app, icons, themeInit, manifest].join('\n');
@@ -386,26 +387,32 @@ for (const entry of entries) {
   }
 }
 
-/* -- 14. Endpoints routed to functions that exist ------------------------ */
+/* -- 14. Endpoints routed to the Worker that answers them ----------------- */
 
-const redirects = new Map();
-for (const block of toml.split('[[redirects]]').slice(1)) {
-  const from = attr(block, /from\s*=\s*"([^"]+)"/);
-  const to = attr(block, /to\s*=\s*"([^"]+)"/);
-  if (from && to) redirects.set(from, to);
-}
+// The portal has one live endpoint, and it used to be a netlify.toml rewrite
+// onto a function under netlify/functions/. On Cloudflare the Worker owns the
+// path: wrangler.toml must run the Worker first for it (a matching asset would
+// otherwise shadow it) and worker.js must actually branch on it.
+const workerFirst = [...wrangler.matchAll(/run_worker_first\s*=\s*\[([^\]]*)\]/g)]
+  .flatMap((match) => match[1].split(','))
+  .map((pattern) => pattern.trim().replace(/^['"]|['"]$/g, ''))
+  .filter(Boolean);
 
 for (const endpoint of endpoints) {
-  if (!redirects.has(endpoint)) {
-    note('unrouted-endpoint', `${endpoint} is not routed in netlify.toml, so it would 404 in production`);
-    continue;
+  const covered = workerFirst.some((pattern) =>
+    pattern.endsWith('*') ? endpoint.startsWith(pattern.slice(0, -1)) : endpoint === pattern
+  );
+  if (!covered) {
+    note(
+      'unrouted-endpoint',
+      `${endpoint} is not covered by run_worker_first in wrangler.toml, so the Worker never sees it in production`
+    );
   }
-  const target = redirects.get(endpoint);
-  const name = target.match(/^\/\.netlify\/functions\/([\w-]+)$/);
-  if (!name) {
-    note('odd-route-target', `${endpoint} points at ${target}, which is not a function path`);
-  } else if (!functionFiles.includes(`${name[1]}.js`)) {
-    note('missing-function', `${endpoint} points at netlify/functions/${name[1]}.js, which does not exist`);
+  if (!worker.includes(`'${endpoint}'`) && !worker.includes(`"${endpoint}"`)) {
+    note(
+      'unhandled-endpoint',
+      `${endpoint} is not handled in worker.js, so a request for it would fall through to the assets`
+    );
   }
 }
 
@@ -440,16 +447,17 @@ if (/<iframe\b/.test(app)) {
 
 /* -- 16. Nothing undeclared is published -------------------------------- */
 
-// `netlify.toml` sets `publish = "."`, so every tracked file is a public URL
-// unless `_redirects` answers it with a 404. That pair is the whole contract: a
-// file that is in neither is published by accident, and this check names it
-// rather than letting it go live unnoticed. `_headers`, `_redirects` and
-// `netlify.toml` are deliberately *absent* from the list, because a rule exists
-// for each — relying on Netlify to withhold its own control files is the kind
-// of assumption that holds right up until it does not.
+// The site is served from the repository root, and Cloudflare uploads the
+// assets directory after `.assetsignore` filtering. That pair is the whole
+// contract, and it replaced the Netlify one: there, a deploy uploaded
+// everything and `_redirects` had to answer each repo file with a forced 404
+// (`404!`) because Netlify's redirects shadow any path that resolves to a real
+// file. Cloudflare's `_redirects` has no 404 status, but it does not need one —
+// a file that is never uploaded cannot be served by accident, and there is no
+// rule left that could be silently shadowed.
+//
 // Files that are *supposed* to be reachable on the deployed site. Everything
-// else in the publish root needs a 404 rule in _redirects, because the site is
-// served from the repository root and Netlify uploads the whole directory.
+// else in the publish root must be listed in `.assetsignore`.
 //
 // LICENSE and robots.txt are here deliberately, not by omission: a licence
 // notice is meant to be readable, and robots.txt only works if a crawler can
@@ -469,35 +477,50 @@ const publicFiles = new Set([
 ]);
 const publicDirs = ['fonts/', 'vendor/'];
 
-const parsedRules = redirectRules
+const assetsIgnore = await read('.assetsignore').catch(() => '');
+const ignorePatterns = assetsIgnore
   .split('\n')
   .map((line) => line.replace(/#.*$/, '').trim())
-  .filter(Boolean)
-  .map((line) => {
-    const [from, to, status] = line.split(/\s+/);
-    const force = Boolean(status && status.endsWith('!'));
-    return { from, to, status: Number(force ? status.slice(0, -1) : status) || 301, force };
-  });
+  .filter(Boolean);
 
-const blocked = parsedRules.filter((rule) => rule.status === 404).map((rule) => rule.from);
+// Gitignore semantics: a trailing slash marks a directory and covers its
+// contents, so one `tools/` entry does what two Netlify rules used to
+// (`/tools/*` for the contents, and the audit's own coverage rule for the
+// directory). One `X` entry covers the file itself and nothing else.
+const isIgnored = (path) =>
+  ignorePatterns.some((pattern) =>
+    pattern.endsWith('/')
+      ? path.startsWith(pattern) || path === pattern.slice(0, -1)
+      : path === pattern
+  );
 
-// The `!` is load-bearing, and it is the one part of this that a reader would
-// reasonably assume was optional. Netlify's redirects shadow a URL that
-// resolves to a file the site actually has, custom 404s included — and every
-// path blocked here is listed *because* a file sits at it. Without the `!` the
-// rule looks correct and serves the file anyway, which is worse than no rule:
-// it is a blocked path that reads as handled.
-for (const rule of parsedRules) {
-  if (rule.status === 404 && !rule.force) {
+// Local tool state and OS noise may genuinely not exist on a fresh clone
+// (`.wrangler/` appears the first time `wrangler dev` runs). They stay in
+// `.assetsignore` so that when they do exist they are never uploaded — their
+// absence is not a failure. Every other pattern must match something real.
+const OPTIONAL_IGNORE_PATTERNS = new Set([
+  '.wrangler/',
+  '.netlify/',
+  '.idea/',
+  '.vscode/',
+  '.DS_Store',
+  'Thumbs.db',
+  'desktop.ini'
+]);
+
+const allFiles = await walk(root);
+const topLevel = (await readdir(root, { withFileTypes: true })).map((item) => item.name);
+for (const pattern of ignorePatterns) {
+  if (OPTIONAL_IGNORE_PATTERNS.has(pattern)) continue;
+  const bare = pattern.replace(/\/$/, '');
+  const matches = topLevel.includes(bare) || allFiles.some((file) => file.startsWith(bare + '/'));
+  if (!matches) {
     note(
-      'shadowed-404-rule',
-      `${rule.from} -> ${rule.to} 404 does not fire: append ! to the status or the files it names stay public`
+      'dead-ignore-rule',
+      `.assetsignore lists ${pattern}, which matches nothing — remove it or the protection is imaginary`
     );
   }
 }
-
-const isBlocked = (path) =>
-  blocked.some((rule) => (rule.endsWith('*') ? path.startsWith(rule.slice(0, -1)) : path === rule));
 
 async function walk(dir, prefix = '') {
   const found = [];
@@ -510,13 +533,13 @@ async function walk(dir, prefix = '') {
   return found;
 }
 
-for (const file of await walk(root)) {
+for (const file of allFiles) {
   if (publicFiles.has(file)) continue;
   if (publicDirs.some((dir) => file.startsWith(dir))) continue;
-  if (isBlocked('/' + file)) continue;
+  if (isIgnored(file)) continue;
   note(
     'published-dev-file',
-    `${file} is published at /${file} — allow it in the audit or block it in _redirects`
+    `${file} is published at /${file} — allow it in the audit or list it in .assetsignore`
   );
 }
 
@@ -577,23 +600,14 @@ if (cssDepth.lowest < 0) {
 // So this check looks at the publish root itself, dot-entries included, rather
 // than at the file list.
 //
-// `.netlify` is the one deliberate exception, and it is not an oversight: that
-// is where a deployed function is served from, so a 404 rule over it would
-// break /api/watchlist. If a local `netlify dev` ever creates one, exclude it
-// from the deploy instead of blocking the path the function answers on.
-const ALLOWED_DOT_ENTRIES = new Set(['.netlify']);
-
+// Gitignore semantics make this smaller than it was on Netlify: one `.git/`
+// entry covers the directory *and* its contents, where Netlify needed `/.git`
+// and `/.git/*` as two separate forced-404 rules. A `.netlify/` directory
+// (Netlify CLI state) is fine to ignore like any other tool-state entry.
 for (const item of await readdir(root, { withFileTypes: true })) {
   if (!item.name.startsWith('.')) continue;
-  if (ALLOWED_DOT_ENTRIES.has(item.name)) continue;
-  const path = '/' + item.name;
-  if (!isBlocked(path)) {
-    note('published-dotfile', `${item.name} is published at ${path} — block it in _redirects`);
-  }
-  // A directory also needs its contents blocked: `/.git` and `/.git/*` are
-  // different rules, and only the second one stops /.git/config.
-  if (item.isDirectory() && !blocked.includes(path + '/*')) {
-    note('published-dotdir', `${path}/* is not blocked in _redirects, so its contents stay public`);
+  if (!isIgnored(item.name)) {
+    note('published-dotfile', `${item.name} is published at /${item.name} — list it in .assetsignore`);
   }
 }
 
