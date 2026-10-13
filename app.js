@@ -60,11 +60,15 @@
     return (n < 10 ? '0' : '') + n;
   }
 
-  /** Every dashboard here is served from netlify.app, so that suffix is noise
-   *  in a 10px mono column. It is stripped for display only: the link and the
-   *  tooltip both keep the real host. */
+  /** Every dashboard here is served from the account's workers.dev subdomain,
+   *  so the host and that subdomain are noise in a 10px mono column. Stripping
+   *  them is display-only: the link and the tooltip both keep the real host.
+   *  The netlify.app form is still handled — the portal was served from there
+   *  until 13 Oct 2026, and a row carrying one of those old addresses should
+   *  still read as a name rather than as a URL. */
   function shortHost(host) {
-    return host.replace(/\.netlify\.app$/, '');
+    return host.replace(/\.(?:netlify\.app|workers\.dev)$/, '')
+      .replace(/\.parth10$/, '');
   }
 
   /**

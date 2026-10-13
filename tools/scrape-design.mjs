@@ -16,11 +16,11 @@
 import { writeFile } from 'node:fs/promises';
 
 const SITES = [
-  { id: 'content-tracker', url: 'https://contenttrackerdashboard.netlify.app/' },
-  { id: 'irish-visa-tracker', url: 'https://irishvisaupdatetracker.netlify.app/' },
-  { id: 'rbi-weekly', url: 'https://rbiweeklydashboard.netlify.app/' },
-  { id: 'csnl-module-picker', url: 'https://ucdcsnlmodulepicker.netlify.app/' },
-  { id: 'portfolio', url: 'https://parth-portfolio-wb.netlify.app/' }
+  { id: 'content-tracker', url: 'https://content-tracker-dashboard.parth10.workers.dev/' },
+  { id: 'irish-visa-tracker', url: 'https://irish-visa-tracker.parth10.workers.dev/' },
+  { id: 'rbi-weekly', url: 'https://rbi-weekly-dashboard.parth10.workers.dev/' },
+  { id: 'csnl-module-picker', url: 'https://ucd-csnl-module-picker.parth10.workers.dev/' },
+  { id: 'portfolio', url: 'https://portfolio.parth10.workers.dev/' }
 ];
 
 const TIMEOUT = 25000;
