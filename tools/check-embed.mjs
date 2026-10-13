@@ -30,7 +30,11 @@ const TIMEOUT = 20000;
 // The portal's own deployed origin. A dashboard whose frame-ancestors names
 // this origin (or `*`) is frameable here, so its `embed: true` declaration
 // agrees with the live headers.
-const PORTAL_ORIGIN = 'https://dashboards-home.netlify.app';
+//
+// This is the Cloudflare Worker host, not the Netlify one the portal used to be
+// served from: the dashboards name the origin they allow, and they were updated
+// with the move, so the old value made every frameable dashboard look blocked.
+const PORTAL_ORIGIN = 'https://dashboards-home.soni-soni-parth.workers.dev';
 
 async function inspect(url) {
   const controller = new AbortController();
