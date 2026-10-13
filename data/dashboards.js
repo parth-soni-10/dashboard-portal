@@ -49,7 +49,7 @@ window.DASHBOARDS = [
       fallback: { titles: 363, shows: 277, movies: 86 }
     },
     embed: true,
-    url: 'https://content-tracker-dashboard.soni-soni-parth.workers.dev/',
+    url: 'https://content-tracker-dashboard.parth10.workers.dev/',
     repo: 'https://github.com/parth-soni-10/ContentTrackerDashboard',
     tags: ['Analytics', 'Google Sheets', 'Chart.js']
   },
@@ -64,7 +64,7 @@ window.DASHBOARDS = [
        the row explains that instead of showing an empty box, and asserted
        against the live headers by tools/check-embed.mjs. */
     embed: false,
-    url: 'https://irish-visa-tracker.soni-soni-parth.workers.dev/',
+    url: 'https://irish-visa-tracker.parth10.workers.dev/',
     repo: 'https://github.com/parth-soni-10/Irish-Visa-Tracker',
     tags: ['Python', 'GitHub Actions', 'Scraping']
   },
@@ -75,7 +75,7 @@ window.DASHBOARDS = [
     description:
       'Weekly Statistical Supplement figures with crude estimates, FII flows and external-debt rankings.',
     embed: true,
-    url: 'https://rbi-weekly-dashboard.soni-soni-parth.workers.dev/',
+    url: 'https://rbi-weekly-dashboard.parth10.workers.dev/',
     repo: 'https://github.com/parth-soni-10/RBI-Weekly-Data-Dashboard',
     tags: ['Scrapers', 'World Bank', 'Functions']
   },
@@ -86,7 +86,7 @@ window.DASHBOARDS = [
     description:
       "Builds a clash-free timetable from UCD's live module data, with assessment weights and exam options.",
     embed: true,
-    url: 'https://ucd-csnl-module-picker.soni-soni-parth.workers.dev/',
+    url: 'https://ucd-csnl-module-picker.parth10.workers.dev/',
     repo: 'https://github.com/parth-soni-10/UCD-CSNL-Module_Picker',
     tags: ['UCD', 'Timetabling', 'Live data']
   }

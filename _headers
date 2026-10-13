@@ -51,4 +51,4 @@
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src https://content-tracker-dashboard.soni-soni-parth.workers.dev https://rbi-weekly-dashboard.soni-soni-parth.workers.dev https://ucd-csnl-module-picker.soni-soni-parth.workers.dev; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src https://content-tracker-dashboard.parth10.workers.dev https://rbi-weekly-dashboard.parth10.workers.dev https://ucd-csnl-module-picker.parth10.workers.dev; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'

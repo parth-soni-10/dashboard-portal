@@ -34,7 +34,7 @@ const TIMEOUT = 20000;
 // This is the Cloudflare Worker host, not the Netlify one the portal used to be
 // served from: the dashboards name the origin they allow, and they were updated
 // with the move, so the old value made every frameable dashboard look blocked.
-const PORTAL_ORIGIN = 'https://dashboards-home.soni-soni-parth.workers.dev';
+const PORTAL_ORIGIN = 'https://dashboards-home.parth10.workers.dev';
 
 async function inspect(url) {
   const controller = new AbortController();
