@@ -17,4 +17,9 @@ binding = "WATCHLIST"
 service = "content-tracker-dashboard"
 
 [vars]
-WATCHLIST_URL = "https://content-tracker-dashboard.parth10.workers.dev/.netlify/functions/watchlist"
+# The mirror's read goes over the binding above; this URL supplies the path it is
+# read from and is the fallback when the binding is absent. It names the Content
+# Tracker's Pages mirror because a Worker cannot fetch another Worker's
+# workers.dev hostname (Cloudflare answers 1042), and because both hosts serve
+# the endpoint. Keep it in step with the Workers config's copy.
+WATCHLIST_URL = "https://contenttrackerdashboard.pages.dev/.netlify/functions/watchlist"
