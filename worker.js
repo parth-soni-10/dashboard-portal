@@ -1,19 +1,23 @@
 /* ---------------------------------------------------------------------------
- * Dashboard portal — Cloudflare Worker.
+ * Dashboard portal — the function half of this site.
+ *
+ * The deploy stages this bundle as the Pages project's `_worker.js` (advanced
+ * mode), so every request to the site arrives here and the paths this file does
+ * not answer fall through to `env.ASSETS` below. It used to run as a Worker
+ * with `run_worker_first = ["/api/*"]`, which is why the fall-through is
+ * spelled out rather than assumed: the same bundle now sees the whole site.
  *
  * One job: answer `/api/watchlist`, the live figures under the Content
  * Tracker row. This is where the Netlify function that used to answer it
  * (netlify/functions/watchlist-count.js, deleted with the rest of that
  * configuration) was ported to; the counting rules below are copied verbatim
  * from the dashboard's own app.js, so the two can never disagree about what a
- * "show" is. Everything else falls through to the static assets — and with
- * `run_worker_first = ["/api/*"]` in wrangler.toml, only /api/* requests
- * arrive here at all.
+ * "show" is.
  *
  * Why a server-side read exists: the dashboard's endpoint sends no
  * Access-Control-Allow-Origin and answers OPTIONS with 405, so a browser
  * sitting on this origin can only fail. A server-side fetch has no such
- * restriction. The document never leaves this Worker — the page wants three
+ * restriction. The document never leaves this function — the page wants three
  * integers out of an 84 KB payload.
  *
  * Response headers keep the original caching promise: visitors are served
@@ -69,16 +73,14 @@ async function watchlist(request, env) {
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    // The binding is the real path: a plain fetch to the dashboard's
-    // workers.dev hostname is refused inside a Worker (Cloudflare answers it
-    // with error 1042, the loop guard), so the public URL is only the fallback
-    // for a local run where the bound Worker is not up.
-    const upstream = env.WATCHLIST
-      ? await env.WATCHLIST.fetch(new URL(new URL(env.WATCHLIST_URL).pathname, 'https://watchlist.internal'), {
-          signal: controller.signal,
-          headers: { Accept: 'application/json' }
-        })
-      : await fetch(env.WATCHLIST_URL, { signal: controller.signal });
+    // One read, to the dashboard's own site. This was a service binding while
+    // the dashboard ran as a Worker too; now that both are Pages projects
+    // there is nothing to bind to, and the endpoint is fetched the ordinary
+    // way.
+    const upstream = await fetch(env.WATCHLIST_URL, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' }
+    });
     if (!upstream.ok) throw new Error(`upstream HTTP ${upstream.status}`);
 
     const rows = await upstream.json();
@@ -104,8 +106,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/api/watchlist') return watchlist(request, env);
-    // Anything else reaching the Worker (it should be /api/* only) is a
-    // static asset.
+    // Everything else is the site: every request arrives here in advanced mode,
+    // so this line is what serves the page, the styles, the data and the icons.
     return env.ASSETS.fetch(request);
   }
 };

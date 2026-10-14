@@ -327,18 +327,27 @@ leaked the upstream's own error text.
 
 ## Deploying
 
-The site is one Worker (`dashboards-home`): `worker.js` answers `/api/watchlist`,
-the repository root is the assets directory, and `_headers` carries the CSP and
-the rest of the response headers. A push to `main` deploys it — the repo is
-connected to the Worker in **Cloudflare Workers Builds** (production branch
-`main`, deploy command `npx wrangler deploy`, preview builds off, no build
-command) — and `npx wrangler deploy` locally publishes the same thing.
+The site is one Cloudflare **Pages** project (`dashboards-home-portal`), and one
+host only: the Workers deployment that used to sit beside it is gone.
+`tools/deploy-pages.mjs` stages the upload and `tools/deploy-pages.mjs` bundles
+`worker.js` into the project's `_worker.js`, which Pages runs in advanced mode —
+a function that sees every request, answers `/api/watchlist` itself and asks
+`env.ASSETS.fetch()` for everything else. The repository root is the assets
+directory, `_headers` carries the CSP and the rest of the response headers, and
+`pages/wrangler.toml` names the project and its vars. A push to `main` deploys
+it — the project is connected to this repository (production branch `main`,
+build command `node tools/deploy-pages.mjs --assets . --bundle .pages-bundle
+--out .pages-dist`, output directory `.pages-dist`) — and
+`Misc/pages-deploy.sh portal` publishes the identical staged directory by hand.
 
 One push ships `worker.js`, `_headers` and every asset together, which is what
 the Content Tracker row depends on: its live figures come from `/api/watchlist`,
-answered by the Worker through the `WATCHLIST` **service binding** in
-`wrangler.toml`. Without that route the row falls back to its recorded figures,
-so a deploy is worth confirming, and `tools/check-live.mjs` is the tool for it.
+answered by that function with a server-side read of the Content Tracker's own
+endpoint (`WATCHLIST_URL` in `pages/wrangler.toml`). That read used to travel a
+**service binding** to the Content Tracker's Worker; both projects are Pages
+projects now, so it is an ordinary fetch of a public endpoint. Without the route
+the row falls back to its recorded figures, so a deploy is worth confirming, and
+`tools/check-live.mjs` is the tool for it.
 It reads this repository's own rules — including `worker.js`, for the `/api`
 route it used to take from `netlify.toml` — and asserts the deployed host obeys
 them, rather than restating the expectations here.
@@ -362,9 +371,9 @@ redirects shadow a URL that resolves to a file the site actually has, so every
 rule to get wrong.
 
 Everything the page needs still resolves: `/tools/…`, `/README.md`,
-`/.gitignore`, `_headers`, `wrangler.toml`, `worker.js`, `.assetsignore` and
-`/.git/…` return 404 — none of them is uploaded — while every asset returns 200
-and `/api/watchlist` answers.
+`/.gitignore`, `_headers`, `worker.js`, `.assetsignore` and `/.git/…` return 404
+— none of them is uploaded — while every asset returns 200 and `/api/watchlist`
+answers.
 
 `/.git` is the one that was actually reachable, and it is worth knowing why it
 went unnoticed. The audit's "nothing is published by accident" check walks the
@@ -392,10 +401,13 @@ inject — and the **two CSP console errors on every page load** it caused — w
 with the platform. The deployed page produces no console output now, and nothing
 in the policy needs an allowance for an injected same-origin script.
 
-The figures do need the Worker: it owns `/api/watchlist` (the route `netlify.toml`
-used to rewrite), reading the Content Tracker dashboard through the `WATCHLIST`
-service binding — a Worker cannot fetch another Worker's `workers.dev` hostname,
-which is the hop that read would otherwise make. If the route or the binding is
+The figures do need the function: it owns `/api/watchlist` (the route
+`netlify.toml` used to rewrite, then a Worker's `run_worker_first`), reading the
+Content Tracker dashboard server-side from its published endpoint, because that
+endpoint sends no `Access-Control-Allow-Origin` and answers `OPTIONS` with 405,
+so a browser on this origin can only fail. That read used to go through a
+`WATCHLIST` service binding to the Content Tracker's Worker; it is an ordinary
+fetch now that neither project is a Worker. If the route or `WATCHLIST_URL` is
 missing, the row still works and shows its recorded figures.
 
 ## Static audit
@@ -424,9 +436,9 @@ into CI. It catches the failure modes that a read-through misses:
 - a `{placeholder}` in a description with no figure to fill it, a recorded
   figure the description never prints, or a `count` block with no endpoint or no
   fallbacks — any of which would print a literal `{shows}` on the page
-- a live endpoint the Worker never sees: one missing from `run_worker_first` in
-  `wrangler.toml`, or one `worker.js` does not branch on — which works locally
-  and 404s in production
+- a live endpoint the function does not branch on — which works locally and
+  404s in production — or a root `wrangler.toml` declaring a Worker, which would
+  mean a second host had grown back beside the Pages project
 - an `<iframe>` with no `title`, no `sandbox`, or a sandbox permitting
   `allow-top-navigation`, and a page that frames dashboards without a `frame-src`
   in its own CSP
@@ -467,7 +479,7 @@ favicon.svg                   Index-numeral mark (ink stamp, no tint)
 
 _headers                      CSP, caching, security headers (all deploy modes)
 .assetsignore                 repo files that are never uploaded
-worker.js                     the Worker: answers /api/watchlist, else assets
+worker.js                     the function: answers /api/watchlist, else assets
 
 tools/dev-server.mjs          Static files + functions + _headers, no-store (see below)
 tools/audit.mjs               Static hygiene audit (dead CSS, tokens, fields)
@@ -603,13 +615,14 @@ node tools/dev-server.mjs        # http://127.0.0.1:4180/
 node tools/dev-server.mjs 4181   # if that port is taken
 ```
 
-It serves the static files and the Worker's own routes, reading `wrangler.toml`
-(`run_worker_first`, and the `[vars]` the Worker sees) rather than repeating the
-list, so local routing cannot drift from production. It also reads
-`.assetsignore` and answers a listed path 404 here exactly as production does by
-never uploading it — otherwise a development file could be downloadable locally
-while it was blocked live, which is the difference this server exists to remove.
-Everything is sent `no-store`.
+It hands every request to `worker.js` — the bundle the deploy stages as
+`_worker.js`, run the way Pages advanced mode runs it, with `env.ASSETS.fetch()`
+backed by the real files — and reads `[vars]` from `pages/wrangler.toml` rather
+than repeating them, so local behaviour cannot drift from production. It also
+reads `.assetsignore` and answers a listed path 404 here exactly as production
+does by never uploading it — otherwise a development file could be downloadable
+locally while it was blocked live, which is the difference this server exists to
+remove. Everything is sent `no-store`.
 
 It reads `_headers` too, and applies it. That was the half it did not model, and
 the cost was real: production ships `script-src 'self'` while locally an inline
@@ -617,9 +630,9 @@ the cost was real: production ships `script-src 'self'` while locally an inline
 failed only after deploying — a policy that cannot be exercised where the code
 is written is a policy that regresses. Headers from every matching block are
 merged in file order, so `/fonts/*` keeps its 30-day cache while `/*` supplies
-the security headers, exactly as the assets layer does. **Worker responses are
+the security headers, exactly as the assets layer does. **Function responses are
 deliberately not touched**, because Cloudflare does not apply `_headers` to them
-either: the Worker owns its own headers.
+either: the function owns its own headers.
 
 That last part matters. `python -m http.server` sends no `Cache-Control` at all,
 so Chrome applies heuristic caching to every subresource and will happily keep

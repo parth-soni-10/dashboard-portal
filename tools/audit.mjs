@@ -36,10 +36,11 @@
  *      recorded figure is printed somewhere, and a count block has both an
  *      endpoint and fallbacks. A mismatch here prints a literal "{shows}" on
  *      the page, which no other check would catch.
- *  14. Every live endpoint is routed by the Worker that answers it:
- *      wrangler.toml must run the Worker first for its path, and worker.js
- *      must branch on it. An endpoint that is answered locally but not in
- *      production (or the reverse) is the worst possible place to find out.
+ *  14. Every live endpoint is handled by the function the deploy stages as
+ *      `_worker.js`, and the configuration behind that deploy is the Pages one.
+ *      An endpoint answered locally but not in production (or the reverse) is
+ *      the worst possible place to find out, and a root `wrangler.toml`
+ *      declaring a Worker means the site has quietly grown a second host again.
  *  15. Frames are declared deliberately: a title, a sandbox that cannot
  *      navigate this page away, and a frame-src in our own CSP. Without the
  *      last one the preview is blocked by this site's policy and looks like
@@ -63,7 +64,7 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(join(root, p), 'utf8');
 
-const [html, css, app, icons, themeInit, manifest, headerRules, wrangler, worker] =
+const [html, css, app, icons, themeInit, manifest, headerRules, pagesConfig, workerWrangler, worker] =
   await Promise.all([
     read('index.html'),
     read('styles.css'),
@@ -72,6 +73,7 @@ const [html, css, app, icons, themeInit, manifest, headerRules, wrangler, worker
     read('theme-init.js'),
     read('data/dashboards.js'),
     read('_headers'),
+    read('pages/wrangler.toml').catch(() => ''),
     read('wrangler.toml').catch(() => ''),
     read('worker.js').catch(() => '')
   ]);
@@ -387,33 +389,41 @@ for (const entry of entries) {
   }
 }
 
-/* -- 14. Endpoints routed to the Worker that answers them ----------------- */
+/* -- 14. Endpoints handled by the function, on the Pages deployment -------- */
 
 // The portal has one live endpoint, and it used to be a netlify.toml rewrite
-// onto a function under netlify/functions/. On Cloudflare the Worker owns the
-// path: wrangler.toml must run the Worker first for it (a matching asset would
-// otherwise shadow it) and worker.js must actually branch on it.
-const workerFirst = [...wrangler.matchAll(/run_worker_first\s*=\s*\[([^\]]*)\]/g)]
-  .flatMap((match) => match[1].split(','))
-  .map((pattern) => pattern.trim().replace(/^['"]|['"]$/g, ''))
-  .filter(Boolean);
-
+// onto a function under netlify/functions/, then a Worker with
+// `run_worker_first`. It is a Pages project now: the deploy stages this bundle
+// as `_worker.js`, Pages runs it in advanced mode, and it therefore sees every
+// request — there is no routing table to keep in step, only the script's own
+// branches.
+//
+// Two things are worth failing on. An endpoint the page calls that worker.js
+// does not branch on falls through to the assets and 404s in production while
+// it looks fine locally. And a root wrangler.toml declaring a Worker would mean
+// a second host had grown back beside the Pages project — the exact split this
+// site was collapsed out of.
 for (const endpoint of endpoints) {
-  const covered = workerFirst.some((pattern) =>
-    pattern.endsWith('*') ? endpoint.startsWith(pattern.slice(0, -1)) : endpoint === pattern
-  );
-  if (!covered) {
-    note(
-      'unrouted-endpoint',
-      `${endpoint} is not covered by run_worker_first in wrangler.toml, so the Worker never sees it in production`
-    );
-  }
   if (!worker.includes(`'${endpoint}'`) && !worker.includes(`"${endpoint}"`)) {
     note(
       'unhandled-endpoint',
       `${endpoint} is not handled in worker.js, so a request for it would fall through to the assets`
     );
   }
+}
+
+if (/^\s*(main|\[assets\])\s*=/m.test(workerWrangler)) {
+  note(
+    'worker-config-present',
+    'wrangler.toml declares a Worker — this site is served from Pages alone, so that file is a second host waiting to be deployed'
+  );
+}
+
+if (!/^\s*pages_build_output_dir\s*=/m.test(pagesConfig)) {
+  note(
+    'pages-config-missing',
+    'pages/wrangler.toml does not name pages_build_output_dir, so `wrangler pages deploy` from that directory would publish nothing'
+  );
 }
 
 /* -- 15. Frames ---------------------------------------------------------- */

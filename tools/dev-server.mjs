@@ -3,13 +3,21 @@
  *
  *   node tools/dev-server.mjs [port]
  *
- * Serves the site the way Cloudflare Workers will: static files from the repo
- * root minus everything `.assetsignore` excludes, `/api/*` answered by the same
- * worker.js the deploy uploads, and the response headers declared in
- * `_headers`. All of those are read rather than restated here, so local
- * behaviour cannot drift away from production — including the rules that keep
- * development files off the published site, which would otherwise look fine
- * locally and be missing in production.
+ * Serves the site the way the Cloudflare Pages project will: worker.js — the
+ * bundle the deploy stages as `_worker.js` — sees every request, answers
+ * `/api/*` itself and asks `env.ASSETS.fetch()` for the rest, which is exactly
+ * what advanced mode does in production. The static files it serves come from
+ * the repo root minus everything `.assetsignore` excludes, with the response
+ * headers declared in `_headers`. All of that is read rather than restated
+ * here, so local behaviour cannot drift away from production — including the
+ * rules that keep development files off the published site, which would
+ * otherwise look fine locally and be missing in production.
+ *
+ * It used to route only `wrangler.toml`'s `run_worker_first` paths to the
+ * function and stub `env.ASSETS` out with a 404, which was right while a Worker
+ * sat in front of the assets and `[vars]` lived in that file. With the Workers
+ * deployment gone the site is the Pages project alone, so the whole request
+ * surface belongs to the function and the fall-through is real code here too.
  *
  * Headers matter as much as routing, which is why they are applied here and not
  * left to the host. Until they were, this server sent no Content-Security-Policy
@@ -74,19 +82,11 @@ const reply = (res, status, type, body, extra) => {
   res.end(body);
 };
 
-/** The `run_worker_first` patterns wrangler.toml declares. */
-async function readWorkerFirst() {
-  const toml = await readFile(join(root, 'wrangler.toml'), 'utf8').catch(() => '');
-  return [...toml.matchAll(/run_worker_first\s*=\s*\[([^\]]*)\]/g)]
-    .flatMap((match) => match[1].split(','))
-    .map((pattern) => pattern.trim().replace(/^['"]|['"]$/g, ''))
-    .filter(Boolean);
-}
-
-/** The `[vars]` wrangler.toml declares — the Worker's plain environment. The
-    pattern only matches ALL_CAPS keys, which in that file is exactly [vars]. */
+/** The `[vars]` the Pages control config declares — the function's plain
+    environment, and the only config this site still has. The pattern only
+    matches ALL_CAPS keys, which in that file is exactly [vars]. */
 async function readVars() {
-  const toml = await readFile(join(root, 'wrangler.toml'), 'utf8').catch(() => '');
+  const toml = await readFile(join(root, 'pages/wrangler.toml'), 'utf8').catch(() => '');
   const vars = {};
   for (const match of toml.matchAll(/^([A-Z][A-Z0-9_]*)\s*=\s*"([^"]*)"/gm)) vars[match[1]] = match[2];
   return vars;
@@ -153,45 +153,42 @@ function isIgnored(patterns, pathname) {
   return patterns.some((pattern) => path === pattern || path.startsWith(pattern + '/'));
 }
 
-/** Whether wrangler.toml would run the Worker first for this pathname. */
-function runsWorkerFirst(patterns, pathname) {
-  return patterns.some((pattern) =>
-    pattern.endsWith('*') ? pathname.startsWith(pattern.slice(0, -1)) : pathname === pattern
-  );
-}
-
-async function serveStatic(pathname, res) {
-  const file = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
+/**
+ * `env.ASSETS.fetch()` — what the function calls for everything it does not
+ * answer itself, and in production the assets layer behind the Pages project.
+ *
+ * A Response rather than a write, because that is what the function gets: it is
+ * handed to worker.js, which returns it untouched, so the headers declared in
+ * `_headers` travel the same way they do in production. An ignored or missing
+ * path is a 404, exactly as an unaploaded file is.
+ */
+async function assetsFetch(request) {
+  const pathname = decodeURIComponent(new URL(request.url).pathname);
   const declared = headersFor(pathname);
+  const file = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
 
   // Nothing outside the repo root, whatever the request says.
   if (file !== root && !file.startsWith(root + sep)) {
-    reply(res, 403, 'text/plain; charset=utf-8', 'Forbidden\n', declared);
-    return;
+    return new Response('Forbidden\n', { status: 403, headers: declared });
   }
 
   try {
     const info = await stat(file);
-    if (info.isDirectory()) {
-      reply(res, 404, 'text/plain; charset=utf-8', 'Not found\n', declared);
-      return;
-    }
+    if (info.isDirectory()) return new Response('Not found\n', { status: 404, headers: declared });
     const body = await readFile(file);
-    res.writeHead(200, {
-      'Content-Type': MIME[extname(file).toLowerCase()] || 'application/octet-stream',
-      'Content-Length': body.length,
-      // `no-store` first, so a declared Cache-Control in _headers overrides it
-      // exactly as it does in production, where no default is sent at all.
-      'Cache-Control': 'no-store',
-      ...declared
+    return new Response(body, {
+      status: 200,
+      headers: {
+        'Content-Type': MIME[extname(file).toLowerCase()] || 'application/octet-stream',
+        'Cache-Control': 'no-store',
+        ...declared
+      }
     });
-    res.end(body);
   } catch {
-    reply(res, 404, 'text/plain; charset=utf-8', 'Not found\n', declared);
+    return new Response('Not found\n', { status: 404, headers: declared });
   }
 }
 
-const workerFirst = await readWorkerFirst();
 const vars = await readVars();
 const ignorePatterns = await readIgnorePatterns();
 const headerRules = await readHeaderRules();
@@ -215,25 +212,21 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (runsWorkerFirst(workerFirst, pathname)) {
-    try {
-      // Re-imported with a cache-busting query so an edited worker.js takes
-      // effect at once, the way the function loader used to.
-      const worker = (await import(`${workerUrl}?t=${Date.now()}`)).default;
-      const result = await worker.fetch(
-        new Request(url.href, { method: req.method, headers: req.headers }),
-        { ...vars, ASSETS: { fetch: () => new Response('Not found\n', { status: 404 }) } }
-      );
-      const body = Buffer.from(await result.arrayBuffer());
-      res.writeHead(result.status, Object.fromEntries(result.headers));
-      res.end(body);
-    } catch (error) {
-      reply(res, 502, 'text/plain; charset=utf-8', String((error && error.stack) || error));
-    }
-    return;
+  // Everything else is the function's, as it is in advanced mode.
+  try {
+    // Re-imported with a cache-busting query so an edited worker.js takes
+    // effect at once, the way the function loader used to.
+    const worker = (await import(`${workerUrl}?t=${Date.now()}`)).default;
+    const result = await worker.fetch(
+      new Request(url.href, { method: req.method, headers: req.headers }),
+      { ...vars, ASSETS: { fetch: assetsFetch } }
+    );
+    const body = Buffer.from(await result.arrayBuffer());
+    res.writeHead(result.status, Object.fromEntries(result.headers));
+    res.end(body);
+  } catch (error) {
+    reply(res, 502, 'text/plain; charset=utf-8', String((error && error.stack) || error));
   }
-
-  await serveStatic(pathname, res);
 });
 
 server.on('error', (error) => {
@@ -248,7 +241,7 @@ server.on('error', (error) => {
 
 server.listen(port, '127.0.0.1', async () => {
   console.log(`serving http://127.0.0.1:${port}/  (no-store, no build step)`);
-  for (const pattern of workerFirst) console.log(`  worker first  ${pattern}`);
+  console.log('  every request goes to worker.js, as advanced mode does; the rest is assets');
   console.log(`  ${ignorePatterns.length} path(s) blocked by .assetsignore`);
   for (const rule of headerRules) {
     console.log(`  headers ${rule.pattern}  (${rule.headers.length})`);
