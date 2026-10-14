@@ -26,8 +26,8 @@
  * The blocking model is `.assetsignore` itself rather than a restatement of
  * it: a path it lists is answered 404 here exactly as it is in production,
  * where the file is never uploaded in the first place. That is what keeps
- * tools/, netlify/ and the README off the site locally, before a deploy finds
- * out for you.
+ * tools/ and the README off the site locally, before a deploy finds out for
+ * you.
  *
  * Everything is served `no-store`, on purpose. `python -m http.server` sends no
  * cache headers at all, and Chrome's heuristic cache then hands back a stale
@@ -119,13 +119,13 @@ async function readHeaderRules() {
   return rules;
 }
 
-/** Netlify's path matching: an exact path, or `/prefix/*` for everything under it. */
+/** `_headers` path matching: an exact path, or `/prefix/*` for everything under it. */
 function headerRuleMatches(pattern, pathname) {
   if (pattern.endsWith('/*')) return pathname.startsWith(pattern.slice(0, -1));
   return pathname === pattern;
 }
 
-/** Every header declared for this path. Later blocks win, as they do on Netlify. */
+/** Every header declared for this path. Later blocks win, as the convention says. */
 function headersFor(pathname) {
   const out = {};
   for (const rule of headerRules) {
@@ -181,7 +181,7 @@ async function serveStatic(pathname, res) {
       'Content-Type': MIME[extname(file).toLowerCase()] || 'application/octet-stream',
       'Content-Length': body.length,
       // `no-store` first, so a declared Cache-Control in _headers overrides it
-      // exactly as it would on Netlify, where no default is sent at all.
+      // exactly as it does in production, where no default is sent at all.
       'Cache-Control': 'no-store',
       ...declared
     });

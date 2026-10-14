@@ -3,13 +3,13 @@
 One page that links every deployed dashboard and previews each one live inside
 its own row. Static HTML, CSS and JavaScript with no build step, matching the
 other dashboards — the one piece that needs a server (reading the Content
-Tracker's figures) is a single Netlify Function, because that dashboard's data
-endpoint cannot be read from a browser on this origin.
+Tracker's figures) is a single Cloudflare Worker (`worker.js`), because that
+dashboard's data endpoint cannot be read from a browser on this origin.
 
 ## Adding or changing a dashboard
 
-Everything on screen comes from `data/dashboards.js`. Edit that file, commit,
-and Netlify redeploys it. Nothing else needs touching.
+Everything on screen comes from `data/dashboards.js`. Edit that file and commit:
+the push deploys it. Nothing else needs touching.
 
 ```js
 {
@@ -17,7 +17,7 @@ and Netlify redeploys it. Nothing else needs touching.
   name: 'RBI Weekly Dashboard',
   tone: 'amber',               // identity colour: forest, emerald, amber, cobalt
   description: 'One sentence. Clamped to two lines in the row.',
-  url: 'https://example.netlify.app/',   // null until it is deployed
+  url: 'https://your-dashboard.pages.dev/',   // null until it is deployed
   repo: 'https://github.com/parth-soni-10/RBI-Weekly-Data-Dashboard',
   tags: ['Scrapers', 'World Bank']       // the filter box also matches these
 }
@@ -79,7 +79,7 @@ with no build step and nothing to install:
 
 **Why Open Props and not Tailwind or Shoelace.** Tailwind produces great results
 but needs a build step and a `node_modules` tree, which would make this the only
-repo in the set that cannot be drag-dropped onto Netlify. Shoelace / Web Awesome
+repo in the set whose assets cannot be published as they are. Shoelace / Web Awesome
 would supply accessible components, but its default language is a generic
 web-component look that fights the house style, and four rows do not need a
 component runtime. Open Props supplies the part that actually improves a design
@@ -199,14 +199,14 @@ from filtering by state — and it searches the tags and the live figures too.
 ## Live figures
 
 The Content Tracker row prints figures read from that dashboard's own data. It
-cannot be read from here directly: its endpoint sends no
-`Access-Control-Allow-Origin` and answers `OPTIONS` with 405, so a browser on
-this origin is not allowed to see the response. `netlify/functions/watchlist-count.js`
-therefore does the reading server-side and returns three integers —
-the upstream document is 84 KB and the page wants three numbers out of it, so
-the document never leaves the function. Netlify caches the response for fifteen
-minutes, so the sheet is read at most once per quarter hour however many people
-visit.
+cannot be read from here directly: that endpoint allows exactly one other origin
+(the portfolio) and nothing else, so a browser on this origin gets no
+`Access-Control-Allow-Origin` and is not allowed to see the response. The
+Worker's own `/api/watchlist` handler (`worker.js`) therefore does the reading
+server-side and returns three integers — the upstream document is 84 KB and the
+page wants three numbers out of it, so the document never leaves the Worker. The
+response is edge-cached for fifteen minutes, so the store is read at most once
+per quarter hour however many people visit.
 
 The counting rules are copied verbatim from `ContentTrackerDashboard/app.js`,
 including its own row filter (a row counts only when it has a name and a year
@@ -222,10 +222,11 @@ transient upstream problem cannot pin a wrong answer at the edge for the whole
   the tooltip says when they were read rather than implying they are live. A
   timestamp generated in the browser would quietly claim the opposite.
 
-The function's fetch is capped at nine seconds: Netlify kills a synchronous
-function at ten, and the upstream has been measured taking eight seconds just to
+The Worker's fetch is capped at nine seconds — a ceiling kept from Netlify's
+ten-second synchronous function limit because the floor under it is measured
+rather than guessed: the upstream has been seen taking eight seconds just to
 connect during a cold spell. The page waits twelve, so it always receives the
-function's answer instead of cutting it off first.
+Worker's answer instead of cutting it off first.
 
 ## Previews
 
@@ -261,10 +262,10 @@ be detected: a dashboard starting to refuse frames.
 
 This is also why `_headers` needs a `frame-src`. Without one our own CSP blocks
 every preview, and it would look like the other dashboard's fault. It names the
-three framable origins individually rather than `https://*.netlify.app`: a
-wildcard let every subdomain on the platform be framed by this page to serve
-three known hosts, which is the same reasoning that closed `connect-src` down to
-`'self'`. Irish Visa Tracker is absent on purpose — it can never be framed.
+three framable origins individually rather than with a wildcard: the wildcard it
+once carried (`https://*.netlify.app`) let every subdomain on that platform be
+framed by this page to serve three known hosts, which is the same reasoning that
+closed `connect-src` down to `'self'`. Irish Visa Tracker is absent on purpose — it can never be framed.
 `tools/audit.mjs` fails if an embeddable entry's origin is missing from
 `frame-src`, if `frame-src` allows an origin nothing uses, or if it is a
 wildcard, so the manifest and the policy cannot drift apart.
@@ -277,14 +278,24 @@ node tools/check-embed.mjs
 
 Read-only. Runs the manifest against a stand-in for `window`, asks each
 dashboard for its headers, and reports whether every `embed` flag matches
-reality. Exits non-zero on a disagreement. A dashboard that cannot be reached is
-reported as unchecked rather than as a failure — not being able to ask is not an
-answer.
+reality. Exits non-zero on a disagreement. A dashboard that cannot be reached —
+including one whose URL answers with an error status, which is what a retired
+host's error page does — is reported as unchecked rather than as a failure: not
+being able to ask is not an answer.
+
+**It also asks on its own:** `.github/workflows/embed-check.yml` runs the same
+check every Monday at 06:00 UTC, and on demand from the Actions tab, because the
+answer lives in somebody else's response headers and nothing here can see it
+change. A red run arrives as an e-mail, and it means one of exactly two things.
+Either the entry and the live dashboard disagree about whether framing is
+allowed — declare it `embed: false` so its row explains itself — or the portal
+is served from somewhere other than `PORTAL_ORIGIN` in `tools/check-embed.mjs`,
+which the run names outright and which is a one-line fix.
 
 ## Checking the deployed site
 
 ```bash
-node tools/check-live.mjs https://your-site.netlify.app
+node tools/check-live.mjs https://dashboards-home-portal.pages.dev
 ```
 
 The host is required, and there is no default: guessing which site this
@@ -296,8 +307,9 @@ confirm the host is actually running this codebase (its `<title>`, plus a
 marker added in the same commit as the rest of the work), because "the checks
 passed" against the wrong site is worse than an error.
 
-It then reads `_redirects`, `_headers`, `netlify.toml` and the manifest out of
-the repository and asserts the live host obeys them: every public file resolves,
+It then reads `_headers`, `worker.js`, `tools/audit.mjs` (for which files are
+meant to be public) and the manifest out of the repository and asserts the live
+host obeys them: every public file resolves,
 every blocked path answers 404, the five security headers match what `_headers`
 declares, the deployed `frame-src` names every embeddable dashboard, and
 `/api/watchlist` returns three integers — with a 502 reported as a *note*
@@ -326,10 +338,10 @@ One push ships `worker.js`, `_headers` and every asset together, which is what
 the Content Tracker row depends on: its live figures come from `/api/watchlist`,
 answered by the Worker through the `WATCHLIST` **service binding** in
 `wrangler.toml`. Without that route the row falls back to its recorded figures,
-so a deploy is worth confirming. `tools/check-live.mjs` is the tool meant to do
-that and **has not been ported yet** — it still reads the old `_redirects` and
-`netlify.toml` layout, so it throws instead of reporting. Until it is, confirm by
-hand against the list under "Everything the page needs still resolves" below.
+so a deploy is worth confirming, and `tools/check-live.mjs` is the tool for it.
+It reads this repository's own rules — including `worker.js`, for the `/api`
+route it used to take from `netlify.toml` — and asserts the deployed host obeys
+them, rather than restating the expectations here.
 
 `[assets] directory = "."` is what lets this deploy with no build step, and it
 has a cost worth naming: **everything in the repository is uploaded unless
@@ -341,16 +353,18 @@ them off the upload — a file that was never uploaded cannot be served — and
 is neither public on purpose nor excluded.
 
 Cloudflare's `_redirects` has no 404 status, so the old Netlify rules are not the
-mechanism any more: they live in `netlify/_redirects` as the record of which repo
-files used to be blocked and why, while `.assetsignore` does the work. That file
-also names the trap it documents — Netlify's redirects shadow a URL that resolves
-to a file the site actually has, so every 404 rule needed its `!` after the
-status — which is Netlify-only syntax Cloudflare does not share.
+mechanism any more: `.assetsignore` does the work, and the rules file itself went
+with the rest of the Netlify configuration — a record of how a host that is no
+longer used blocked a repo file is what git history is for. What it documented
+is worth knowing, and is why the ignore list reads the way it does: Netlify's
+redirects shadow a URL that resolves to a file the site actually has, so every
+404 rule needed a `!` after its status to fire at all. Cloudflare has no such
+rule to get wrong.
 
 Everything the page needs still resolves: `/tools/…`, `/README.md`,
-`/.gitignore`, `/netlify/…`, `netlify.toml`, `_headers`, `wrangler.toml`,
-`worker.js`, `.assetsignore` and `/.git/…` return 404 — none of them is uploaded
-— while every asset returns 200 and `/api/watchlist` answers.
+`/.gitignore`, `_headers`, `wrangler.toml`, `worker.js`, `.assetsignore` and
+`/.git/…` return 404 — none of them is uploaded — while every asset returns 200
+and `/api/watchlist` answers.
 
 `/.git` is the one that was actually reachable, and it is worth knowing why it
 went unnoticed. The audit's "nothing is published by accident" check walks the
@@ -362,10 +376,10 @@ outright, and the audit looks at the publish root rather than at the file list,
 which is what the old 404 rule could not do.
 
 **Response headers live in `_headers`,** which Cloudflare's assets layer applies
-to every response it serves. `netlify.toml` is kept only as the record of the
-Netlify-era configuration (the function route, the build settings) and is
-excluded from the upload, so it documents rather than configures. Keep `_headers`
-the single source of the CSP.
+to every response it serves. The Netlify-era `netlify.toml` is deleted — a config
+Cloudflare ignores is worse than none, because the file that looks like the
+configuration stops being the one that is served. Keep `_headers` the single
+source of the CSP.
 
 The CSP is `script-src 'self'` and `style-src 'self'` with no hashes, so there
 is no inline script or `style` attribute anywhere in the page. The theme
@@ -410,16 +424,14 @@ into CI. It catches the failure modes that a read-through misses:
 - a `{placeholder}` in a description with no figure to fill it, a recorded
   figure the description never prints, or a `count` block with no endpoint or no
   fallbacks — any of which would print a literal `{shows}` on the page
-- a live endpoint with no `[[redirects]]` entry in `netlify.toml`, or one
-  pointing at a function file that does not exist — which works locally and
-  404s in production
+- a live endpoint the Worker never sees: one missing from `run_worker_first` in
+  `wrangler.toml`, or one `worker.js` does not branch on — which works locally
+  and 404s in production
 - an `<iframe>` with no `title`, no `sandbox`, or a sandbox permitting
   `allow-top-navigation`, and a page that frames dashboards without a `frame-src`
   in its own CSP
-- a file that would be published but is neither declared public nor blocked in
-  `_redirects` — the check that stops a development file from going live
-- a `_redirects` 404 rule with no `!`, which Netlify would shadow: the file it
-  names stays public while the rule reads as a block
+- a file that would be published but is neither declared public nor listed in
+  `.assetsignore` — the check that stops a development file from going live
 - a dot-entry at the publish root that is not blocked — the gap above, which the
   tracked-file check structurally cannot see
 - an `'unsafe-inline'` or `'unsafe-eval'` in the CSP, a `frame-src` wildcard, an
@@ -451,17 +463,16 @@ data/dashboards.js            The dashboard manifest
 vendor/open-props.min.css     Open Props 1.7.17 (MIT)
 vendor/modern-normalize.css   modern-normalize 3.0.1 (MIT)
 fonts/                        Inter, Geist Sans and Geist Mono (variable)
-netlify/functions/            watchlist-count.js — the only server-side piece
 favicon.svg                   Index-numeral mark (ink stamp, no tint)
 
 _headers                      CSP, caching, security headers (all deploy modes)
-_redirects                    404s that keep development files off the site
-netlify.toml                  Publish config plus the /api rewrites
+.assetsignore                 repo files that are never uploaded
+worker.js                     the Worker: answers /api/watchlist, else assets
 
 tools/dev-server.mjs          Static files + functions + _headers, no-store (see below)
 tools/audit.mjs               Static hygiene audit (dead CSS, tokens, fields)
 tools/check-embed.mjs         Asserts the embed flags against live headers
-tools/check-live.mjs          Asserts the deployed host obeys _redirects/_headers
+tools/check-live.mjs          Asserts the deployed host obeys .assetsignore/_headers
 tools/scrape-design.mjs       Re-runnable evidence collector
 tools/design-report.json      What it found, per dashboard
 ```
@@ -592,14 +603,13 @@ node tools/dev-server.mjs        # http://127.0.0.1:4180/
 node tools/dev-server.mjs 4181   # if that port is taken
 ```
 
-It serves the static files and the functions behind exactly the routes
-`netlify.toml` rewrites to, reading that file rather than repeating the list, so
-local routing cannot drift from production. It also reads `_redirects` and
-applies the same 404s, **including the shadowing rule** — an unforced rule only
-fires for a path that genuinely does not exist. That detail is what makes the
-server worth having: a rule that forgot its `!` serves the file here exactly as
-Netlify would, instead of 404ing locally and lulling you into thinking the path
-is blocked. Everything is sent `no-store`.
+It serves the static files and the Worker's own routes, reading `wrangler.toml`
+(`run_worker_first`, and the `[vars]` the Worker sees) rather than repeating the
+list, so local routing cannot drift from production. It also reads
+`.assetsignore` and answers a listed path 404 here exactly as production does by
+never uploading it — otherwise a development file could be downloadable locally
+while it was blocked live, which is the difference this server exists to remove.
+Everything is sent `no-store`.
 
 It reads `_headers` too, and applies it. That was the half it did not model, and
 the cost was real: production ships `script-src 'self'` while locally an inline
@@ -607,9 +617,9 @@ the cost was real: production ships `script-src 'self'` while locally an inline
 failed only after deploying — a policy that cannot be exercised where the code
 is written is a policy that regresses. Headers from every matching block are
 merged in file order, so `/fonts/*` keeps its 30-day cache while `/*` supplies
-the security headers, exactly as it does on Netlify. **Function responses are
-deliberately not touched**, because Netlify does not apply `_headers` to them
-either: a function owns its own headers.
+the security headers, exactly as the assets layer does. **Worker responses are
+deliberately not touched**, because Cloudflare does not apply `_headers` to them
+either: the Worker owns its own headers.
 
 That last part matters. `python -m http.server` sends no `Cache-Control` at all,
 so Chrome applies heuristic caching to every subresource and will happily keep

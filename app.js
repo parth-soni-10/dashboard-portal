@@ -60,14 +60,14 @@
     return (n < 10 ? '0' : '') + n;
   }
 
-  /** Every dashboard here is served from the account's workers.dev subdomain,
-   *  so the host and that subdomain are noise in a 10px mono column. Stripping
-   *  them is display-only: the link and the tooltip both keep the real host.
-   *  The netlify.app form is still handled — the portal was served from there
-   *  until 13 Oct 2026, and a row carrying one of those old addresses should
-   *  still read as a name rather than as a URL. */
+  /** Every dashboard here is served from the account's Cloudflare Pages
+   *  subdomain, so the host and `pages.dev` are noise in a 10px mono column.
+   *  Stripping them is display-only: the link and the tooltip both keep the
+   *  real host. The workers.dev form is handled too because the Workers
+   *  deployment still answers on it and a manifest entry may name either. */
   function shortHost(host) {
-    return host.replace(/\.(?:netlify\.app|workers\.dev)$/, '')
+    return host.replace(/\.pages\.dev$/, '')
+      .replace(/\.workers\.dev$/, '')
       .replace(/\.parth10$/, '');
   }
 
@@ -565,7 +565,7 @@
         : '') +
       '</div>' +
       // The tooltip holds the full host, which is the only reason to have one:
-      // the visible text has had the netlify.app suffix stripped.
+      // the visible text has had the deploy-host suffix stripped.
       '<span class="row-host" title="' +
       esc(host || String(item.url || '')) +
       '">' +

@@ -36,8 +36,8 @@ window.DASHBOARDS = [
        it tracks the sheet. */
     description:
       '{titles} titles logged — {shows} shows and {movies} movies — turned into yearly comparisons, genre breakdowns and recommendations.',
-    /* Read server-side by netlify/functions/watchlist-count.js, because that
-       dashboard's endpoint sends no CORS headers. `fallback` is what the row
+    /* Read server-side by this Worker (worker.js), because that dashboard's
+       endpoint sends no CORS headers. `fallback` is what the row
        shows until the live answer arrives, and what it keeps showing if the
        check never completes — so it must stay plausible, and `recorded` says
        when it was true. Both are reported in the figures' own hover text, so a
@@ -49,7 +49,7 @@ window.DASHBOARDS = [
       fallback: { titles: 363, shows: 277, movies: 86 }
     },
     embed: true,
-    url: 'https://content-tracker-dashboard.parth10.workers.dev/',
+    url: 'https://contenttrackerdashboard.pages.dev/',
     repo: 'https://github.com/parth-soni-10/ContentTrackerDashboard',
     tags: ['Analytics', 'Google Sheets', 'Chart.js']
   },
@@ -64,7 +64,7 @@ window.DASHBOARDS = [
        the row explains that instead of showing an empty box, and asserted
        against the live headers by tools/check-embed.mjs. */
     embed: false,
-    url: 'https://irish-visa-tracker.parth10.workers.dev/',
+    url: 'https://irishvisaupdatetracker.pages.dev/',
     repo: 'https://github.com/parth-soni-10/Irish-Visa-Tracker',
     tags: ['Python', 'GitHub Actions', 'Scraping']
   },
@@ -75,7 +75,7 @@ window.DASHBOARDS = [
     description:
       'Weekly Statistical Supplement figures with crude estimates, FII flows and external-debt rankings.',
     embed: true,
-    url: 'https://rbi-weekly-dashboard.parth10.workers.dev/',
+    url: 'https://rbiweeklydashboard.pages.dev/',
     repo: 'https://github.com/parth-soni-10/RBI-Weekly-Data-Dashboard',
     tags: ['Scrapers', 'World Bank', 'Functions']
   },
@@ -86,7 +86,7 @@ window.DASHBOARDS = [
     description:
       "Builds a clash-free timetable from UCD's live module data, with assessment weights and exam options.",
     embed: true,
-    url: 'https://ucd-csnl-module-picker.parth10.workers.dev/',
+    url: 'https://ucdcsnlmodulepicker.pages.dev/',
     repo: 'https://github.com/parth-soni-10/UCD-CSNL-Module_Picker',
     tags: ['UCD', 'Timetabling', 'Live data']
   }

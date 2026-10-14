@@ -2,9 +2,10 @@
  * Dashboard portal — Cloudflare Worker.
  *
  * One job: answer `/api/watchlist`, the live figures under the Content
- * Tracker row. This is the port of netlify/functions/watchlist-count.js; the
- * counting rules below are copied verbatim from the dashboard's own app.js
- * (and from that function), so the two can never disagree about what a
+ * Tracker row. This is where the Netlify function that used to answer it
+ * (netlify/functions/watchlist-count.js, deleted with the rest of that
+ * configuration) was ported to; the counting rules below are copied verbatim
+ * from the dashboard's own app.js, so the two can never disagree about what a
  * "show" is. Everything else falls through to the static assets — and with
  * `run_worker_first = ["/api/*"]` in wrangler.toml, only /api/* requests
  * arrive here at all.

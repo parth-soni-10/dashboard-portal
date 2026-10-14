@@ -1,19 +1,19 @@
 /**
  * Live check against a deployed host.
  *
- *   node tools/check-live.mjs https://your-site.netlify.app
+ *   node tools/check-live.mjs https://dashboards-home-portal.pages.dev
  *
  * Reads this repository's own rules — `_redirects`, `_headers`, the manifest
- * and `netlify.toml` — and asserts that the deployed site obeys them, instead
- * of restating the expectations here. A second copy of the list is a copy that
+ * and `worker.js` — and asserts that the deployed site obeys them, instead of
+ * restating the expectations here. A second copy of the list is a copy that
  * drifts, which is the same reason `tools/dev-server.mjs` reads those files.
  *
  * Why it exists: every check in `tools/audit.mjs` inspects the *files*, and
- * `tools/dev-server.mjs` models what Netlify *should* do with them. Neither can
- * tell you what Netlify actually does, and the failure this is really watching
- * for is specific — a redirects rule that Netlify shadows serves the file it was
- * meant to block with a 200, while the rule sits in the repository looking
- * correct. That is not hypothetical: `_redirects` blocked every development file
+ * `tools/dev-server.mjs` models what a host *should* do with them. Neither can
+ * tell you what the deployed host actually does, and the failure this is really
+ * watching for is specific — a path a rule was meant to block served by the host
+ * with a 200, while the rule sits in the repository looking correct. That is not
+ * hypothetical: under Netlify, `_redirects` blocked every development file
  * except `.git/` for a while, and `/.git/config` was reachable the whole time.
  * Nothing in the repository could have shown that. This can.
  *
@@ -37,7 +37,7 @@ const read = (p) => readFile(join(root, p), 'utf8');
 
 const base = (process.argv[2] || '').replace(/\/+$/, '');
 if (!/^https?:\/\/[^/]+$/.test(base)) {
-  console.error('usage: node tools/check-live.mjs https://your-site.netlify.app');
+  console.error('usage: node tools/check-live.mjs https://dashboards-home-portal.pages.dev');
   process.exit(2);
 }
 
@@ -77,13 +77,37 @@ async function get(path, method = 'GET') {
   }
 }
 
-const [html, redirectRules, headerRules, manifest, toml] = await Promise.all([
+// `_redirects` is deliberately not read: there is no such file at the publish
+// root any more. What keeps a development file off the site now is
+// `.assetsignore` — a file that is never uploaded cannot be served, which is
+// stronger than a rule answering 404 — and *which* files are supposed to be
+// public is read out of `tools/audit.mjs` (its check 16) rather than restated
+// here. It used to be a list here as well, and it drifted exactly as a second
+// copy does: the audit had long allowed LICENSE, robots.txt and
+// apple-touch-icon.png as deliberately public while this check called all three
+// blocked, so a correct deploy failed the check three times over.
+const [html, headerRules, manifest, worker, auditSource] = await Promise.all([
   read('index.html'),
-  read('_redirects'),
   read('_headers'),
   read('data/dashboards.js'),
-  read('netlify.toml')
+  read('worker.js'),
+  read('tools/audit.mjs')
 ]);
+
+/** The names inside a `const <name> = [ … ]` (or `= new Set([ … ])`) declaration. */
+function declaredList(source, name) {
+  const block = source.match(new RegExp(`const ${name} = (?:new Set\\()?\\[([^\\]]*)\\]`));
+  return block ? [...block[1].matchAll(/'([^']+)'/g)].map((match) => match[1]) : null;
+}
+
+const publicFiles = declaredList(auditSource, 'publicFiles') || [];
+const publicDirs = declaredList(auditSource, 'publicDirs') || [];
+if (!publicFiles.length || !publicDirs.length) {
+  fail(
+    'no-public-list',
+    'tools/audit.mjs declares no public file list, so what is meant to be public cannot be told from what must be blocked'
+  );
+}
 
 /* ------------------------------------------------- the site is this site -- */
 
@@ -106,14 +130,17 @@ if (home.status !== 200) {
 
 /* ------------------------------------- nothing extra is running the page -- */
 
-// Netlify injects its own HUD into the HTML it serves, and being same-origin
-// `script-src 'self'` permits it — so it is worth naming rather than assuming.
-// The comparison is against this repository's own <script src> list, so the
-// check does not need a list of what is allowed; anything extra is extra.
+// A host that injects its own script into the HTML it serves is worth naming
+// rather than assuming it away, since being same-origin `script-src 'self'`
+// permits it. The comparison is against this repository's own <script src>
+// list, so the check does not need a list of what is allowed; anything extra is
+// extra.
 //
-// This is what surfaced the badge without anyone diffing the served HTML by
-// hand: the HUD's inline styles are refused by style-src, so the badge never
-// paints, but it still leaves two console errors on every load.
+// This is what surfaced Netlify's own badge without anyone diffing the served
+// HTML by hand: its inline styles were refused by style-src, so the badge never
+// painted, but it still left two console errors on every load. Nothing injects
+// anything now, so the check should find nothing — which is the point of keeping
+// it rather than deleting it with the host that made it necessary.
 const localScripts = new Set(
   [...html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)].map((m) => m[1])
 );
@@ -156,24 +183,24 @@ if (livePolicy && !/frame-ancestors 'none'/.test(livePolicy)) {
 
 /* --------------------------------------------- every public file resolves -- */
 
-const publicFiles = [
-  'index.html',
-  'styles.css',
-  'app.js',
-  'icons.js',
-  'theme-init.js',
-  'favicon.svg',
-  'data/dashboards.js',
-  'vendor/open-props.min.css',
-  'vendor/modern-normalize.css',
-  'fonts/inter.woff2'
-];
-const publicDirs = ['fonts/', 'vendor/'];
+const allFiles = await walk(root);
 
+// A directory is probed with a real file found inside it, so a renamed asset is
+// what gets checked rather than a path written down when it was named the old
+// way.
+let publicChecked = 0;
 for (const file of publicFiles) {
   const path = file === 'index.html' ? '/' : '/' + file;
   const res = await get(path, 'HEAD');
+  publicChecked++;
   if (res.status !== 200) fail('public-404', `${path} returned ${res.status}, but the page needs it`);
+}
+for (const dir of publicDirs) {
+  const sample = allFiles.find((file) => file.startsWith(dir));
+  if (!sample) continue;
+  const res = await get('/' + sample, 'HEAD');
+  publicChecked++;
+  if (res.status !== 200) fail('public-404', `/${sample} returned ${res.status}, but the page needs it`);
 }
 
 // Everything on disk that is not deliberately public must be blocked live.
@@ -188,15 +215,6 @@ async function walk(dir, prefix = '') {
   return found;
 }
 
-const parsed = redirectRules
-  .split('\n')
-  .map((line) => line.replace(/#.*$/, '').trim())
-  .filter(Boolean)
-  .map((line) => {
-    const [from, to, status] = line.split(/\s+/);
-    return { from, to, status: Number((status || '').replace('!', '')) || 301 };
-  });
-
 /** Distinctive text from a local file, to prove the live body is not it. */
 function fingerprint(source) {
   const lines = source
@@ -207,7 +225,7 @@ function fingerprint(source) {
 }
 
 const targets = [
-  ...(await walk(root)).filter(
+  ...allFiles.filter(
     (file) =>
       !publicFiles.includes(file) && !publicDirs.some((dir) => file.startsWith(dir))
   ),
@@ -224,7 +242,7 @@ for (const file of targets) {
   if (res.status !== 404) {
     fail(
       'blocked-but-served',
-      `${path} returned ${res.status}, so it is public — _redirects intends 404 (and the ! is what makes it fire)`
+      `${path} returned ${res.status}, so it is public — .assetsignore is meant to keep it off the upload`
     );
     continue;
   }
@@ -241,14 +259,15 @@ for (const file of targets) {
 
 /* --------------------------------------------------------- the function -- */
 
-// The redirect is read from netlify.toml rather than written out here, so a
-// changed route is checked rather than an old one.
-const apiFrom = (toml.match(/from\s*=\s*"(\/api\/[^"]+)"/) || [])[1];
-const apiTo = (toml.match(/to\s*=\s*"([^"]+)"\s*\n\s*status/) || [])[1];
+// The route is read from worker.js rather than written out here, so a changed
+// path is checked rather than an old one. It used to be a netlify.toml
+// [[redirects]] entry pointing at netlify/functions/watchlist-count.js; the
+// Worker owns the path now, and both of those files are gone.
+const apiFrom = (worker.match(/url\.pathname\s*===\s*'(\/api\/[^']+)'/) || [])[1];
 
 let figures = null;
 if (!apiFrom) {
-  fail('no-api-route', 'netlify.toml declares no /api route, so the live figures have no endpoint');
+  fail('no-api-route', 'worker.js answers no /api route, so the live figures have no endpoint');
 } else {
   const res = await get(apiFrom);
   if (res.status === 502) {
@@ -290,7 +309,7 @@ if (!apiFrom) {
 // The CSP's frame-src has to name every embeddable dashboard, or the preview is
 // blocked by this site's own policy — which looks like the other dashboard's
 // fault. The local audit asserts the same thing about the file; this asserts it
-// about the header Netlify is actually sending.
+// about the header the host is actually sending.
 const entries = manifest
   .split(/\n  \{/)
   .slice(1)
@@ -311,9 +330,9 @@ for (const entry of entries) {
 /* ------------------------------------------------------------- the report -- */
 
 console.log(`check-live: ${base}`);
-console.log(`  ${publicFiles.length} public files reachable`);
+console.log(`  ${publicChecked} public files reachable`);
 console.log(`  ${blockedChecked} blocked paths answer 404, with no contents leaked`);
-if (apiTo) console.log(`  ${apiFrom} -> ${apiTo.replace('/.netlify/functions/', '')}`);
+if (apiFrom) console.log(`  ${apiFrom} is answered by the Worker`);
 if (figures) console.log(`  live figures: ${figures.titles} titles, ${figures.shows} shows, ${figures.movies} movies`);
 for (const note of notes) console.log(`  note: ${note}`);
 

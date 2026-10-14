@@ -15,7 +15,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       # No build step, no package.json: the repo root IS the publish directory,
       # so "does it still parse" is the whole of a static check.
@@ -26,9 +26,12 @@ jobs:
       - name: Static hygiene audit
         run: node tools/audit.mjs
 
-      - name: Syntax-check the site, tools and function
+      # The netlify/functions/ directory is gone with the function it held: the
+      # Worker owns /api/watchlist now, so there is no second endpoint source to
+      # syntax-check. tools/audit.mjs covers the rest.
+      - name: Syntax-check the site and the tools
         run: |
           set -e
-          for f in app.js icons.js theme-init.js tools/*.mjs netlify/functions/*.js; do
+          for f in app.js icons.js theme-init.js tools/*.mjs; do
             node --check "$f"
           done

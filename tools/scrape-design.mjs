@@ -16,11 +16,11 @@
 import { writeFile } from 'node:fs/promises';
 
 const SITES = [
-  { id: 'content-tracker', url: 'https://content-tracker-dashboard.parth10.workers.dev/' },
-  { id: 'irish-visa-tracker', url: 'https://irish-visa-tracker.parth10.workers.dev/' },
-  { id: 'rbi-weekly', url: 'https://rbi-weekly-dashboard.parth10.workers.dev/' },
-  { id: 'csnl-module-picker', url: 'https://ucd-csnl-module-picker.parth10.workers.dev/' },
-  { id: 'portfolio', url: 'https://portfolio.parth10.workers.dev/' }
+  { id: 'content-tracker', url: 'https://contenttrackerdashboard.pages.dev/' },
+  { id: 'irish-visa-tracker', url: 'https://irishvisaupdatetracker.pages.dev/' },
+  { id: 'rbi-weekly', url: 'https://rbiweeklydashboard.pages.dev/' },
+  { id: 'csnl-module-picker', url: 'https://ucdcsnlmodulepicker.pages.dev/' },
+  { id: 'portfolio', url: 'https://parth-portfolio-wb.pages.dev/' }
 ];
 
 const TIMEOUT = 25000;

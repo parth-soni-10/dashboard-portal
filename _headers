@@ -1,12 +1,13 @@
 # Response headers.
 #
-# These live here rather than in netlify.toml on purpose: Netlify only reads
-# netlify.toml for a repository-connected deploy. A drag-and-drop or API/zip
-# deploy ignores it entirely, which would silently ship the site with no CSP
-# at all. `_headers` is honoured in every deploy mode, so it is the single
-# source of truth and netlify.toml keeps only the build config.
+# This file is the single source of the response headers, and the assets layer
+# applies it to everything it serves. It replaced the [[headers]] blocks in
+# netlify.toml, which went with the rest of the Netlify configuration: a config
+# the host ignores is worse than none, because the file that looks like the
+# configuration stops being the one that is served.
 #
-# Syntax is the same path-matching Netlify uses in netlify.toml.
+# The syntax is the `_headers` convention: a path pattern, then its indented
+# headers. `*` matches within a segment; `/fonts/*` covers the directory.
 
 # The font filenames are stable, NOT content-hashed (fonts/inter.woff2), so a
 # long immutable cache would pin a client to a replaced file for a year with no
@@ -51,4 +52,4 @@
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src https://content-tracker-dashboard.parth10.workers.dev https://rbi-weekly-dashboard.parth10.workers.dev https://ucd-csnl-module-picker.parth10.workers.dev; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src https://contenttrackerdashboard.pages.dev https://rbiweeklydashboard.pages.dev https://ucdcsnlmodulepicker.pages.dev; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'
