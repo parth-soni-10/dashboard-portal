@@ -63,8 +63,9 @@
   /** Every dashboard here is served from the account's Cloudflare Pages
    *  subdomain, so the host and `pages.dev` are noise in a 10px mono column.
    *  Stripping them is display-only: the link and the tooltip both keep the
-   *  real host. The workers.dev form is handled too because the Workers
-   *  deployment still answers on it and a manifest entry may name either. */
+   *  real host. The workers.dev form is stripped too — none of these sites
+   *  answers on one any more, but the manifest is edited by hand and a link to
+   *  somebody else's Worker is a perfectly good entry. */
   function shortHost(host) {
     return host.replace(/\.pages\.dev$/, '')
       .replace(/\.workers\.dev$/, '')
