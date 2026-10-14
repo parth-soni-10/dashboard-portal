@@ -39,8 +39,9 @@
  *  14. Every live endpoint is handled by the function the deploy stages as
  *      `_worker.js`, and the configuration behind that deploy is the Pages one.
  *      An endpoint answered locally but not in production (or the reverse) is
- *      the worst possible place to find out, and a root `wrangler.toml`
- *      declaring a Worker means the site has quietly grown a second host again.
+ *      the worst possible place to find out, and a Workers-only key in
+ *      `wrangler.toml` — a cron, `workers_dev`, a route, a custom domain —
+ *      means the site has quietly grown a second host again.
  *  15. Frames are declared deliberately: a title, a sandbox that cannot
  *      navigate this page away, and a frame-src in our own CSP. Without the
  *      last one the preview is blocked by this site's policy and looks like
@@ -400,9 +401,9 @@ for (const entry of entries) {
 //
 // Two things are worth failing on. An endpoint the page calls that worker.js
 // does not branch on falls through to the assets and 404s in production while
-// it looks fine locally. And a root wrangler.toml declaring a Worker would mean
-// a second host had grown back beside the Pages project — the exact split this
-// site was collapsed out of.
+// it looks fine locally. And a root wrangler.toml that carries anything
+// Workers-only would mean a second host had grown back beside the Pages project
+// — the exact split this site was collapsed out of.
 for (const endpoint of endpoints) {
   if (!worker.includes(`'${endpoint}'`) && !worker.includes(`"${endpoint}"`)) {
     note(
@@ -412,11 +413,24 @@ for (const endpoint of endpoints) {
   }
 }
 
-if (/^\s*(main|\[assets\])\s*=/m.test(workerWrangler)) {
-  note(
-    'worker-config-present',
-    'wrangler.toml declares a Worker — this site is served from Pages alone, so that file is a second host waiting to be deployed'
-  );
+// The file itself has to stay: the Pages project's build command dry-runs it to
+// produce the worker.js the staging step turns into `_worker.js`. What it must
+// never carry is a way to deploy — each of these keys is a Worker beside the
+// Pages project rather than a build input.
+const workerDeployKeys = [
+  [/^\s*\[+triggers\]+/m, 'a cron trigger'],
+  [/^\s*workers_dev\s*=/m, 'a workers.dev switch'],
+  [/^\s*\[+routes\]+/m, 'routes'],
+  [/^\s*preview_urls\s*=/m, 'preview URLs'],
+  [/^\s*custom_domain\s*=/m, 'a custom domain']
+];
+for (const [pattern, what] of workerDeployKeys) {
+  if (pattern.test(workerWrangler)) {
+    note(
+      'worker-deploy-config',
+      `wrangler.toml declares ${what} — this site is served from Pages alone, so that key is a Worker waiting to be deployed`
+    );
+  }
 }
 
 if (!/^\s*pages_build_output_dir\s*=/m.test(pagesConfig)) {

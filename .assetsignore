@@ -35,6 +35,7 @@ tools/
 
 README.md
 _headers
+wrangler.toml
 worker.js
 # Deploy files. This repository's Pages control config, the scripts that deploy
 # it, and the staging output those scripts write (`.pages-bundle/`,

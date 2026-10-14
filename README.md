@@ -437,8 +437,9 @@ into CI. It catches the failure modes that a read-through misses:
   figure the description never prints, or a `count` block with no endpoint or no
   fallbacks — any of which would print a literal `{shows}` on the page
 - a live endpoint the function does not branch on — which works locally and
-  404s in production — or a root `wrangler.toml` declaring a Worker, which would
-  mean a second host had grown back beside the Pages project
+  404s in production — or a Workers-only key in `wrangler.toml` (a cron,
+  `workers_dev`, a route, a custom domain), which would mean a second host had
+  grown back beside the Pages project
 - an `<iframe>` with no `title`, no `sandbox`, or a sandbox permitting
   `allow-top-navigation`, and a page that frames dashboards without a `frame-src`
   in its own CSP

@@ -1,0 +1,23 @@
+# Bundle input for this site's Pages build — NOT a deployment.
+#
+# The Cloudflare Pages project runs, as its build command:
+#
+#   npx --yes wrangler@4 deploy --dry-run --outdir .pages-bundle
+#   && node tools/deploy-pages.mjs --assets . --bundle .pages-bundle --out .pages-dist
+#
+# and this file is read for the first half of that only: `--dry-run` bundles
+# `main` below into the worker.js that tools/deploy-pages.mjs stages as the
+# project's `_worker.js`. Nothing is deployed from here, and nothing should be —
+# this site has one host, the Pages project, and `tools/audit.mjs` fails if a
+# Workers-only key (a cron trigger, workers_dev, routes, preview URLs, a custom
+# domain) appears in this file.
+#
+# Everything the deployed site needs lives where the deploy reads it:
+# `pages/wrangler.toml` carries the project name, its bindings and its vars, and
+# `_headers` carries the response headers.
+#
+# Not published: `.assetsignore` lists this file, so it is never uploaded.
+
+name = "dashboards-home-portal"
+main = "worker.js"
+compatibility_date = "2026-10-01"
