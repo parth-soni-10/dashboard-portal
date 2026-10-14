@@ -1,10 +1,10 @@
 # Files in this repo that are NOT part of the published site.
 #
-# This is the Cloudflare half of what `_redirects` used to do. Netlify could
-# only hide a repo file with a forced 404 rule (`404!`) because a deploy from
-# the repository root uploads everything; Cloudflare's `_redirects` has no 404
-# status, and the stronger equivalent is not uploading the file at all. A path
-# that was never deployed cannot be served by mistake.
+# This is what the Netlify `_redirects` rules did, done the way Cloudflare can:
+# Netlify could only hide a repo file with a forced 404 rule (`404!`), because a
+# deploy from the repository root uploads everything; an upload here is filtered
+# first, and a path that was never deployed cannot be served by mistake. The
+# rules file itself is gone with the rest of that configuration.
 #
 # `tools/audit.mjs` (check 16) asserts the pair stays complete: every tracked
 # file is either intentionally public or listed here, and every pattern here
@@ -30,11 +30,16 @@
 Thumbs.db
 desktop.ini
 
-netlify/
 tools/
 
 README.md
-netlify.toml
 _headers
 wrangler.toml
 worker.js
+# CI files. The deploy workflow's staging output, this repository's Pages
+# mirror control config, and the scripts and workflows that drive them are
+# development files: the assets directory is the repository root, so anything not
+# listed here would be uploaded and served.
+pages/
+.pages-bundle/
+.pages-dist/

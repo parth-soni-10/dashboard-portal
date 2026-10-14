@@ -1,0 +1,20 @@
+# Control config for this repository's Pages mirror.
+#
+# It lives in the repository now so CI can deploy the mirror the way the local
+# deploy script did: `wrangler pages deploy` run from this directory takes the
+# project name, its bindings and its vars from here, and `pages_build_output_dir`
+# names the upload that tools/deploy-pages.mjs stages.
+
+name = "dashboards-home-portal"
+pages_build_output_dir = "../.pages-dist"
+compatibility_date = "2026-10-01"
+
+# The portal asks the Content Tracker Worker for watchlist counts through this
+# binding, so the count is one source whether the portal is opened here or on its
+# Workers deployment.
+[[services]]
+binding = "WATCHLIST"
+service = "content-tracker-dashboard"
+
+[vars]
+WATCHLIST_URL = "https://content-tracker-dashboard.parth10.workers.dev/.netlify/functions/watchlist"
