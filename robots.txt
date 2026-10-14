@@ -1,5 +1,11 @@
-# The whole site is one page and everything published is meant to be
-# crawled. No Sitemap line: this deploy's URL is not recorded anywhere in
-# the repo, and a sitemap naming a guessed host would be worse than none.
+# The whole site is one page and everything published is meant to be crawled.
+#
+# The Sitemap line names the deployed host, which is no longer a guess: it is the
+# project name in pages/wrangler.toml, the address the footer links to, and the
+# origin this deploy's own _headers allow framing from. It used to be left out on
+# the grounds that the URL was recorded nowhere in the repository — and the only
+# cost of that was this path 404ing for every crawler that asked for it.
 User-agent: *
 Allow: /
+
+Sitemap: https://dashboards-home-portal.pages.dev/sitemap.xml

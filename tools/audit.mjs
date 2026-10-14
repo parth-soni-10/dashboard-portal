@@ -483,10 +483,12 @@ if (/<iframe\b/.test(app)) {
 // Files that are *supposed* to be reachable on the deployed site. Everything
 // else in the publish root must be listed in `.assetsignore`.
 //
-// LICENSE and robots.txt are here deliberately, not by omission: a licence
-// notice is meant to be readable, and robots.txt only works if a crawler can
-// fetch it — blocking either would defeat the file. Both are static text with
-// nothing in them that is not already in the repository.
+// LICENSE, robots.txt and sitemap.xml are here deliberately, not by omission: a
+// licence notice is meant to be readable, robots.txt only works if a crawler can
+// fetch it, and sitemap.xml is the file robots.txt points that crawler at —
+// blocking any of the three would defeat the file. All three are static text with
+// nothing in them that is not already in the repository, and `tools/check-live.mjs`
+// reads this list, so each one is also probed on the deployed site.
 const publicFiles = new Set([
   'index.html',
   'styles.css',
@@ -497,7 +499,8 @@ const publicFiles = new Set([
   'apple-touch-icon.png',
   'data/dashboards.js',
   'LICENSE',
-  'robots.txt'
+  'robots.txt',
+  'sitemap.xml'
 ]);
 const publicDirs = ['fonts/', 'vendor/'];
 

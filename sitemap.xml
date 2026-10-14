@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  One entry, because the portal is one page: the dashboard cards are hash routes
+  (`#/…`), which are not separate URLs and must not be listed as if they were.
+
+  No <lastmod>: nothing here tracks when the manifest last changed, and a hand-
+  maintained date would either be a lie or the first thing to rot. A crawler that
+  refetches a one-page site weekly needs no hint, which is why <changefreq> says
+  so and the timestamp is left out.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://dashboards-home-portal.pages.dev/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
