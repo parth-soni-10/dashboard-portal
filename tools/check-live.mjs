@@ -4,7 +4,7 @@
  *   node tools/check-live.mjs https://dashboards-home-portal.pages.dev
  *
  * Reads this repository's own rules — `_redirects`, `_headers`, the manifest
- * and `worker.js` — and asserts that the deployed site obeys them, instead of
+ * and `functions/_router.js` — and asserts that the deployed site obeys them, instead of
  * restating the expectations here. A second copy of the list is a copy that
  * drifts, which is the same reason `tools/dev-server.mjs` reads those files.
  *
@@ -86,11 +86,11 @@ async function get(path, method = 'GET') {
 // copy does: the audit had long allowed LICENSE, robots.txt and
 // apple-touch-icon.png as deliberately public while this check called all three
 // blocked, so a correct deploy failed the check three times over.
-const [html, headerRules, manifest, worker, auditSource] = await Promise.all([
+const [html, headerRules, manifest, router, auditSource] = await Promise.all([
   read('index.html'),
   read('_headers'),
   read('data/dashboards.js'),
-  read('worker.js'),
+  read('functions/_router.js'),
   read('tools/audit.mjs')
 ]);
 
@@ -259,15 +259,15 @@ for (const file of targets) {
 
 /* --------------------------------------------------------- the function -- */
 
-// The route is read from worker.js rather than written out here, so a changed
+// The route is read from the router rather than written out here, so a changed
 // path is checked rather than an old one. It used to be a netlify.toml
 // [[redirects]] entry pointing at netlify/functions/watchlist-count.js; the
-// Worker owns the path now, and both of those files are gone.
-const apiFrom = (worker.match(/url\.pathname\s*===\s*'(\/api\/[^']+)'/) || [])[1];
+// function owns the path now, and both of those files are gone.
+const apiFrom = (router.match(/url\.pathname\s*===\s*'(\/api\/[^']+)'/) || [])[1];
 
 let figures = null;
 if (!apiFrom) {
-  fail('no-api-route', 'worker.js answers no /api route, so the live figures have no endpoint');
+  fail('no-api-route', 'functions/_router.js answers no /api route, so the live figures have no endpoint');
 } else {
   const res = await get(apiFrom);
   if (res.status === 502) {

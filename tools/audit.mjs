@@ -36,8 +36,8 @@
  *      recorded figure is printed somewhere, and a count block has both an
  *      endpoint and fallbacks. A mismatch here prints a literal "{shows}" on
  *      the page, which no other check would catch.
- *  14. Every live endpoint is handled by the function the deploy stages as
- *      `_worker.js`, and the configuration behind that deploy is the Pages one.
+ *  14. Every live endpoint is handled by the Pages Function the deploy
+ *      publishes, and the configuration behind that deploy is the Pages one.
  *      An endpoint answered locally but not in production (or the reverse) is
  *      the worst possible place to find out, and a Workers-only key in
  *      `wrangler.toml` — a cron, `workers_dev`, a route, a custom domain —
@@ -65,7 +65,7 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(join(root, p), 'utf8');
 
-const [html, css, app, icons, themeInit, manifest, headerRules, pagesConfig, workerWrangler, worker] =
+const [html, css, app, icons, themeInit, manifest, headerRules, config, entry, router] =
   await Promise.all([
     read('index.html'),
     read('styles.css'),
@@ -74,9 +74,9 @@ const [html, css, app, icons, themeInit, manifest, headerRules, pagesConfig, wor
     read('theme-init.js'),
     read('data/dashboards.js'),
     read('_headers'),
-    read('pages/wrangler.toml').catch(() => ''),
     read('wrangler.toml').catch(() => ''),
-    read('worker.js').catch(() => '')
+    read('functions/[[path]].js').catch(() => ''),
+    read('functions/_router.js').catch(() => '')
   ]);
 const js = [app, icons, themeInit].join('\n');
 
@@ -394,38 +394,47 @@ for (const entry of entries) {
 
 // The portal has one live endpoint, and it used to be a netlify.toml rewrite
 // onto a function under netlify/functions/, then a Worker with
-// `run_worker_first`. It is a Pages project now: the deploy stages this bundle
-// as `_worker.js`, Pages runs it in advanced mode, and it therefore sees every
-// request — there is no routing table to keep in step, only the script's own
+// `run_worker_first`. It is a Pages project now, and Pages compiles this
+// repository's `functions/` directory as part of the deploy: the catch-all
+// `functions/[[path]].js` sees every request and hands it to the router beside
+// it. There is no routing table to keep in step, only the router's own
 // branches.
 //
-// Two things are worth failing on. An endpoint the page calls that worker.js
+// Three things are worth failing on. An endpoint the page calls that the router
 // does not branch on falls through to the assets and 404s in production while
-// it looks fine locally. And a root wrangler.toml that carries anything
-// Workers-only would mean a second host had grown back beside the Pages project
-// — the exact split this site was collapsed out of.
+// it looks fine locally. A root wrangler.toml that carries anything Workers-only
+// would mean a second host had grown back beside the Pages project — the exact
+// split this site was collapsed out of. And the upload has to be the staged
+// directory, because `wrangler pages deploy` from this repository reads the
+// config here for it.
 for (const endpoint of endpoints) {
-  if (!worker.includes(`'${endpoint}'`) && !worker.includes(`"${endpoint}"`)) {
+  if (!router.includes(`'${endpoint}'`) && !router.includes(`"${endpoint}"`)) {
     note(
       'unhandled-endpoint',
-      `${endpoint} is not handled in worker.js, so a request for it would fall through to the assets`
+      `${endpoint} is not handled in functions/_router.js, so a request for it would fall through to the assets`
     );
   }
 }
 
-// The file itself has to stay: the Pages project's build command dry-runs it to
-// produce the worker.js the staging step turns into `_worker.js`. What it must
-// never carry is a way to deploy — each of these keys is a Worker beside the
-// Pages project rather than a build input.
+if (!entry.includes('onRequest')) {
+  note(
+    'pages-function-missing',
+    'functions/[[path]].js exports no onRequest, so Pages would have no function to run and every request would be served as an asset'
+  );
+}
+
+// Each of these keys is a Worker beside the Pages project rather than
+// configuration of it.
 const workerDeployKeys = [
   [/^\s*\[+triggers\]+/m, 'a cron trigger'],
   [/^\s*workers_dev\s*=/m, 'a workers.dev switch'],
   [/^\s*\[+routes\]+/m, 'routes'],
   [/^\s*preview_urls\s*=/m, 'preview URLs'],
-  [/^\s*custom_domain\s*=/m, 'a custom domain']
+  [/^\s*custom_domain\s*=/m, 'a custom domain'],
+  [/^\s*main\s*=/m, 'a Worker entry point']
 ];
 for (const [pattern, what] of workerDeployKeys) {
-  if (pattern.test(workerWrangler)) {
+  if (pattern.test(config)) {
     note(
       'worker-deploy-config',
       `wrangler.toml declares ${what} — this site is served from Pages alone, so that key is a Worker waiting to be deployed`
@@ -433,10 +442,10 @@ for (const [pattern, what] of workerDeployKeys) {
   }
 }
 
-if (!/^\s*pages_build_output_dir\s*=/m.test(pagesConfig)) {
+if (!/^\s*pages_build_output_dir\s*=/m.test(config)) {
   note(
     'pages-config-missing',
-    'pages/wrangler.toml does not name pages_build_output_dir, so `wrangler pages deploy` from that directory would publish nothing'
+    'wrangler.toml does not name pages_build_output_dir, so `wrangler pages deploy` from this directory would publish nothing'
   );
 }
 
@@ -523,10 +532,10 @@ const isIgnored = (path) =>
 
 // Local tool state, OS noise and the deploy pipeline's staging output may
 // genuinely not exist on a fresh clone (`.wrangler/` appears the first time
-// `wrangler dev` runs; `.pages-bundle/` and `.pages-dist/` only exist once a
-// deploy has staged them). They stay in `.assetsignore` so that when they do
-// exist they are never uploaded — their absence is not a failure. Every other
-// pattern must match something real.
+// `wrangler dev` runs; `.pages-dist/` only exists once a deploy has staged it).
+// They stay in `.assetsignore` so that when they do exist they are never
+// uploaded — their absence is not a failure. Every other pattern must match
+// something real.
 const OPTIONAL_IGNORE_PATTERNS = new Set([
   '.wrangler/',
   '.netlify/',
@@ -535,12 +544,10 @@ const OPTIONAL_IGNORE_PATTERNS = new Set([
   '.DS_Store',
   'Thumbs.db',
   'desktop.ini',
-  // Written by this repository's own deploy pipeline (`wrangler deploy
-  // --dry-run --outdir .pages-bundle`, then `tools/deploy-pages.mjs --out
-  // .pages-dist`), never by a checkout. They stay listed because a local
+  // Written by this repository's own deploy pipeline (`tools/deploy-pages.mjs
+  // --out .pages-dist`), never by a checkout. They stay listed because a local
   // deploy leaves them at the publish root, where the next unfiltered upload
   // would serve the staged copy of the site back at the site's own paths.
-  '.pages-bundle/',
   '.pages-dist/'
 ]);
 

@@ -12,7 +12,7 @@
 # would have silently stopped being true the day the file it was meant for
 # returned. That second half exempts two kinds of pattern that a fresh clone
 # cannot be expected to contain: local tool state (`.wrangler/`) and this
-# repository's own deploy staging output (`.pages-bundle/`, `.pages-dist/`).
+# repository's own deploy staging output (`.pages-dist/`).
 
 # Repository and tooling. The assets layer does not exclude dot-entries by
 # itself, so every one at the publish root is listed here.
@@ -36,11 +36,12 @@ tools/
 README.md
 _headers
 wrangler.toml
-worker.js
-# Deploy files. This repository's Pages control config, the scripts that deploy
-# it, and the staging output those scripts write (`.pages-bundle/`,
-# `.pages-dist/`) are development files: the assets directory is the repository
-# root, so anything not listed here would be uploaded and served.
-pages/
-.pages-bundle/
+# The function half of the site. Pages compiles this directory at deploy time —
+# a file here is a route, not an asset — and the upload is a staged copy of the
+# repository, so without this rule the source of every function would also be
+# published as a static file under /functions/.
+functions/
+# Deploy files: the script that stages the upload and the staging output it
+# writes (`.pages-dist/`) are development files. The assets directory is the
+# repository root, so anything not listed here would be uploaded and served.
 .pages-dist/

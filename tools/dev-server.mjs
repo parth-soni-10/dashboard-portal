@@ -3,21 +3,21 @@
  *
  *   node tools/dev-server.mjs [port]
  *
- * Serves the site the way the Cloudflare Pages project will: worker.js — the
- * bundle the deploy stages as `_worker.js` — sees every request, answers
- * `/api/*` itself and asks `env.ASSETS.fetch()` for the rest, which is exactly
- * what advanced mode does in production. The static files it serves come from
+ * Serves the site the way the Cloudflare Pages project will: the function —
+ * `functions/[[path]].js`, which Pages compiles from this repository and which
+ * hands everything to `functions/_router.js` — sees every request, answers
+ * `/api/*` itself and asks `env.ASSETS.fetch()` for the rest. The static files it serves come from
  * the repo root minus everything `.assetsignore` excludes, with the response
  * headers declared in `_headers`. All of that is read rather than restated
  * here, so local behaviour cannot drift away from production — including the
  * rules that keep development files off the published site, which would
  * otherwise look fine locally and be missing in production.
  *
- * It used to route only `wrangler.toml`'s `run_worker_first` paths to the
+ * It used to route only a Workers config's `run_worker_first` paths to the
  * function and stub `env.ASSETS` out with a 404, which was right while a Worker
- * sat in front of the assets and `[vars]` lived in that file. With the Workers
- * deployment gone the site is the Pages project alone, so the whole request
- * surface belongs to the function and the fall-through is real code here too.
+ * sat in front of the assets and `[vars]` lived in that file. The site is the
+ * Pages project alone now, and the function catches every path, so the whole
+ * request surface belongs to it and the fall-through is real code here too.
  *
  * Headers matter as much as routing, which is why they are applied here and not
  * left to the host. Until they were, this server sent no Content-Security-Policy
@@ -43,7 +43,7 @@
  * makes a change that works look like a change that did nothing. That cost real
  * debugging time here more than once; this server does not allow it.
  *
- * worker.js is re-imported with a cache-busting query on every request. Node
+ * The handler is re-imported with a cache-busting query on every request. Node
  * caches a module for the life of the process, so without it an edited Worker
  * would keep serving the old code until the server was restarted — which made
  * a correct edit look broken once, when a renamed file kept answering at its
@@ -82,11 +82,11 @@ const reply = (res, status, type, body, extra) => {
   res.end(body);
 };
 
-/** The `[vars]` the Pages control config declares — the function's plain
-    environment, and the only config this site still has. The pattern only
-    matches ALL_CAPS keys, which in that file is exactly [vars]. */
+/** The `[vars]` the Pages config declares — the function's plain environment,
+    and the only config this site has. The pattern only matches ALL_CAPS keys,
+    which in that file is exactly [vars]. */
 async function readVars() {
-  const toml = await readFile(join(root, 'pages/wrangler.toml'), 'utf8').catch(() => '');
+  const toml = await readFile(join(root, 'wrangler.toml'), 'utf8').catch(() => '');
   const vars = {};
   for (const match of toml.matchAll(/^([A-Z][A-Z0-9_]*)\s*=\s*"([^"]*)"/gm)) vars[match[1]] = match[2];
   return vars;
@@ -192,7 +192,7 @@ async function assetsFetch(request) {
 const vars = await readVars();
 const ignorePatterns = await readIgnorePatterns();
 const headerRules = await readHeaderRules();
-const workerUrl = pathToFileURL(join(root, 'worker.js')).href;
+const workerUrl = pathToFileURL(join(root, 'functions', '_router.js')).href;
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${port}`);
@@ -214,8 +214,8 @@ const server = createServer(async (req, res) => {
 
   // Everything else is the function's, as it is in advanced mode.
   try {
-    // Re-imported with a cache-busting query so an edited worker.js takes
-    // effect at once, the way the function loader used to.
+    // Re-imported with a cache-busting query so an edited handler takes effect
+    // at once, the way the function loader used to.
     const worker = (await import(`${workerUrl}?t=${Date.now()}`)).default;
     const result = await worker.fetch(
       new Request(url.href, { method: req.method, headers: req.headers }),
@@ -241,7 +241,7 @@ server.on('error', (error) => {
 
 server.listen(port, '127.0.0.1', async () => {
   console.log(`serving http://127.0.0.1:${port}/  (no-store, no build step)`);
-  console.log('  every request goes to worker.js, as advanced mode does; the rest is assets');
+  console.log('  every request goes to functions/[[path]].js, as it does in production; the rest is assets');
   console.log(`  ${ignorePatterns.length} path(s) blocked by .assetsignore`);
   for (const rule of headerRules) {
     console.log(`  headers ${rule.pattern}  (${rule.headers.length})`);

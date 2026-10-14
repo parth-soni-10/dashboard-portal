@@ -3,8 +3,9 @@
 One page that links every deployed dashboard and previews each one live inside
 its own row. Static HTML, CSS and JavaScript with no build step, matching the
 other dashboards — the one piece that needs a server (reading the Content
-Tracker's figures) is a single Cloudflare Worker (`worker.js`), because that
-dashboard's data endpoint cannot be read from a browser on this origin.
+Tracker's figures) is a Pages Function (`functions/_router.js`, reached through
+the catch-all `functions/[[path]].js`), because that dashboard's data endpoint
+cannot be read from a browser on this origin.
 
 ## Adding or changing a dashboard
 
@@ -201,10 +202,11 @@ from filtering by state — and it searches the tags and the live figures too.
 The Content Tracker row prints figures read from that dashboard's own data. It
 cannot be read from here directly: that endpoint allows exactly one other origin
 (the portfolio) and nothing else, so a browser on this origin gets no
-`Access-Control-Allow-Origin` and is not allowed to see the response. The
-Worker's own `/api/watchlist` handler (`worker.js`) therefore does the reading
-server-side and returns three integers — the upstream document is 84 KB and the
-page wants three numbers out of it, so the document never leaves the Worker. The
+`Access-Control-Allow-Origin` and is not allowed to see the response. This
+site's own `/api/watchlist` handler (`functions/_router.js`) therefore does the
+reading server-side and returns three integers — the upstream document is 84 KB
+and the page wants three numbers out of it, so the document never leaves the
+function. The
 response is edge-cached for fifteen minutes, so the store is read at most once
 per quarter hour however many people visit.
 
@@ -222,11 +224,11 @@ transient upstream problem cannot pin a wrong answer at the edge for the whole
   the tooltip says when they were read rather than implying they are live. A
   timestamp generated in the browser would quietly claim the opposite.
 
-The Worker's fetch is capped at nine seconds — a ceiling kept from Netlify's
+The function's fetch is capped at nine seconds — a ceiling kept from Netlify's
 ten-second synchronous function limit because the floor under it is measured
 rather than guessed: the upstream has been seen taking eight seconds just to
 connect during a cold spell. The page waits twelve, so it always receives the
-Worker's answer instead of cutting it off first.
+function's answer instead of cutting it off first.
 
 ## Previews
 
@@ -307,7 +309,7 @@ confirm the host is actually running this codebase (its `<title>`, plus a
 marker added in the same commit as the rest of the work), because "the checks
 passed" against the wrong site is worse than an error.
 
-It then reads `_headers`, `worker.js`, `tools/audit.mjs` (for which files are
+It then reads `_headers`, `functions/_router.js`, `tools/audit.mjs` (for which files are
 meant to be public) and the manifest out of the repository and asserts the live
 host obeys them: every public file resolves,
 every blocked path answers 404, the five security headers match what `_headers`
@@ -328,38 +330,43 @@ leaked the upstream's own error text.
 ## Deploying
 
 The site is one Cloudflare **Pages** project (`dashboards-home-portal`), and one
-host only: the Workers deployment that used to sit beside it is gone.
-`tools/deploy-pages.mjs` stages the upload and `tools/deploy-pages.mjs` bundles
-`worker.js` into the project's `_worker.js`, which Pages runs in advanced mode —
-a function that sees every request, answers `/api/watchlist` itself and asks
-`env.ASSETS.fetch()` for everything else. The repository root is the assets
-directory, `_headers` carries the CSP and the rest of the response headers, and
-`pages/wrangler.toml` names the project and its vars. A push to `main` deploys
-it — the project is connected to this repository (production branch `main`,
-build command `node tools/deploy-pages.mjs --assets . --bundle .pages-bundle
---out .pages-dist`, output directory `.pages-dist`) — and
+host only: the Workers deployment that used to sit beside it is gone, and so is
+the Workers config it was built from. What answers a request is a Pages Function
+— `functions/[[path]].js`, the catch-all route, hands every request to
+`functions/_router.js`, which answers `/api/watchlist` itself and asks
+`env.ASSETS.fetch()` for everything else. Pages compiles those files as part of
+the deploy, so nothing is bundled and no `_worker.js` is staged.
+
+`tools/deploy-pages.mjs` stages the upload (the repository root minus
+`.assetsignore`), the repository root is the assets directory, `_headers`
+carries the CSP and the rest of the response headers, and the repository's one
+config — `wrangler.toml` — names the project, its output directory and its
+vars. A push to `main` deploys it: the project is connected to this repository
+(production branch `main`, build command `node tools/deploy-pages.mjs --assets .
+--out .pages-dist`, output directory `.pages-dist`), and
 `Misc/pages-deploy.sh portal` publishes the identical staged directory by hand.
 
-One push ships `worker.js`, `_headers` and every asset together, which is what
+One push ships the function, `_headers` and every asset together, which is what
 the Content Tracker row depends on: its live figures come from `/api/watchlist`,
 answered by that function with a server-side read of the Content Tracker's own
-endpoint (`WATCHLIST_URL` in `pages/wrangler.toml`). That read used to travel a
+endpoint (`WATCHLIST_URL` in `wrangler.toml`). That read used to travel a
 **service binding** to the Content Tracker's Worker; both projects are Pages
 projects now, so it is an ordinary fetch of a public endpoint. Without the route
 the row falls back to its recorded figures, so a deploy is worth confirming, and
 `tools/check-live.mjs` is the tool for it.
-It reads this repository's own rules — including `worker.js`, for the `/api`
-route it used to take from `netlify.toml` — and asserts the deployed host obeys
-them, rather than restating the expectations here.
+It reads this repository's own rules — including `functions/_router.js`, for the
+`/api` route it used to take from `netlify.toml` — and asserts the deployed host
+obeys them, rather than restating the expectations here.
 
-`[assets] directory = "."` is what lets this deploy with no build step, and it
-has a cost worth naming: **everything in the repository is uploaded unless
-`.assetsignore` excludes it.** Shipping the audit, this README, the manifest's
-worked examples and the function's own source does not leak a secret, but it is
-not something to discover later either. `.assetsignore` is the list that keeps
-them off the upload — a file that was never uploaded cannot be served — and
-`tools/audit.mjs` keeps the two lists honest: it fails when a file is added that
-is neither public on purpose nor excluded.
+**Everything in the repository is uploaded unless `.assetsignore` excludes it.**
+Shipping the audit, this README, the manifest's worked examples and the
+functions' own source does not leak a secret, but it is not something to discover
+later either. `.assetsignore` is the list that keeps them off the upload — a file
+that was never uploaded cannot be served — and `tools/audit.mjs` keeps the two
+lists honest: it fails when a file is added that is neither public on purpose nor
+excluded. What the staged upload *replaces* is a build step: Pages reads no
+ignore file, so the filter has to run before the upload, which is the one reason
+`tools/deploy-pages.mjs` exists at all.
 
 Cloudflare's `_redirects` has no 404 status, so the old Netlify rules are not the
 mechanism any more: `.assetsignore` does the work, and the rules file itself went
@@ -371,7 +378,8 @@ redirects shadow a URL that resolves to a file the site actually has, so every
 rule to get wrong.
 
 Everything the page needs still resolves: `/tools/…`, `/README.md`,
-`/.gitignore`, `_headers`, `worker.js`, `.assetsignore` and `/.git/…` return 404
+`/.gitignore`, `_headers`, `/functions/…`, `.assetsignore` and `/.git/…` return
+404
 — none of them is uploaded — while every asset returns 200 and `/api/watchlist`
 answers.
 
@@ -438,8 +446,8 @@ into CI. It catches the failure modes that a read-through misses:
   fallbacks — any of which would print a literal `{shows}` on the page
 - a live endpoint the function does not branch on — which works locally and
   404s in production — or a Workers-only key in `wrangler.toml` (a cron,
-  `workers_dev`, a route, a custom domain), which would mean a second host had
-  grown back beside the Pages project
+  `workers_dev`, a route, a custom domain, a `main` entry point), which would
+  mean a second host had grown back beside the Pages project
 - an `<iframe>` with no `title`, no `sandbox`, or a sandbox permitting
   `allow-top-navigation`, and a page that frames dashboards without a `frame-src`
   in its own CSP
@@ -480,7 +488,9 @@ favicon.svg                   Index-numeral mark (ink stamp, no tint)
 
 _headers                      CSP, caching, security headers (all deploy modes)
 .assetsignore                 repo files that are never uploaded
-worker.js                     the function: answers /api/watchlist, else assets
+wrangler.toml                 the site's one config: its Pages project
+functions/[[path]].js         the catch-all Pages Function: hands every request on
+functions/_router.js          the work: answers /api/watchlist, else assets
 
 tools/dev-server.mjs          Static files + functions + _headers, no-store (see below)
 tools/audit.mjs               Static hygiene audit (dead CSS, tokens, fields)
@@ -616,9 +626,9 @@ node tools/dev-server.mjs        # http://127.0.0.1:4180/
 node tools/dev-server.mjs 4181   # if that port is taken
 ```
 
-It hands every request to `worker.js` — the bundle the deploy stages as
-`_worker.js`, run the way Pages advanced mode runs it, with `env.ASSETS.fetch()`
-backed by the real files — and reads `[vars]` from `pages/wrangler.toml` rather
+It hands every request to the Pages Function — `functions/[[path]].js`, which
+Pages compiles the same way in production — and reads `[vars]` from
+`wrangler.toml` rather
 than repeating them, so local behaviour cannot drift from production. It also
 reads `.assetsignore` and answers a listed path 404 here exactly as production
 does by never uploading it — otherwise a development file could be downloadable

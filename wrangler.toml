@@ -1,23 +1,28 @@
-# Bundle input for this site's Pages build — NOT a deployment.
+# The one config this site has: its Cloudflare Pages project.
 #
-# The Cloudflare Pages project runs, as its build command:
+#   npx wrangler pages deploy          → publish .pages-dist to the project
+#   npx wrangler pages dev .           → local test on http://localhost:8788
 #
-#   npx --yes wrangler@4 deploy --dry-run --outdir .pages-bundle
-#   && node tools/deploy-pages.mjs --assets . --bundle .pages-bundle --out .pages-dist
-#
-# and this file is read for the first half of that only: `--dry-run` bundles
-# `main` below into the worker.js that tools/deploy-pages.mjs stages as the
-# project's `_worker.js`. Nothing is deployed from here, and nothing should be —
-# this site has one host, the Pages project, and `tools/audit.mjs` fails if a
-# Workers-only key (a cron trigger, workers_dev, routes, preview URLs, a custom
-# domain) appears in this file.
-#
-# Everything the deployed site needs lives where the deploy reads it:
-# `pages/wrangler.toml` carries the project name, its bindings and its vars, and
-# `_headers` carries the response headers.
-#
-# Not published: `.assetsignore` lists this file, so it is never uploaded.
+# There is no Worker config and no Worker. `wrangler pages deploy` run from this
+# directory takes the project name, its vars and its bindings from here, and
+# `pages_build_output_dir` names the upload that tools/deploy-pages.mjs stages
+# from this repository. The function half of the site is a Pages Function —
+# `functions/[[path]].js`, which hands every request to `functions/_router.js` —
+# and Pages compiles those files as part of the deploy, so nothing is bundled
+# here and `wrangler deploy` is not a command this repository has any use for.
 
 name = "dashboards-home-portal"
-main = "worker.js"
+pages_build_output_dir = ".pages-dist"
 compatibility_date = "2026-10-01"
+
+[vars]
+# Where the Content Tracker's live figures are read from, server-side, by the
+# function.
+#
+# This was a `[[services]]` binding to the Content Tracker's Worker, because a
+# service binding cannot target a Pages project. That Worker is gone, so the
+# binding is gone with it and the read is an ordinary fetch of the Content
+# Tracker's own Pages endpoint. It has to be server-side: that dashboard sends
+# no Access-Control-Allow-Origin and answers OPTIONS with 405, so a browser on
+# this origin can only fail.
+WATCHLIST_URL = "https://contenttrackerdashboard.pages.dev/.netlify/functions/watchlist"

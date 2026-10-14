@@ -11,3 +11,7 @@ desktop.ini
 
 # Cloudflare Wrangler local state (not committed)
 .wrangler/
+
+# Deploy staging output, written by tools/deploy-pages.mjs. Build output; also
+# listed in .assetsignore, so it can never be uploaded even by hand.
+.pages-dist/

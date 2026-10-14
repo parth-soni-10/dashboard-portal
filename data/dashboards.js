@@ -36,7 +36,7 @@ window.DASHBOARDS = [
        it tracks the sheet. */
     description:
       '{titles} titles logged — {shows} shows and {movies} movies — turned into yearly comparisons, genre breakdowns and recommendations.',
-    /* Read server-side by this Worker (worker.js), because that dashboard's
+    /* Read server-side by this site's Pages Function, because that dashboard's
        endpoint sends no CORS headers. `fallback` is what the row
        shows until the live answer arrives, and what it keeps showing if the
        check never completes — so it must stay plausible, and `recorded` says

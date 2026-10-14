@@ -1,11 +1,15 @@
 /* ---------------------------------------------------------------------------
- * Dashboard portal — the function half of this site.
+ * Dashboard portal — the routing half of this site's function.
  *
- * The deploy stages this bundle as the Pages project's `_worker.js` (advanced
- * mode), so every request to the site arrives here and the paths this file does
- * not answer fall through to `env.ASSETS` below. It used to run as a Worker
- * with `run_worker_first = ["/api/*"]`, which is why the fall-through is
- * spelled out rather than assumed: the same bundle now sees the whole site.
+ * Pages compiles this repository's `functions/` directory, and its entry -
+ * `functions/[[path]].js` — hands every request here, so the paths this file
+ * does not answer fall through to `env.ASSETS` below. It used to run as a
+ * Worker with `run_worker_first = ["/api/*"]`, which is why the fall-through is
+ * spelled out rather than assumed: the same handler now sees the whole site.
+ *
+ * The `_` prefix is deliberate: Pages treats a file named this way as private,
+ * so it is compiled into the deployment without becoming a route of its own.
+ * The routing table is therefore the single catch-all beside it.
  *
  * One job: answer `/api/watchlist`, the live figures under the Content
  * Tracker row. This is where the Netlify function that used to answer it
@@ -73,10 +77,10 @@ async function watchlist(request, env) {
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    // One read, to the dashboard's own site. This was a service binding while
-    // the dashboard ran as a Worker too; now that both are Pages projects
-    // there is nothing to bind to, and the endpoint is fetched the ordinary
-    // way.
+    // One read, to the dashboard's own site: the WATCHLIST_URL var in
+    // wrangler.toml. This was a service binding while the dashboard ran as a
+    // Worker too; now that both are Pages projects there is nothing to bind to,
+    // and the endpoint is fetched the ordinary way.
     const upstream = await fetch(env.WATCHLIST_URL, {
       signal: controller.signal,
       headers: { Accept: 'application/json' }
