@@ -10,8 +10,9 @@
 # file is either intentionally public or listed here, and every pattern here
 # matches something real — an ignore rule that matches nothing is a rule that
 # would have silently stopped being true the day the file it was meant for
-# returned. The tool-state patterns below are exempt from that second half:
-# they may not exist on a fresh clone.
+# returned. That second half exempts two kinds of pattern that a fresh clone
+# cannot be expected to contain: local tool state (`.wrangler/`) and this
+# repository's own deploy staging output (`.pages-bundle/`, `.pages-dist/`).
 
 # Repository and tooling. The assets layer does not exclude dot-entries by
 # itself, so every one at the publish root is listed here.

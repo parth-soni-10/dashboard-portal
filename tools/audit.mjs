@@ -494,10 +494,12 @@ const isIgnored = (path) =>
       : path === pattern
   );
 
-// Local tool state and OS noise may genuinely not exist on a fresh clone
-// (`.wrangler/` appears the first time `wrangler dev` runs). They stay in
-// `.assetsignore` so that when they do exist they are never uploaded — their
-// absence is not a failure. Every other pattern must match something real.
+// Local tool state, OS noise and the deploy pipeline's staging output may
+// genuinely not exist on a fresh clone (`.wrangler/` appears the first time
+// `wrangler dev` runs; `.pages-bundle/` and `.pages-dist/` only exist once a
+// deploy has staged them). They stay in `.assetsignore` so that when they do
+// exist they are never uploaded — their absence is not a failure. Every other
+// pattern must match something real.
 const OPTIONAL_IGNORE_PATTERNS = new Set([
   '.wrangler/',
   '.netlify/',
@@ -505,7 +507,14 @@ const OPTIONAL_IGNORE_PATTERNS = new Set([
   '.vscode/',
   '.DS_Store',
   'Thumbs.db',
-  'desktop.ini'
+  'desktop.ini',
+  // Written by this repository's own deploy pipeline (`wrangler deploy
+  // --dry-run --outdir .pages-bundle`, then `tools/deploy-pages.mjs --out
+  // .pages-dist`), never by a checkout. They stay listed because a local
+  // deploy leaves them at the publish root, where the next unfiltered upload
+  // would serve the staged copy of the site back at the site's own paths.
+  '.pages-bundle/',
+  '.pages-dist/'
 ]);
 
 const allFiles = await walk(root);
