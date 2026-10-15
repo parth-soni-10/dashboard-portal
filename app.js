@@ -172,13 +172,13 @@
       var value = shown.values[key];
       out.push(
         typeof value === 'number'
-          ? '<span class="fig' +
+          ? '<span data-component="warm-tooltip" tabindex="0" data-tooltip="' + hint + '" class="fig' +
             (shown.live ? '' : ' fig-stale') +
             '" title="' +
             hint +
-            '">' +
+            '"><span data-component="animated-counter" tabindex="0" class="counter-value" aria-label="Recorded count">' +
             value +
-            '</span>'
+            '</span></span>'
           : esc(match)
       );
       return match;
@@ -367,7 +367,7 @@
       // No allow-top-navigation: the framed dashboard must not be able to
       // navigate this page out from under the visitor.
       '" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"' +
-      ' referrerpolicy="no-referrer" loading="eager"></iframe>' +
+      ' referrerpolicy="no-referrer" loading="lazy"></iframe>' +
       '<span class="preview-state">Loading the live dashboard\u2026</span>' +
       '</div>' +
       '<figcaption class="preview-cap">Live preview \u00b7 ' +
@@ -415,6 +415,7 @@
     var row = findRow(id);
     var box = row ? row.querySelector('.row-preview') : null;
     if (box) {
+      if (box.open) box.close();
       box.innerHTML = '';
       box.hidden = true;
     }
@@ -438,6 +439,13 @@
 
     box.innerHTML = previewBody(item);
     box.hidden = false;
+    if (box instanceof HTMLDialogElement) {
+      var close = document.createElement('button');
+      close.type = 'button'; close.className = 'preview-dialog-close'; close.textContent = 'Close preview'; close.setAttribute('aria-label', 'Close preview of ' + item.name);
+      close.addEventListener('click', function () { closePreview(true); });
+      box.prepend(close);
+      box.showModal();
+    }
     hydrateIcons(box);
     previewOpenId = id;
     setPreviewButton(id, true);
@@ -567,7 +575,7 @@
       '</div>' +
       // The tooltip holds the full host, which is the only reason to have one:
       // the visible text has had the deploy-host suffix stripped.
-      '<span class="row-host" title="' +
+      '<span class="row-host" data-component="warm-tooltip" tabindex="0" data-tooltip="' +
       esc(host || String(item.url || '')) +
       '">' +
       esc(hostText) +
@@ -579,7 +587,7 @@
       '</div>' +
       // Empty until opened. Living inside the row is what keeps the preview
       // from covering anything or needing to be re-anchored on scroll.
-      (live ? '<div class="row-preview" id="preview-' + esc(item.id) + '" hidden></div>' : '') +
+      (live ? '<dialog class="row-preview" id="preview-' + esc(item.id) + '" aria-label="Preview of ' + esc(item.name) + '" hidden></dialog>' : '') +
       '</li>'
     );
   }
@@ -608,7 +616,7 @@
 
   function matches(item) {
     if (!query) return true;
-    var haystack = [item.name, item.description, plainDescription(item), (item.tags || []).join(' ')]
+    var haystack = [item.name, item.category, item.description, plainDescription(item), (item.tags || []).join(' ')]
       .join(' ')
       .toLowerCase();
     return query

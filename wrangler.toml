@@ -15,6 +15,14 @@ name = "dashboards-home-portal"
 pages_build_output_dir = ".pages-dist"
 compatibility_date = "2026-10-01"
 
+# Shared feedback KV. Create the `site-feedback` namespace first, then set its
+# returned ID here (and bind SITE_FEEDBACK in the Pages dashboard for the
+# production project). Do not invent an ID: Wrangler credentials are currently
+# expired, so this binding is documented but intentionally not enabled.
+# [[kv_namespaces]]
+# binding = "SITE_FEEDBACK"
+# id = "<site-feedback namespace ID>"
+
 [vars]
 # Where the Content Tracker's live figures are read from, server-side, by the
 # function.

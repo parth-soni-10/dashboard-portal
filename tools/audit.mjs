@@ -18,8 +18,9 @@
  *   4. Every @keyframes block is referenced by an animation declaration.
  *   5. Elements in index.html are balanced, and every element id referenced by
  *      app.js exists in the markup.
- *   6. No inline <script> or style="" attribute, because the CSP is
- *      script-src 'self' / style-src 'self' with no hashes.
+ *   6. No inline executable <script> or style="" attribute, because the CSP
+ *      is script-src 'self' / style-src 'self' with no hashes. JSON-LD is a
+ *      non-executable data block and is permitted.
  *   7. No data-* attribute is written by JS and then never read by anything —
  *      write-only state is invisible dead code.
  *   8. Every field in the manifest is actually rendered. A documented field
@@ -59,6 +60,7 @@
  */
 
 import { readdir, readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -78,9 +80,12 @@ const [html, css, app, icons, themeInit, manifest, headerRules, config, entry, r
     read('functions/[[path]].js').catch(() => ''),
     read('functions/_router.js').catch(() => '')
   ]);
+const enhancedHtml = await read('portal-enhancements.js').catch(() => '');
+const enhancedCss = await read('portal-enhancements.css').catch(() => '');
+const fullCss = css + '\n' + enhancedCss;
 const js = [app, icons, themeInit].join('\n');
 
-const allSource = [html, app, icons, themeInit, manifest].join('\n');
+const allSource = [html, app, enhancedHtml, icons, themeInit, manifest].join('\n');
 
 // `_headers` without its prose. The CSP is read out of this, not out of the raw
 // file, because the comments there necessarily *talk about* directives — an
@@ -130,7 +135,7 @@ const fallbackKeys = new Set(entries.flatMap((entry) => recordedFigures(entry.co
 /* -- 1. Dead CSS selectors ------------------------------------------------- */
 
 // Strip comments and at-rule preludes so only real selector text is scanned.
-const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+const cssNoComments = fullCss.replace(/\/\*[\s\S]*?\*\//g, '');
 const selectorText = [];
 for (const block of cssNoComments.matchAll(/(^|[};])\s*([^{}@;]+)\{/g)) {
   const sel = block[2].trim();
@@ -183,7 +188,7 @@ for (const [name, value] of defined) {
 // that app.js sets at runtime with setProperty — both are deliberate, so they
 // are not findings.
 const openProps = await read('vendor/open-props.min.css');
-const vendorPlusOwn = cssNoComments + openProps;
+const vendorPlusOwn = cssNoComments + enhancedCss + openProps;
 for (const m of cssNoComments.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)\s*(,)?/g)) {
   const [name, fallback] = [m[1], m[2]];
   if (fallback) continue;
@@ -295,8 +300,13 @@ for (const field of ['name', 'description', 'id', 'tone', 'url', 'repo']) {
 
 /* -- 6. CSP safety -------------------------------------------------------- */
 
-if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(htmlNoComments)) {
-  note('csp', 'index.html has an inline <script>, which script-src \'self\' blocks');
+for (const tag of htmlNoComments.matchAll(/<script\b([^>]*)>/gi)) {
+  const attrs = tag[1];
+  const isJsonLd = /\btype=["']application\/ld\+json["']/i.test(attrs);
+  const hasSource = /\bsrc=/i.test(attrs);
+  if (!isJsonLd && !hasSource) {
+    note('csp', 'index.html has an executable inline <script>, which script-src \'self\' blocks');
+  }
 }
 if (/\sstyle=["']/i.test(htmlNoComments)) {
   note('csp', 'index.html has an inline style="" attribute, which style-src \'self\' blocks');
@@ -336,7 +346,7 @@ for (const key of [...manifestKeys].sort()) {
   // A fallback's own keys are not fields: they are the names a description
   // prints, and check 13 proves each of those is used.
   if (fallbackKeys.has(key)) continue;
-  if (!new RegExp(`\\.${key}\\b`).test(app)) {
+  if (!new RegExp(`\\.${key}\\b`).test(app + enhancedHtml)) {
     note('unused-manifest-field', `'${key}' is never read by app.js`);
   }
 }
@@ -344,7 +354,7 @@ for (const key of [...manifestKeys].sort()) {
 /* -- 9. Colour literals in JS must exist in the stylesheet ---------------- */
 
 for (const m of js.matchAll(/#[0-9a-fA-F]{6}\b/g)) {
-  if (!css.toUpperCase().includes(m[0].toUpperCase())) {
+  if (!fullCss.toUpperCase().includes(m[0].toUpperCase())) {
     note('stale-colour', `${m[0]} in JS does not appear anywhere in styles.css`);
   }
 }
@@ -500,13 +510,17 @@ if (/<iframe\b/.test(app)) {
 // reads this list, so each one is also probed on the deployed site.
 const publicFiles = new Set([
   'index.html',
+  'data/dashboards.js',
   'styles.css',
+  'portal-enhancements.css',
+  'portal-enhancements.js',
+  'sw.js',
   'app.js',
   'icons.js',
   'theme-init.js',
   'favicon.svg',
   'apple-touch-icon.png',
-  'data/dashboards.js',
+  'portal-social.png',
   'LICENSE',
   'robots.txt',
   'sitemap.xml'
@@ -775,6 +789,26 @@ for (const m of cssNoComments.matchAll(/transition:\s*([^;]+);/g)) {
 }
 
 /* ---------------------------------------------------------------- report -- */
+
+/* The upload is generated locally and is what Pages publishes. Audit it too:
+   a source-only pass cannot catch a missing staged asset or an inline CSP
+   violation introduced by the deploy staging step itself. */
+const built = join(root, '.pages-dist');
+if (existsSync(built)) {
+  const required = ['index.html', 'styles.css', 'portal-enhancements.css', 'app.js', 'portal-enhancements.js', 'data/dashboards.js', 'sw.js', '404.html'];
+  for (const file of required) {
+    try { await readFile(join(built, file)); } catch { note('built-dist-missing', `${file} is absent from .pages-dist`); }
+  }
+  async function builtHtml(dir) {
+    const names = await readdir(dir, { withFileTypes: true });
+    return (await Promise.all(names.map((item) => item.isDirectory() ? builtHtml(join(dir, item.name)) : item.name.endsWith('.html') ? [join(dir, item.name)] : []))).flat();
+  }
+  for (const file of await builtHtml(built)) {
+    const source = await readFile(file, 'utf8');
+    if (/<script\b(?![^>]*\bsrc\s*=)(?![^>]*\btype\s*=\s*["']application\/ld\+json["'])[^>]*>/i.test(source)) note('built-csp', `${file} contains executable inline script`);
+    if (/<style\b/i.test(source) || /\sstyle\s*=/i.test(source)) note('built-csp', `${file} contains an inline style block or attribute`);
+  }
+}
 
 if (!problems.length) {
   console.log('audit: clean');

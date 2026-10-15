@@ -25,6 +25,7 @@
  * indistinguishable from a real page.
  */
 import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -132,7 +133,7 @@ if (!existsSync(join(out, "404.html"))) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Not found</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0b0c;color:#e9e9ea;font:16px/1.6 system-ui,sans-serif}main{text-align:center;padding:2rem}a{color:inherit}</style>
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body><main><h1>404</h1><p>Nothing here.</p><p><a href="/">Back to the site</a></p></main></body>
 </html>
@@ -140,6 +141,20 @@ if (!existsSync(join(out, "404.html"))) {
     "utf8"
   );
   copied.push("404.html (generated)");
+}
+
+// Tie the service-worker cache name to the exact staged app contents, so every
+// deployment activates a fresh cache without changing its offline strategy.
+const swPath = join(out, "sw.js");
+if (existsSync(swPath)) {
+  const names = (await readdir(out, { recursive: true })).filter((name) => !name.endsWith("sw.js")).sort();
+  const digest = createHash("sha256");
+  for (const name of names) {
+    const path = join(out, name);
+    try { digest.update(name); digest.update(await readFile(path)); } catch (_) { /* directories are skipped */ }
+  }
+  const source = await readFile(swPath, "utf8");
+  await writeFile(swPath, source.replace("dashboard-portal-v1", "dashboard-portal-" + digest.digest("hex").slice(0, 16)), "utf8");
 }
 
 const indexPresent = existsSync(join(out, "index.html"));

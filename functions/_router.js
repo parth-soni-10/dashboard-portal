@@ -39,6 +39,7 @@
 const TIMEOUT_MS = 9000;
 
 const OK_CACHE = 'public, max-age=300, s-maxage=900, stale-while-revalidate=86400';
+const FEEDBACK_TTL = 60 * 60 * 24 * 90;
 
 const reply = (status, body, cacheControl) =>
   new Response(JSON.stringify(body), {
@@ -106,10 +107,30 @@ async function watchlist(request, env) {
   }
 }
 
+async function feedback(request, env) {
+  const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+  if (request.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
+  if (!env.SITE_FEEDBACK || !env.SITE_FEEDBACK.put) return new Response(JSON.stringify({ error: 'Feedback is not configured' }), { status: 503, headers });
+  const length = Number(request.headers.get('content-length') || 0);
+  if (length > 4096) return new Response(JSON.stringify({ error: 'Payload too large' }), { status: 413, headers });
+  try {
+    const raw = await request.text();
+    if (raw.length > 4096) return new Response(JSON.stringify({ error: 'Payload too large' }), { status: 413, headers });
+    const body = JSON.parse(raw);
+    if (body && typeof body.website === 'string' && body.website) return new Response(JSON.stringify({ ok: true }), { status: 202, headers });
+    const message = typeof body.message === 'string' ? body.message.trim() : '';
+    if (!message || message.length > 2000) return new Response(JSON.stringify({ error: 'Invalid feedback' }), { status: 400, headers });
+    const id = crypto.randomUUID();
+    await env.SITE_FEEDBACK.put('fb:portal:' + id, JSON.stringify({ message, source: 'portal', createdAt: new Date().toISOString() }), { expirationTtl: FEEDBACK_TTL });
+    return new Response(JSON.stringify({ ok: true }), { status: 201, headers });
+  } catch (_) { return new Response(JSON.stringify({ error: 'Invalid feedback' }), { status: 400, headers }); }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/api/watchlist') return watchlist(request, env);
+    if (url.pathname === '/api/feedback') return feedback(request, env);
     // Everything else is the site: every request arrives here in advanced mode,
     // so this line is what serves the page, the styles, the data and the icons.
     return env.ASSETS.fetch(request);
