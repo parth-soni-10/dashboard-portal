@@ -233,7 +233,7 @@ const voidTags = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'in
 const htmlNoComments = html.replace(/<!--[\s\S]*?-->/g, '');
 const stack = [];
 for (const m of htmlNoComments.matchAll(/<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g)) {
-  const [, close, rawTag, attrs, selfClose] = m;
+  const [, close, rawTag, , selfClose] = m;
   const tag = rawTag.toLowerCase();
   if (voidTags.has(tag) || selfClose || /^(doctype|!)/i.test(rawTag)) continue;
   if (close) {

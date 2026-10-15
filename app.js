@@ -766,7 +766,6 @@
     introPlayed = true;
 
     var visible = dashboards.filter(matches);
-    var total = dashboards.length;
 
     el.grid.innerHTML = visible.map(rowMarkup).join('');
     hydrateIcons(el.grid);
