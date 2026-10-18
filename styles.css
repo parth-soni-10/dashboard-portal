@@ -1119,3 +1119,43 @@ input,
     max-width: none;
   }
 }
+
+/* The shared 44px touch-target utility, from the brief's accessibility
+   contract. One rule, on coarse pointers only, applied to every interactive
+   component rather than re-sized per component: a link that happens to be a
+   whole row already clears 44px, but a chip, a close button or the honeypot's
+   neighbouring field does not.
+
+   The class is the contract other sites reuse (`.touch-target`); the element
+   list is here because this site's markup is hand-written and has no component
+   layer to put the class on every control. */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (pointer: coarse) {
+  a[href],
+  button,
+  summary,
+  [role='button'],
+  [role='tab'],
+  [role='switch'],
+  input:not([type='hidden']),
+  select,
+  textarea,
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    box-sizing: border-box;
+  }
+
+  /* Inline text links inside a sentence are not targets on their own; making
+     them 44px tall would break the line rhythm and the sentence's wrapping. */
+  .lede a,
+  .sr-only a,
+  p a:not(.touch-target) {
+    min-height: 0;
+    min-width: 0;
+  }
+}

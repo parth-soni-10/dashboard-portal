@@ -142,7 +142,10 @@
            floating in its own band. -->
       <div class="masthead">
         <p class="eyebrow">Index</p>
-        <h1 class="title">Dashboards</h1>
+        <!-- tabindex="-1" so the heading can receive focus after a client-side
+             navigation (Back/Forward, a shared #preview-… link); the skip link
+             still targets #index, which is the content a keyboard user wants. -->
+        <h1 class="title" tabindex="-1">Dashboards</h1>
         <p id="meta" class="lede" aria-live="polite"><strong>6</strong> dashboards, each deployed separately.</p>
         <p class="sr-only">Also explore the <a href="https://parth-portfolio-wb.pages.dev/">Parth Soni portfolio</a>.</p>
       </div>

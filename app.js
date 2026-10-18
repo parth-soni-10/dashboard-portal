@@ -722,6 +722,26 @@
     }
   }
 
+  /**
+   * Move focus to the page heading after a client-side navigation.
+   *
+   * The skip link already lands on the index, but Back/Forward and a shared
+   * `#preview-…` link change what is on screen without any focus move, so a
+   * screen-reader user was left on a document that no longer matched the
+   * announcement. The heading is the page's own name ("Dashboards"), which is
+   * the same thing a full page load would announce.
+   */
+  function focusHeading() {
+    var heading = document.querySelector('.masthead h1');
+    if (!heading) return;
+    if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    try {
+      heading.focus({ preventScroll: true });
+    } catch (e) {
+      heading.focus();
+    }
+  }
+
   /** Re-apply whatever the URL now says. Used by Back/Forward and by the hash. */
   function applyUrlState() {
     var next = urlState();
@@ -736,9 +756,18 @@
     }
 
     if (next.preview !== previewOpenId) {
-      if (next.preview) openPreview(next.preview, true);
-      else closePreview(false);
+      if (next.preview) {
+        // Opening a preview takes focus into its dialog; leaving it on the
+        // heading would undo that.
+        openPreview(next.preview, true);
+        return;
+      }
+      closePreview(false);
     }
+
+    // A navigation that changed the query, or changed nothing visible, lands on
+    // the page's heading — the same place a full load announces.
+    focusHeading();
   }
 
   function renderMeta() {
