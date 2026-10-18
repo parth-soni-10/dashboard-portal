@@ -14,6 +14,9 @@ try {
     page.on('console',m=>{if(/content security policy|refused to/i.test(m.text()))results.consoleErrors.push(m.text());});
     await page.goto(base,{waitUntil:'networkidle'});
     await page.screenshot({path:`../docs/screenshots/portal/${width}.png`,fullPage:true});
+    const missing=await page.request.get(base+'definitely-not-a-page');
+    if(missing.status()!==404)throw new Error(`unknown path answered ${missing.status()} instead of 404`);
+    if(!(await missing.text()).includes('Nothing at this address'))throw new Error('unknown path did not serve the project 404 page');
     await page.goto(base+'?q=visa',{waitUntil:'networkidle'}); if(await page.locator('#filter').inputValue()!=='visa'||await page.locator('#grid .row:not([hidden])').count()!==1)throw new Error('query URL contract failed');
     await page.locator('#filter').fill('visa'); await page.waitForTimeout(400);
     if(await page.locator('#grid .row:not([hidden])').count()!==1)throw new Error(`search mismatch at ${width}`);
