@@ -171,7 +171,15 @@ const defined = new Map();
 for (const m of cssNoComments.matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;{}]+);/g)) {
   if (!defined.has(m[1])) defined.set(m[1], m[2].trim());
 }
+/* The shared motion tokens are a published contract, not a local variable: the
+   design system's verify:motion script reads all four duration tiers and the
+   easing curves from the root element at runtime, and a site is expected to
+   carry the whole set so a timing change stays a one-line edit across sites.
+   They are deliberately exempt from the dead-token rule for that reason only;
+   any other unused custom property is still a mistake. */
+const sharedMotionToken = /^--motion-(duration|ease)-/;
 for (const [name, value] of defined) {
+  if (sharedMotionToken.test(name)) continue;
   const consumedInCss = new RegExp(`var\\(\\s*${name}\\b`).test(cssNoComments);
   const consumedInJs = allSource.includes(name);
   if (!consumedInCss && !consumedInJs) {
@@ -523,7 +531,11 @@ const publicFiles = new Set([
   'portal-social.png',
   'LICENSE',
   'robots.txt',
-  'sitemap.xml'
+  'sitemap.xml',
+  // The platform's dead-end page and its sheet. Required in the upload (see the
+  // built-dist check below), so they are published on purpose rather than leaked.
+  '404.html',
+  '404.css'
 ]);
 const publicDirs = ['fonts/', 'vendor/'];
 
@@ -804,7 +816,11 @@ if (existsSync(built)) {
     return (await Promise.all(names.map((item) => item.isDirectory() ? builtHtml(join(dir, item.name)) : item.name.endsWith('.html') ? [join(dir, item.name)] : []))).flat();
   }
   for (const file of await builtHtml(built)) {
-    const source = await readFile(file, 'utf8');
+    // Comments are not parsed, so a <style> mentioned inside one is prose, not
+    // a policy violation — the generated 404 documents the CSP decision in
+    // exactly those words. Strip comments before scanning; the markup that a
+    // browser actually executes is what this check is about.
+    const source = (await readFile(file, 'utf8')).replace(/<!--[\s\S]*?-->/g, '');
     if (/<script\b(?![^>]*\bsrc\s*=)(?![^>]*\btype\s*=\s*["']application\/ld\+json["'])[^>]*>/i.test(source)) note('built-csp', `${file} contains executable inline script`);
     if (/<style\b/i.test(source) || /\sstyle\s*=/i.test(source)) note('built-csp', `${file} contains an inline style block or attribute`);
   }

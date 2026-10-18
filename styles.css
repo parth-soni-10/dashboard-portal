@@ -121,8 +121,19 @@
   --r-control: 6px;
   --r-frame: 4px;
 
-  --ease: var(--ease-3);
-  --dur: 150ms;
+  /* Shared motion tokens, same names and values as the design system, so the
+     site's timings are one edit away from every other site's. --dur/--ease stay
+     the local aliases the rules below already read. */
+  --motion-duration-micro: 100ms;
+  --motion-duration-standard: 200ms;
+  --motion-duration-complex: 400ms;
+  --motion-duration-page: 600ms;
+  --motion-ease-enter: cubic-bezier(.16, 1, .3, 1);
+  --motion-ease-exit: cubic-bezier(.7, 0, .84, 0);
+  --motion-ease-transform: cubic-bezier(.4, 0, .2, 1);
+
+  --ease: var(--motion-ease-transform);
+  --dur: var(--motion-duration-standard);
 
   --maxw: 1080px;
   --bar-h: 52px;
@@ -958,7 +969,7 @@ input,
    flickered while filtering. */
 @media (prefers-reduced-motion: no-preference) {
   .is-intro .row {
-    animation: row-in 260ms var(--ease) both;
+    animation: row-in var(--motion-duration-standard) var(--motion-ease-enter) both;
   }
 
   /* A short stagger down the index, capped so a long list never crawls. */
@@ -1041,12 +1052,17 @@ input,
     border-top: 1px solid var(--line);
   }
 
+  /* The title gets the full width and the controls move to their own band.
+     Keeping five 44px controls beside the title cost it so much room that
+     `overflow-wrap: anywhere` broke "Dashboard" in half — a proper noun split
+     mid-word is worse than one more line of height. */
   .row {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'num    title  actions'
-      'desc   desc   desc'
-      'tags   tags   host';
+      'num     title  title'
+      'desc    desc   desc'
+      'tags    tags   host'
+      'actions actions actions';
     column-gap: var(--size-3);
     row-gap: var(--size-2);
     padding-block: var(--size-4);
@@ -1081,6 +1097,7 @@ input,
 
   .row-actions {
     grid-area: actions;
+    justify-content: flex-end;
   }
 
   /* Redundant with the row being a link in the first place — but only then. A

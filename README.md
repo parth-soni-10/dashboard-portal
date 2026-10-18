@@ -337,13 +337,20 @@ the Workers config it was built from. What answers a request is a Pages Function
 `env.ASSETS.fetch()` for everything else. Pages compiles those files as part of
 the deploy, so nothing is bundled and no `_worker.js` is staged.
 
+`--sw-cache dashboard-portal-v1` is the one flag this site passes: it rewrites
+that literal in the staged `sw.js` to `dashboard-portal-<hash of everything else
+in the upload>`, so every deploy activates a fresh offline cache without the
+worker's caching strategy changing. It is a flag rather than something the script
+always does because a site whose worker versions its own cache must not have a
+second scheme applied over the top; see `tools/deploy-pages.mjs` for the details.
+
 `tools/deploy-pages.mjs` stages the upload (the repository root minus
 `.assetsignore`), the repository root is the assets directory, `_headers`
 carries the CSP and the rest of the response headers, and the repository's one
 config — `wrangler.toml` — names the project, its output directory and its
 vars. A push to `main` deploys it: the project is connected to this repository
 (production branch `main`, build command `node tools/deploy-pages.mjs --assets .
---out .pages-dist`, output directory `.pages-dist`), and
+--out .pages-dist --sw-cache dashboard-portal-v1`, output directory `.pages-dist`), and
 `Misc/pages-deploy.sh portal` publishes the identical staged directory by hand.
 
 One push ships the function, `_headers` and every asset together, which is what
