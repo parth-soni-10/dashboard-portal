@@ -35,7 +35,7 @@
     $('#favourites').innerHTML = data.filter(function (x) { return pins.indexOf(x.id)>=0; }).slice(0,4).map(function(x){ return '<button type="button" role="radio" aria-checked="'+String(x.id===favoriteId)+'" data-fav="'+esc(x.id)+'">'+esc(x.name)+'</button>'; }).join('') || '<button type="button" data-add-first>Pin first dashboard</button>';
     renderGlance();
   }
-  var glanceIndex=0, favoriteId=pins[0]||null; function renderGlance(){var x=data[glanceIndex%data.length];if(!x)return;var f=x.count&&x.count.fallback&&x.count.fallback.titles;$('#glance-list').innerHTML='<p><strong>'+esc(x.name)+'</strong></p><p>'+(typeof f==='number'?'<span data-component="animated-counter" class="counter-value" tabindex="0" aria-label="Recorded titles">'+f+'</span> titles (recorded)':'No live metric available')+'</p><p class="sample-label">Change since yesterday unavailable — no daily history is connected.</p>';}
+  var glanceIndex=0, favoriteId=pins[0]||null; function renderGlance(){var x=data[glanceIndex%data.length];if(!x)return;var f=x.count&&x.count.fallback&&x.count.fallback.titles;var figure=typeof f==='number'?(x.url?'<a data-component="animated-counter" class="counter-value" href="'+esc(x.url)+'" target="_blank" rel="noopener" aria-label="'+f+' recorded titles — open '+esc(x.name)+'">'+f+'</a>':'<span data-component="animated-counter" class="counter-value" aria-label="Recorded titles">'+f+'</span>'):'';$('#glance-list').innerHTML='<p><strong>'+esc(x.name)+'</strong></p><p>'+figure+(typeof f==='number'?' titles (recorded)':'No live metric available')+'</p><p class="sample-label">Change since yesterday unavailable — no daily history is connected.</p>';}
   $('#glance-prev').addEventListener('click',function(){glanceIndex=(glanceIndex+data.length-1)%data.length;renderGlance();});$('#glance-next').addEventListener('click',function(){glanceIndex=(glanceIndex+1)%data.length;renderGlance();});
   grid.addEventListener('click', function (e) {
     var row=e.target.closest('.row'); if(!row) return;
@@ -58,11 +58,21 @@
   $('#custom-links').addEventListener('click',function(e){var b=e.target.closest('[data-delete-link]');if(b){custom.splice(+b.dataset.deleteLink,1);localStorage.setItem('portal:links',JSON.stringify(custom));paintCustom();}});
   $('#feedback-form').addEventListener('submit',async function(e){e.preventDefault();var status=$('#feedback-status'),form=e.currentTarget;status.textContent='Sending…';try{var response=await fetch('/api/feedback',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:$('#feedback-message').value,website:form.elements.website.value,source:'portal'})});if(!response.ok)throw new Error();status.textContent='Thanks. Your report was received.';form.reset();}catch(_){status.textContent='Could not send the report. Please try again later.';}});
   var today=new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'short',year:'numeric'}); $('#sticky-date').textContent='Date · '+today.format(new Date())+' · deploy time unavailable';
+  function openUpdates(){var heading=$('#updates-title');if(!heading)return;heading.focus({preventScroll:true});heading.scrollIntoView({block:'center'});}
+  $('#sticky-date').addEventListener('click',openUpdates);
+  $('#activity-open').addEventListener('click',openUpdates);
   $('#recent-updates').innerHTML=data.slice(0,5).map(function(x){return '<li><a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.name)+'</a> · sample update</li>';}).join('');
   var heatClass=['heat-0','heat-1','heat-2','heat-3','heat-4']; $('#activity-heatmap').innerHTML=Array.from({length:90},function(_,i){return '<i class="'+heatClass[(i*7)%5]+'" title="Sample activity day '+(i+1)+'"></i>';}).join('');
   $('#visits-chart').innerHTML='<svg viewBox="0 0 300 70" role="presentation"><polyline points="0,55 30,40 60,49 90,27 120,42 150,20 180,34 210,14 240,27 270,9 300,20"/></svg>';
   var theme=$('#theme-toggle'); if(theme)theme.setAttribute('data-component','switch-mode');
   document.querySelectorAll('[data-portal-action]').forEach(function(button){button.addEventListener('click',async function(){var item=data.find(function(x){return pins.indexOf(x.id)>=0;})||data[0],url=item&&item.url,status=$('#portal-action-status');if(button.dataset.portalAction==='refresh'){location.reload();return;}if(button.dataset.portalAction==='open'){if(url)window.open(url,'_blank','noopener');return;}try{if(button.dataset.portalAction==='share'&&navigator.share){await navigator.share({title:item.name,url:url});status.textContent='Share sheet opened.';}else{await navigator.clipboard.writeText(url);status.textContent='Link copied.';}}catch(_){status.textContent='Could not share or copy this link.';}});});
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').then(function(reg){ if(reg.waiting){var note=document.createElement('button');note.textContent='Update available → Reload';note.className='update-prompt';note.dataset.component='dynamic-button';note.onclick=function(){reg.waiting.postMessage({type:'SKIP_WAITING'});location.reload();};document.body.appendChild(note);}reg.addEventListener('updatefound',function(){var worker=reg.installing;if(worker)worker.addEventListener('statechange',function(){if(worker.state==='installed'&&navigator.serviceWorker.controller){var note=document.createElement('button');note.textContent='Update available → Reload';note.className='update-prompt';note.onclick=function(){worker.postMessage({type:'SKIP_WAITING'});location.reload();};document.body.appendChild(note);}});});}).catch(function(){});
+  // The launchpad reads the same manifest the rows above read, so a dashboard
+  // that is removed from data/dashboards.js leaves the pad on the next load.
+  if (window.mountHairline) {
+    window.mountHairline('portal-launchpad', data.filter(function (x) { return !!x.url; }).slice(0, 6).map(function (x) {
+      return { title: x.name, href: x.url, host: String(x.url).replace(/^https?:\/\//, '').replace(/\/$/, '') };
+    }));
+  }
   renderPins(); paintCustom(); draw();
 })();

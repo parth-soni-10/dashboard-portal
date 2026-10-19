@@ -170,15 +170,19 @@
       out.push(esc(text.slice(last, offset)));
       last = offset + match.length;
       var value = shown.values[key];
+      // The figure counts a dashboard's titles, so it is also the way to that
+      // dashboard: an anchor when there is a destination, a plain reading when
+      // there is not. Keeping the tooltip's own attributes on the same element
+      // leaves one tab stop for both the hint and the drill-down.
+      var reading = String(value);
+      var label = reading + ' \u2014 open ' + item.name;
       out.push(
         typeof value === 'number'
-          ? '<span data-component="warm-tooltip" tabindex="0" data-tooltip="' + hint + '" class="fig' +
-            (shown.live ? '' : ' fig-stale') +
-            '" title="' +
-            hint +
-            '"><span data-component="animated-counter" tabindex="0" class="counter-value" aria-label="Recorded count">' +
-            value +
-            '</span></span>'
+          ? (item.url
+              ? '<a data-component="warm-tooltip animated-counter" href="' + esc(item.url) + '" target="_blank" rel="noopener" data-tooltip="' + hint + '" class="fig fig-link' +
+                (shown.live ? '' : ' fig-stale') + '" aria-label="' + esc(label) + '">' + reading + '</a>'
+              : '<span data-component="warm-tooltip animated-counter" tabindex="0" data-tooltip="' + hint + '" class="fig' +
+                (shown.live ? '' : ' fig-stale') + '" title="' + hint + '">' + reading + '</span>')
           : esc(match)
       );
       return match;

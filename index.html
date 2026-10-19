@@ -167,7 +167,7 @@
            lands here; the heading alone is not focusable. -->
       <section id="index" tabindex="-1" aria-labelledby="index-title">
         <h2 id="index-title" class="sr-only">Deployed dashboards</h2>
-        <p id="sticky-date" class="sticky-date" data-component="skiper74" tabindex="0"></p>
+        <button id="sticky-date" class="sticky-date" type="button" data-component="skiper74" aria-label="Latest deploy date — open recent updates"></button>
 
         <ul id="grid" class="registry" aria-label="Deployed dashboards">
           <li class="row" data-id="content-tracker" data-tone="forest">
@@ -262,11 +262,12 @@
       <div class="portal-actions" aria-label="Dashboard actions"><button type="button" data-component="dynamic-button" data-portal-action="open">Open</button><button type="button" data-component="dynamic-button" data-portal-action="refresh">Refresh</button><button type="button" data-component="dynamic-button" data-portal-action="copy">Copy link</button><button type="button" data-component="dynamic-button" data-portal-action="share">Share</button><span id="portal-action-status" aria-live="polite"></span></div>
       <div class="portal-grid">
         <section class="portal-card" data-component="fund-widget"><h3>At a glance</h3><div id="glance-list"></div><button type="button" id="glance-prev" class="touch-target" aria-label="Previous dashboard">←</button><button type="button" id="glance-next" class="touch-target" aria-label="Next dashboard">→</button></section>
+        <section class="portal-card hairline-card" aria-labelledby="launchpad-title"><h3 id="launchpad-title">Launchpad</h3><div class="hairline-figure" id="portal-launchpad"></div><p class="hairline-read" data-hairline-read aria-live="polite">rest</p></section>
         <section class="portal-card" data-component="jelly-radio"><h3>Favourite tracker</h3><div id="favourites" role="radiogroup" aria-label="Favourite dashboards"></div><div class="undo-row"><button type="button" id="clear-pins" data-component="time-undo-action">Clear pins</button><p id="undo-status" aria-live="polite"></p></div></section>
         <section class="portal-card" data-component="stepper"><h3>Freshness settings</h3><label for="freshness">Fresh badge threshold (hours)</label><div class="number-row"><button type="button" data-step="-1" class="touch-target" aria-label="Decrease freshness">−</button><input id="freshness" type="number" min="1" max="168" value="24"><button type="button" data-step="1" class="touch-target" aria-label="Increase freshness">+</button></div><label for="alert-threshold">Flag after (hours)</label><input id="alert-threshold" type="number" min="1" max="720" value="72" aria-label="Flag if updated after this many hours" data-component="skiper68"></section>
         <section class="portal-card" data-component="analytics-chart"><h3>Visits · 30 days</h3><p class="sample-label">Illustrative sample — Cloudflare Analytics is not connected.</p><div id="visits-chart" role="img" aria-label="Illustrative sample visits chart" tabindex="0"></div></section>
-        <section class="portal-card" data-component="github-activity"><h3>Activity · 90 days</h3><p class="sample-label">Sample activity — no deploy-event feed is connected.</p><div id="activity-heatmap" aria-label="Illustrative sample contribution heatmap" tabindex="0"></div></section>
-        <section class="portal-card" data-component="transaction-list"><h3>Recent updates</h3><ul id="recent-updates"></ul><p class="sample-label">Sample entries; live deploy events are not available.</p></section>
+        <section class="portal-card" data-component="github-activity"><h3>Activity · 90 days</h3><p class="sample-label">Sample activity — no deploy-event feed is connected.</p><div id="activity-heatmap" aria-label="Illustrative sample contribution heatmap" tabindex="0"></div><button id="activity-open" class="card-link" type="button" aria-label="Open the recent updates behind this activity grid">See recent updates →</button></section>
+        <section class="portal-card" data-component="transaction-list"><h3 id="updates-title" tabindex="-1">Recent updates</h3><ul id="recent-updates"></ul><p class="sample-label">Sample entries; live deploy events are not available.</p></section>
         <section class="portal-card" data-component="inline-table-control"><h3>Custom links</h3><form id="custom-link-form"><label for="custom-name">Name</label><input id="custom-name" required maxlength="60"><label for="custom-url">URL</label><input id="custom-url" type="url" required><label for="custom-category">Category</label><input id="custom-category" required maxlength="30"><button type="submit">Add link</button></form><ul id="custom-links"></ul></section>
         <section class="portal-card" data-component="feedback"><h3>Report a broken link</h3><form id="feedback-form"><label for="feedback-message">What went wrong?</label><textarea id="feedback-message" required maxlength="2000"></textarea><label class="honeypot" aria-hidden="true" for="feedback-website">Leave blank</label><input id="feedback-website" name="website" tabindex="-1" autocomplete="off" aria-label="Leave blank"><button type="submit" data-component="dynamic-button">Send report</button><p id="feedback-status" aria-live="polite"></p></form></section>
       </div>
@@ -283,6 +284,9 @@
 
     <script src="data/dashboards.js"></script>
     <script src="icons.js"></script>
+    <script src="hairline/kernel.js"></script>
+    <script src="hairline/mount.js"></script>
+    <script src="hairline/launchpad.js"></script>
     <script src="portal-enhancements.js" defer></script>
     <script src="app.js" defer></script></body>
 </html>
