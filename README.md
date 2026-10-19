@@ -40,7 +40,7 @@ policy is caught rather than silently breaking its preview.
   description: '{titles} titles logged — {shows} shows — and yearly comparisons.',
   count: {
     endpoint: '/api/watchlist',        // same-origin route, proxied server-side
-    source: 'the watchlist Google Sheet',   // named in the hover text
+    source: 'the watchlist database',      // named in the hover text
     recorded: '2026-09-15',            // when the fallbacks below were true
     fallback: { titles: 363, shows: 277 }
   }

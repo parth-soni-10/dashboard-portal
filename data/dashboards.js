@@ -34,7 +34,7 @@ window.DASHBOARDS = [
     /* {placeholders} are filled with the live figures from `count` below.
        Never write one of these numbers into the text by hand: a literal is
        what silently went stale before, and the whole point of this row is that
-       it tracks the sheet. */
+       it tracks the database. */
     description:
       '{titles} titles logged — {shows} shows and {movies} movies — turned into yearly comparisons, genre breakdowns and recommendations.',
     /* Read server-side by this site's Pages Function, because that dashboard's
@@ -52,7 +52,7 @@ window.DASHBOARDS = [
     embed: true,
     url: 'https://contenttrackerdashboard.pages.dev/',
     repo: 'https://github.com/parth-soni-10/ContentTrackerDashboard',
-    tags: ['Analytics', 'Google Sheets', 'Chart.js']
+    tags: ['Analytics', 'Cloudflare D1', 'Chart.js']
   },
   {
     id: 'irish-visa-tracker',
