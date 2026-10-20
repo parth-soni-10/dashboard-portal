@@ -82,10 +82,21 @@ const [html, css, app, icons, themeInit, manifest, headerRules, config, entry, r
   ]);
 const enhancedHtml = await read('portal-enhancements.js').catch(() => '');
 const enhancedCss = await read('portal-enhancements.css').catch(() => '');
+// The Hairline figure's three runtime scripts. The page loads them, so the
+// classes THEY produce are produced — the dead-class check below asks "does
+// anything name this class", and the figure's own SVG classes
+// (.nf, .sil, .hi, .lo, .fo, .dash, .dot, .m) are named by the kernel that
+// draws the figure. Reading them in is what the check means: a class nothing
+// produces is still reported.
+const hairline = (await Promise.all([
+  read('hairline/kernel.js').catch(() => ''),
+  read('hairline/mount.js').catch(() => ''),
+  read('hairline/launchpad.js').catch(() => '')
+])).join('\n');
 const fullCss = css + '\n' + enhancedCss;
 const js = [app, icons, themeInit].join('\n');
 
-const allSource = [html, app, enhancedHtml, icons, themeInit, manifest].join('\n');
+const allSource = [html, app, enhancedHtml, icons, themeInit, manifest, hairline].join('\n');
 
 // `_headers` without its prose. The CSP is read out of this, not out of the raw
 // file, because the comments there necessarily *talk about* directives — an
@@ -535,7 +546,15 @@ const publicFiles = new Set([
   // The platform's dead-end page and its sheet. Required in the upload (see the
   // built-dist check below), so they are published on purpose rather than leaked.
   '404.html',
-  '404.css'
+  '404.css',
+  // The Hairline figure's three runtime scripts. The page loads them by name, so
+  // they are published on purpose — and they are listed FILE BY FILE rather
+  // than as a directory, because a directory exemption would let a stray
+  // fourth file hide there and the whole point of the check below is that a
+  // file nobody meant to publish does not get published.
+  'hairline/kernel.js',
+  'hairline/mount.js',
+  'hairline/launchpad.js'
 ]);
 const publicDirs = ['fonts/', 'vendor/'];
 
