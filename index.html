@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark" data-site="portal">
+<html lang="en" data-theme="light" data-site="portal">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,8 +10,8 @@
     />
     <link rel="canonical" href="https://dashboards-home-portal.pages.dev/" />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-    <meta name="theme-color" content="#0e0e11" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light dark" />
 
     <!-- Link previews use the deployed Pages project hostname. -->
     <meta property="og:type" content="website" />
@@ -73,7 +73,8 @@
       }
     </script>
 
-    <!-- Runs before first paint so the stored theme applies without a flash. -->
+    <!-- Runs before first paint so the stored theme applies without a flash;
+         with nothing stored it sets light, which is the site's default. -->
     <script src="theme-init.js"></script>
 
     <!-- Both faces are first-paint critical: Geist sets the index title and

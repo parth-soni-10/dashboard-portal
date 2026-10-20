@@ -932,7 +932,6 @@
   function applyTheme(theme, fromUser) {
     root.dataset.theme = theme;
     if (fromUser) {
-      root.dataset.themeSource = 'stored';
       try {
         localStorage.setItem(THEME_KEY, theme);
       } catch (e) {
@@ -959,17 +958,6 @@
   el.themeToggle.addEventListener('click', function () {
     applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark', true);
   });
-
-  // Follow the operating system while the visitor has not chosen for themselves.
-  if (window.matchMedia) {
-    var media = window.matchMedia('(prefers-color-scheme: light)');
-    var onSystemChange = function (event) {
-      if (root.dataset.themeSource === 'stored') return;
-      applyTheme(event.matches ? 'light' : 'dark', false);
-    };
-    if (media.addEventListener) media.addEventListener('change', onSystemChange);
-    else if (media.addListener) media.addListener(onSystemChange);
-  }
 
   /* ----------------------------------------------------------------- boot -- */
 
