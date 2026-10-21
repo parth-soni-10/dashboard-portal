@@ -429,6 +429,50 @@ body {
   border-color: var(--ink);
 }
 
+/* Sort order: three visible choices rather than a menu that hides two. The
+ * chips take the same 28px height and 6px radius as the filter field. */
+.sort-jelly {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-control);
+  background: var(--bg);
+}
+
+/* A flex item shrinks before its text does. Left alone, the three labels get
+ * squeezed into two-line boxes and the second line is clipped by the 22px
+ * height, so each chip keeps its max-content width and one line of text. */
+.sort-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sort-chip:hover {
+  color: var(--ink);
+}
+
+.sort-chip.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+
 /* The key hint, set like a key: hairline, mono, small. It fades out on focus
    because at that point the shortcut is already known. */
 .field-hint {

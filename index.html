@@ -40,6 +40,7 @@
     <link rel="stylesheet" href="vendor/modern-normalize.css" />
     <link rel="stylesheet" href="vendor/open-props.min.css" />
     <link rel="stylesheet" href="glide-select.css" />
+    <link rel="stylesheet" href="jelly-radio.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <!-- iOS ignores SVG favicons and the manifest entirely, so without this it
@@ -73,12 +74,23 @@
             <kbd class="field-hint" aria-hidden="true">/</kbd>
           </div>
 
-          <label class="sr-only" for="sort">Sort dashboards</label>
-          <select id="sort" class="sort-select" data-glide data-glide-size="sm" data-glide-menu-width="180">
-            <option value="curated">Curated</option>
-            <option value="name">A–Z</option>
-            <option value="host">By host</option>
-          </select>
+          <div
+            id="sortJelly"
+            class="sort-jelly"
+            role="group"
+            aria-label="Sort dashboards"
+            data-jelly-radio
+            data-jelly-bare
+            data-jelly-size="sm"
+            data-jelly-radius="4"
+            data-jelly-swell="0.06"
+            data-jelly-barge="1"
+            data-jelly-shrink="0.03"
+          >
+            <button type="button" class="sort-chip active" data-order="curated" aria-pressed="true">Curated</button>
+            <button type="button" class="sort-chip" data-order="name" aria-pressed="false">A–Z</button>
+            <button type="button" class="sort-chip" data-order="host" aria-pressed="false">By host</button>
+          </div>
 
           <button
             id="theme-toggle"
@@ -158,5 +170,6 @@
     <script src="data/dashboards.js"></script>
     <script src="icons.js"></script>
     <script src="glide-select.js"></script>
+    <script src="jelly-radio.js" defer></script>
     <script src="app.js" defer></script></body>
 </html>

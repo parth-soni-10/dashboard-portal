@@ -31,7 +31,7 @@
     emptyTitle: document.getElementById('empty-title'),
     emptyBody: document.getElementById('empty-body'),
     meta: document.getElementById('meta'),
-    sort: document.getElementById('sort'),
+    sortJelly: document.getElementById('sortJelly'),
     themeToggle: document.getElementById('theme-toggle')
   };
 
@@ -808,9 +808,20 @@
     render();
   }
 
-  if (el.sort) {
-    el.sort.addEventListener('change', function () { applyOrder(el.sort.value); });
-  }
+  // Three orders, all visible: an inline radio group reads faster than a menu
+  // that hides two of the three choices behind a click.
+  var sortButtons = el.sortJelly
+    ? Array.prototype.slice.call(el.sortJelly.querySelectorAll('[data-order]'))
+    : [];
+  sortButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      sortButtons.forEach(function (other) {
+        other.classList.toggle('active', other === button);
+        other.setAttribute('aria-pressed', other === button ? 'true' : 'false');
+      });
+      applyOrder(button.getAttribute('data-order'));
+    });
+  });
 
   function cancelPendingFilter() {
     clearTimeout(filterTimer);
