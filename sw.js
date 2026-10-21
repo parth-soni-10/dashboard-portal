@@ -1,6 +1,0 @@
-const CACHE = 'dashboard-portal-v1'; // deploy-pages.mjs replaces this with the built asset hash
-const CORE = ['/', '/styles.css', '/portal-enhancements.css', '/app.js', '/portal-enhancements.js', '/hairline/kernel.js', '/hairline/mount.js', '/hairline/launchpad.js', '/data/dashboards.js', '/icons.js', '/theme-init.js', '/sw.js', '/vendor/modern-normalize.css', '/vendor/open-props.min.css', '/fonts/inter.woff2', '/fonts/geist-sans.woff2', '/favicon.svg', '/apple-touch-icon.png'];
-self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting())));
-self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
-self.addEventListener('fetch', event => { if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return; event.respondWith(fetch(event.request).then(response => { if (response.ok) caches.open(CACHE).then(cache => cache.put(event.request, response.clone())); return response; }).catch(() => caches.match(event.request))); });
-self.addEventListener('message', event => { if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting(); });

@@ -117,23 +117,11 @@ if (!publicFiles.length || !publicDirs.length) {
 // as the rest of this work, so its presence is a usable "is this build current"
 // signal rather than a guess.
 const home = await get('/');
-let currentBuild = false;
 if (home.status !== 200) {
   fail('home', `${base}/ returned ${home.status}`);
 } else {
-  if (!/<title>\s*(?:Dashboard Portal|Data Analytics Dashboards Portal \| Parth Soni)\s*<\/title>/i.test(home.body)) {
-    fail('wrong-site', `${base}/ is not this project — its <title> does not identify the Dashboard Portal`);
-  } else if (!/<link\s+rel="canonical"\s+href="https:\/\/dashboards-home-portal\.pages\.dev\/"\s*\/>/i.test(home.body)) {
-    notes.push(`${base}/ is still on the previous build; the new metadata and pre-rendered index are not published yet`);
-  }
-  currentBuild = home.status === 200 && /<link\s+rel="canonical"\s+href="https:\/\/dashboards-home-portal\.pages\.dev\/"\s*\/>/i.test(home.body);
-  if (currentBuild) {
-    const socialImage = await get('/portal-social.png', 'HEAD');
-    if (socialImage.status !== 200) {
-      fail('social-image-missing', `/portal-social.png returned ${socialImage.status}, but the current page links to it`);
-    } else if (socialImage.headers.get('content-type') !== 'image/png') {
-      fail('social-image-type', `/portal-social.png is ${socialImage.headers.get('content-type') || 'missing Content-Type'}, expected image/png`);
-    }
+  if (!/<title>\s*Dashboard Portal\s*<\/title>/i.test(home.body)) {
+    fail('wrong-site', `${base}/ is not this project — its <title> is not "Dashboard Portal"`);
   }
   if (!/property="og:type"/.test(home.body)) {
     notes.push(`${base}/ lacks og:type, so it was built from a commit before this one`);
@@ -202,7 +190,6 @@ const allFiles = await walk(root);
 // way.
 let publicChecked = 0;
 for (const file of publicFiles) {
-  if (!currentBuild && file === 'portal-social.png') continue;
   const path = file === 'index.html' ? '/' : '/' + file;
   const res = await get(path, 'HEAD');
   publicChecked++;
@@ -244,7 +231,7 @@ const targets = [
   ),
   '.git/config',
   '.git/HEAD'
-].filter((file) => !file.startsWith('.pages-dist/'));
+];
 
 let blockedChecked = 0;
 for (const file of targets) {

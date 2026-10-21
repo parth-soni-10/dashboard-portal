@@ -170,19 +170,15 @@
       out.push(esc(text.slice(last, offset)));
       last = offset + match.length;
       var value = shown.values[key];
-      // The figure counts a dashboard's titles, so it is also the way to that
-      // dashboard: an anchor when there is a destination, a plain reading when
-      // there is not. Keeping the tooltip's own attributes on the same element
-      // leaves one tab stop for both the hint and the drill-down.
-      var reading = String(value);
-      var label = reading + ' \u2014 open ' + item.name;
       out.push(
         typeof value === 'number'
-          ? (item.url
-              ? '<a data-component="warm-tooltip animated-counter" href="' + esc(item.url) + '" target="_blank" rel="noopener" data-tooltip="' + hint + '" class="fig fig-link' +
-                (shown.live ? '' : ' fig-stale') + '" aria-label="' + esc(label) + '">' + reading + '</a>'
-              : '<span data-component="warm-tooltip animated-counter" tabindex="0" data-tooltip="' + hint + '" class="fig' +
-                (shown.live ? '' : ' fig-stale') + '" title="' + hint + '">' + reading + '</span>')
+          ? '<span class="fig' +
+            (shown.live ? '' : ' fig-stale') +
+            '" title="' +
+            hint +
+            '">' +
+            value +
+            '</span>'
           : esc(match)
       );
       return match;
@@ -371,7 +367,7 @@
       // No allow-top-navigation: the framed dashboard must not be able to
       // navigate this page out from under the visitor.
       '" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"' +
-      ' referrerpolicy="no-referrer" loading="lazy"></iframe>' +
+      ' referrerpolicy="no-referrer" loading="eager"></iframe>' +
       '<span class="preview-state">Loading the live dashboard\u2026</span>' +
       '</div>' +
       '<figcaption class="preview-cap">Live preview \u00b7 ' +
@@ -419,7 +415,6 @@
     var row = findRow(id);
     var box = row ? row.querySelector('.row-preview') : null;
     if (box) {
-      if (box.open) box.close();
       box.innerHTML = '';
       box.hidden = true;
     }
@@ -443,13 +438,6 @@
 
     box.innerHTML = previewBody(item);
     box.hidden = false;
-    if (box instanceof HTMLDialogElement) {
-      var close = document.createElement('button');
-      close.type = 'button'; close.className = 'preview-dialog-close'; close.textContent = 'Close preview'; close.setAttribute('aria-label', 'Close preview of ' + item.name);
-      close.addEventListener('click', function () { closePreview(true); });
-      box.prepend(close);
-      box.showModal();
-    }
     hydrateIcons(box);
     previewOpenId = id;
     setPreviewButton(id, true);
@@ -579,7 +567,7 @@
       '</div>' +
       // The tooltip holds the full host, which is the only reason to have one:
       // the visible text has had the deploy-host suffix stripped.
-      '<span class="row-host" data-component="warm-tooltip" tabindex="0" data-tooltip="' +
+      '<span class="row-host" title="' +
       esc(host || String(item.url || '')) +
       '">' +
       esc(hostText) +
@@ -591,7 +579,7 @@
       '</div>' +
       // Empty until opened. Living inside the row is what keeps the preview
       // from covering anything or needing to be re-anchored on scroll.
-      (live ? '<dialog class="row-preview" id="preview-' + esc(item.id) + '" aria-label="Preview of ' + esc(item.name) + '" hidden></dialog>' : '') +
+      (live ? '<div class="row-preview" id="preview-' + esc(item.id) + '" hidden></div>' : '') +
       '</li>'
     );
   }
@@ -620,7 +608,7 @@
 
   function matches(item) {
     if (!query) return true;
-    var haystack = [item.name, item.category, item.description, plainDescription(item), (item.tags || []).join(' ')]
+    var haystack = [item.name, item.description, plainDescription(item), (item.tags || []).join(' ')]
       .join(' ')
       .toLowerCase();
     return query
@@ -726,26 +714,6 @@
     }
   }
 
-  /**
-   * Move focus to the page heading after a client-side navigation.
-   *
-   * The skip link already lands on the index, but Back/Forward and a shared
-   * `#preview-…` link change what is on screen without any focus move, so a
-   * screen-reader user was left on a document that no longer matched the
-   * announcement. The heading is the page's own name ("Dashboards"), which is
-   * the same thing a full page load would announce.
-   */
-  function focusHeading() {
-    var heading = document.querySelector('.masthead h1');
-    if (!heading) return;
-    if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
-    try {
-      heading.focus({ preventScroll: true });
-    } catch (e) {
-      heading.focus();
-    }
-  }
-
   /** Re-apply whatever the URL now says. Used by Back/Forward and by the hash. */
   function applyUrlState() {
     var next = urlState();
@@ -760,18 +728,9 @@
     }
 
     if (next.preview !== previewOpenId) {
-      if (next.preview) {
-        // Opening a preview takes focus into its dialog; leaving it on the
-        // heading would undo that.
-        openPreview(next.preview, true);
-        return;
-      }
-      closePreview(false);
+      if (next.preview) openPreview(next.preview, true);
+      else closePreview(false);
     }
-
-    // A navigation that changed the query, or changed nothing visible, lands on
-    // the page's heading — the same place a full load announces.
-    focusHeading();
   }
 
   function renderMeta() {

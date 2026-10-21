@@ -34,7 +34,6 @@ desktop.ini
 tools/
 
 README.md
-CLAUDE.md
 _headers
 wrangler.toml
 # The function half of the site. Pages compiles this directory at deploy time —

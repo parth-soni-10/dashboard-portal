@@ -67,7 +67,6 @@ const MIME = {
   '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
-  '.png': 'image/png',
   '.woff2': 'font/woff2',
   '.toml': 'text/plain; charset=utf-8',
   '.md': 'text/plain; charset=utf-8'
@@ -175,7 +174,7 @@ async function assetsFetch(request) {
 
   try {
     const info = await stat(file);
-    if (info.isDirectory()) return notFound(declared);
+    if (info.isDirectory()) return new Response('Not found\n', { status: 404, headers: declared });
     const body = await readFile(file);
     return new Response(body, {
       status: 200,
@@ -186,23 +185,8 @@ async function assetsFetch(request) {
       }
     });
   } catch {
-    return notFound(declared);
+    return new Response('Not found\n', { status: 404, headers: declared });
   }
-}
-
-/**
- * A miss, answered the way Pages answers it: the project's own 404.html with a
- * 404 status. Replying with plain text here made every dead link look correct
- * locally and wrong in production — the page existed, was uploaded, and was
- * never reached from the one place it could be tested.
- */
-async function notFound(declared) {
-  const body = await readFile(join(root, '404.html')).catch(() => null);
-  if (!body) return new Response('Not found\n', { status: 404, headers: declared });
-  return new Response(body, {
-    status: 404,
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', ...declared }
-  });
 }
 
 const vars = await readVars();

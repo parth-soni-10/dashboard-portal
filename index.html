@@ -1,80 +1,31 @@
 <!doctype html>
-<html lang="en" data-theme="light" data-site="portal">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Data Analytics Dashboards Portal | Parth Soni</title>
+    <title>Dashboard Portal</title>
     <meta
       name="description"
-      content="Explore Parth Soni's dashboards for F1 session analysis, personal finance, RBI weekly data, visa decisions, UCD module planning, and media analytics."
+      content="One index for every deployed dashboard: media analytics, visa decisions, RBI data and UCD timetables."
     />
-    <link rel="canonical" href="https://dashboards-home-portal.pages.dev/" />
-    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-    <meta name="theme-color" content="#ffffff" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0e0e11" />
+    <meta name="color-scheme" content="dark light" />
 
-    <!-- Link previews use the deployed Pages project hostname. -->
+    <!-- Link previews, so pasting this into a chat renders something rather
+         than a naked URL. og:url and og:image are deliberately absent rather
+         than guessed: the site has no hostname until it is deployed, and a
+         wrong og:url is worse than none — crawlers fall back to the requested
+         URL, which is right by definition. Add both with the real host once it
+         has one. -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Dashboard Portal" />
-    <meta property="og:title" content="Data Analytics Dashboards Portal | Parth Soni" />
+    <meta property="og:title" content="Dashboard Portal" />
     <meta
       property="og:description"
-      content="Explore F1 session analysis, personal finance, RBI weekly data, visa decisions, UCD module planning, and media analytics."
+      content="One index for every deployed dashboard: media analytics, visa decisions, RBI data and UCD timetables."
     />
-    <meta property="og:url" content="https://dashboards-home-portal.pages.dev/" />
-    <meta property="og:image" content="https://dashboards-home-portal.pages.dev/portal-social.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Dashboard Portal index mark" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Data Analytics Dashboards Portal | Parth Soni" />
-    <meta
-      name="twitter:description"
-      content="Explore F1 session analysis, personal finance, RBI weekly data, visa decisions, UCD module planning, and media analytics."
-    />
-    <meta name="twitter:image" content="https://dashboards-home-portal.pages.dev/portal-social.png" />
-    <meta name="twitter:image:alt" content="Dashboard Portal index mark" />
-    <script type="application/ld+json" id="portal-schema">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "WebSite",
-            "@id": "https://dashboards-home-portal.pages.dev/#website",
-            "url": "https://dashboards-home-portal.pages.dev/",
-            "name": "Data Analytics Dashboards Portal | Parth Soni",
-            "inLanguage": "en"
-          },
-          {
-            "@type": "CollectionPage",
-            "@id": "https://dashboards-home-portal.pages.dev/#index",
-            "url": "https://dashboards-home-portal.pages.dev/",
-            "name": "Data Analytics Dashboards Portal | Parth Soni",
-            "description": "An index of deployed dashboards for motorsport, personal finance, economic data, immigration decisions, university planning, and media analytics.",
-            "isPartOf": { "@id": "https://dashboards-home-portal.pages.dev/#website" },
-            "mainEntity": { "@id": "https://dashboards-home-portal.pages.dev/#dashboard-list" }
-          },
-          {
-            "@type": "ItemList",
-            "@id": "https://dashboards-home-portal.pages.dev/#dashboard-list",
-            "name": "Deployed dashboards",
-            "itemListOrder": "https://schema.org/ItemListOrderAscending",
-            "numberOfItems": 6,
-            "itemListElement": [
-              { "@type": "ListItem", "position": 1, "name": "Content Tracker", "url": "https://contenttrackerdashboard.pages.dev/", "description": "Media watchlist analytics with yearly comparisons, genre breakdowns, and recommendations." },
-              { "@type": "ListItem", "position": 2, "name": "Irish Visa Tracker", "url": "https://irishvisaupdatetracker.pages.dev/", "description": "Daily Embassy of Ireland decision and approval counts with community-reported wait times." },
-              { "@type": "ListItem", "position": 3, "name": "RBI Weekly Dashboard", "url": "https://rbiweeklydashboard.pages.dev/", "description": "Weekly Statistical Supplement data with crude estimates, FII flows, and external-debt rankings." },
-              { "@type": "ListItem", "position": 4, "name": "F1 Session Analyzer", "url": "https://f1-practice-session-analysis.pages.dev/", "description": "Analyze Formula 1 practice sessions with turn-by-turn driver and team comparisons." },
-              { "@type": "ListItem", "position": 5, "name": "cents. Expense Tracker", "url": "https://cents-app.pages.dev/", "description": "A private personal-finance tracker for budgets, spending, balances, and recurring bills." },
-              { "@type": "ListItem", "position": 6, "name": "CSNL Module Picker", "url": "https://ucdcsnlmodulepicker.pages.dev/", "description": "Build a clash-free UCD timetable using live module data, assessment weights, and exam options." }
-            ]
-          }
-        ]
-      }
-    </script>
+    <meta name="twitter:card" content="summary" />
 
-    <!-- Runs before first paint so the stored theme applies without a flash;
-         with nothing stored it sets light, which is the site's default. -->
+    <!-- Runs before first paint so the stored theme applies without a flash. -->
     <script src="theme-init.js"></script>
 
     <!-- Both faces are first-paint critical: Geist sets the index title and
@@ -89,7 +40,6 @@
     <link rel="stylesheet" href="vendor/modern-normalize.css" />
     <link rel="stylesheet" href="vendor/open-props.min.css" />
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="portal-enhancements.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <!-- iOS ignores SVG favicons and the manifest entirely, so without this it
          substitutes a screenshot of the page for the home-screen icon. The
@@ -106,7 +56,7 @@
       <div class="bar-inner">
         <p class="wordmark">Dashboard Portal</p>
 
-      <div class="bar-tools">
+        <div class="bar-tools">
           <div class="field">
             <label class="sr-only" for="filter">Filter dashboards</label>
             <span class="field-ico" data-icon="search" aria-hidden="true"></span>
@@ -143,12 +93,8 @@
            floating in its own band. -->
       <div class="masthead">
         <p class="eyebrow">Index</p>
-        <!-- tabindex="-1" so the heading can receive focus after a client-side
-             navigation (Back/Forward, a shared #preview-… link); the skip link
-             still targets #index, which is the content a keyboard user wants. -->
-        <h1 class="title" tabindex="-1">Dashboards</h1>
-        <p id="meta" class="lede" aria-live="polite"><strong>6</strong> dashboards, each deployed separately.</p>
-        <p class="sr-only">Also explore the <a href="https://parth-portfolio-wb.pages.dev/">Parth Soni portfolio</a>.</p>
+        <h1 class="title">Dashboards</h1>
+        <p id="meta" class="lede" aria-live="polite"></p>
       </div>
 
       <!-- Column labels for the index below. They are the same grid as a row,
@@ -161,76 +107,25 @@
         <span></span>
       </div>
 
-      <!-- The list is intentionally present in the HTML for crawlers and for
-           visitors without JavaScript. app.js upgrades it with filtering and previews. -->
+      <!-- The list is built in the browser from data/dashboards.js. Without
+           scripting there would otherwise be a blank page and no explanation. -->
+      <noscript>
+        <p class="empty">
+          <span class="empty-title">This index is built in the browser</span>
+          <span class="empty-body"
+            >With JavaScript disabled there is nothing to show. The repository and the
+            portfolio are linked in the footer.</span
+          >
+        </p>
+      </noscript>
 
       <!-- tabindex="-1" on the skip link's target so a keyboard user actually
            lands here; the heading alone is not focusable. -->
       <section id="index" tabindex="-1" aria-labelledby="index-title">
         <h2 id="index-title" class="sr-only">Deployed dashboards</h2>
-        <button id="sticky-date" class="sticky-date" type="button" data-component="skiper74" aria-label="Latest deploy date — open recent updates"></button>
 
-        <ul id="grid" class="registry" aria-label="Deployed dashboards">
-          <li class="row" data-id="content-tracker" data-tone="forest">
-            <span class="row-index" aria-hidden="true">01</span>
-            <div class="row-main">
-              <h3 class="row-title"><a href="https://contenttrackerdashboard.pages.dev/" target="_blank" rel="noopener">Content Tracker</a></h3>
-              <p class="row-desc">Media watchlist analytics with yearly comparisons, genre breakdowns, and recommendations.</p>
-              <p class="row-tags">Analytics · Cloudflare D1 · Chart.js</p>
-            </div>
-            <span class="row-host" title="contenttrackerdashboard.pages.dev">contenttrackerdashboard</span>
-            <div class="row-actions"></div>
-          </li>
-          <li class="row" data-id="irish-visa-tracker" data-tone="emerald">
-            <span class="row-index" aria-hidden="true">02</span>
-            <div class="row-main">
-              <h3 class="row-title"><a href="https://irishvisaupdatetracker.pages.dev/" target="_blank" rel="noopener">Irish Visa Tracker</a></h3>
-              <p class="row-desc">Daily Embassy of Ireland decision and approval counts, plus the community wait times still being reported.</p>
-              <p class="row-tags">Python · GitHub Actions · Scraping</p>
-            </div>
-            <span class="row-host" title="irishvisaupdatetracker.pages.dev">irishvisaupdatetracker</span>
-            <div class="row-actions"></div>
-          </li>
-          <li class="row" data-id="rbi-weekly" data-tone="amber">
-            <span class="row-index" aria-hidden="true">03</span>
-            <div class="row-main">
-              <h3 class="row-title"><a href="https://rbiweeklydashboard.pages.dev/" target="_blank" rel="noopener">RBI Weekly Dashboard</a></h3>
-              <p class="row-desc">Weekly Statistical Supplement figures with crude estimates, FII flows and external-debt rankings.</p>
-              <p class="row-tags">Scrapers · World Bank · Functions</p>
-            </div>
-            <span class="row-host" title="rbiweeklydashboard.pages.dev">rbiweeklydashboard</span>
-            <div class="row-actions"></div>
-          </li>
-          <li class="row" data-id="f1-session-analyzer">
-            <span class="row-index" aria-hidden="true">04</span>
-            <div class="row-main">
-              <h3 class="row-title"><a href="https://f1-practice-session-analysis.pages.dev/" target="_blank" rel="noopener">F1 Session Analyzer</a></h3>
-              <p class="row-desc">Analyze Formula 1 practice sessions with turn-by-turn driver and team comparisons.</p>
-              <p class="row-tags">Formula 1 · Motorsport · Telemetry</p>
-            </div>
-            <span class="row-host" title="f1-practice-session-analysis.pages.dev">f1-practice-session-analysis</span>
-            <div class="row-actions"></div>
-          </li>
-          <li class="row" data-id="cents-app">
-            <span class="row-index" aria-hidden="true">05</span>
-            <div class="row-main">
-              <h3 class="row-title"><a href="https://cents-app.pages.dev/" target="_blank" rel="noopener">cents. Expense Tracker</a></h3>
-              <p class="row-desc">A private personal-finance tracker for budgets, spending, balances, and recurring bills.</p>
-              <p class="row-tags">Personal finance · Budget · PWA</p>
-            </div>
-            <span class="row-host" title="cents-app.pages.dev">cents-app</span>
-            <div class="row-actions"></div>
-          </li>
-          <li class="row" data-id="csnl-module-picker" data-tone="cobalt">
-            <span class="row-index" aria-hidden="true">06</span>
-            <div class="row-main">
-              <h3 class="row-title"><a href="https://ucdcsnlmodulepicker.pages.dev/" target="_blank" rel="noopener">CSNL Module Picker</a></h3>
-              <p class="row-desc">Builds a clash-free timetable from UCD's live module data, with assessment weights and exam options.</p>
-              <p class="row-tags">UCD · Timetabling · Live data</p>
-            </div>
-            <span class="row-host" title="ucdcsnlmodulepicker.pages.dev">ucdcsnlmodulepicker</span>
-            <div class="row-actions"></div>
-          </li>
+        <ul id="grid" class="registry">
+          <!-- Rows are rendered from data/dashboards.js -->
         </ul>
 
         <p id="empty" class="empty" hidden>
@@ -244,37 +139,6 @@
       </section>
     </main>
 
-    <section id="portal-workbench" class="portal-workbench" aria-labelledby="workbench-title">
-      <p class="eyebrow">Portal tools</p>
-      <h2 id="workbench-title">Dashboard overview</h2>
-      <p>Live dashboard links remain in the index above. Activity samples are explicitly marked where no feed is connected.</p>
-      <div class="portal-controls">
-        <details class="filter-disclosure" data-component="filter-disclosure"><summary>Filter dashboards</summary><div id="category-filter" role="radiogroup" aria-label="Filter by category"><button type="button" role="radio" aria-checked="true" data-category="all">All</button><button type="button" role="radio" aria-checked="false" data-category="Media">Media</button><button type="button" role="radio" aria-checked="false" data-category="Visa">Visa</button><button type="button" role="radio" aria-checked="false" data-category="RBI">RBI</button><button type="button" role="radio" aria-checked="false" data-category="UCD">UCD</button><button type="button" role="radio" aria-checked="false" data-category="Finance">Finance</button><button type="button" role="radio" aria-checked="false" data-category="Motorsport">Motorsport</button></div></details>
-        <label for="sort-select">Sort</label><select id="sort-select" data-component="glide-select"><option value="recent">Recently updated</option><option value="az">A–Z</option><option value="category">By category</option></select>
-        <div class="segment" role="radiogroup" aria-label="View" data-component="rubber-segment"><button type="button" role="radio" aria-checked="true" data-view="list">List</button><button type="button" role="radio" aria-checked="false" data-view="grid">Grid</button></div>
-      </div>
-      <nav class="portal-nav" aria-label="Portal sections" data-component="gooey-nav"><a href="#index">Home</a><a href="#index">Dashboards</a><a href="#portal-about">About</a></nav>
-      <nav class="portal-island" aria-label="Section index" data-component="scroll-island"><a href="#index">Live</a><a href="#portal-workbench">Experiments</a><a href="#portal-about">About</a></nav>
-      <div class="portal-tabs" role="tablist" aria-label="Dashboard status" data-component="fluid-tabs"><button type="button" role="tab" aria-selected="true" data-status-tab="live">Live</button><button type="button" role="tab" aria-selected="false" data-status-tab="experiments">Experiments</button><button type="button" role="tab" aria-selected="false" data-status-tab="archive">Archive</button></div><span id="tab-note" aria-live="polite">Showing live dashboards</span>
-      <div class="portal-switches">
-        <label><input type="checkbox" id="show-offline" aria-label="Show offline sites" role="switch" data-component="squish-switch"> Show offline sites</label>
-        <label><input type="checkbox" id="show-wip" aria-label="Show work in progress" role="switch" data-component="squish-switch"> Show WIP</label>
-      </div>
-      <div class="portal-actions" aria-label="Dashboard actions"><button type="button" data-component="dynamic-button" data-portal-action="open">Open</button><button type="button" data-component="dynamic-button" data-portal-action="refresh">Refresh</button><button type="button" data-component="dynamic-button" data-portal-action="copy">Copy link</button><button type="button" data-component="dynamic-button" data-portal-action="share">Share</button><span id="portal-action-status" aria-live="polite"></span></div>
-      <div class="portal-grid">
-        <section class="portal-card" data-component="fund-widget"><h3>At a glance</h3><div id="glance-list"></div><button type="button" id="glance-prev" class="touch-target" aria-label="Previous dashboard">←</button><button type="button" id="glance-next" class="touch-target" aria-label="Next dashboard">→</button></section>
-        <section class="portal-card hairline-card" aria-labelledby="launchpad-title"><h3 id="launchpad-title">Launchpad</h3><div class="hairline-figure" id="portal-launchpad"></div><p class="hairline-read" data-hairline-read aria-live="polite">rest</p></section>
-        <section class="portal-card" data-component="jelly-radio"><h3>Favourite tracker</h3><div id="favourites" role="radiogroup" aria-label="Favourite dashboards"></div><div class="undo-row"><button type="button" id="clear-pins" data-component="time-undo-action">Clear pins</button><p id="undo-status" aria-live="polite"></p></div></section>
-        <section class="portal-card" data-component="stepper"><h3>Freshness settings</h3><label for="freshness">Fresh badge threshold (hours)</label><div class="number-row"><button type="button" data-step="-1" class="touch-target" aria-label="Decrease freshness">−</button><input id="freshness" type="number" min="1" max="168" value="24"><button type="button" data-step="1" class="touch-target" aria-label="Increase freshness">+</button></div><label for="alert-threshold">Flag after (hours)</label><input id="alert-threshold" type="number" min="1" max="720" value="72" aria-label="Flag if updated after this many hours" data-component="skiper68"></section>
-        <section class="portal-card" data-component="analytics-chart"><h3>Visits · 30 days</h3><p class="sample-label">Illustrative sample — Cloudflare Analytics is not connected.</p><div id="visits-chart" role="img" aria-label="Illustrative sample visits chart" tabindex="0"></div></section>
-        <section class="portal-card" data-component="github-activity"><h3>Activity · 90 days</h3><p class="sample-label">Sample activity — no deploy-event feed is connected.</p><div id="activity-heatmap" aria-label="Illustrative sample contribution heatmap" tabindex="0"></div><button id="activity-open" class="card-link" type="button" aria-label="See recent updates - open the recent updates behind this activity grid">See recent updates →</button></section>
-        <section class="portal-card" data-component="transaction-list"><h3 id="updates-title" tabindex="-1">Recent updates</h3><ul id="recent-updates"></ul><p class="sample-label">Sample entries; live deploy events are not available.</p></section>
-        <section class="portal-card" data-component="inline-table-control"><h3>Custom links</h3><form id="custom-link-form"><label for="custom-name">Name</label><input id="custom-name" required maxlength="60"><label for="custom-url">URL</label><input id="custom-url" type="url" required><label for="custom-category">Category</label><input id="custom-category" required maxlength="30"><button type="submit">Add link</button></form><ul id="custom-links"></ul></section>
-        <section class="portal-card" data-component="feedback"><h3>Report a broken link</h3><form id="feedback-form"><label for="feedback-message">What went wrong?</label><textarea id="feedback-message" required maxlength="2000"></textarea><label class="honeypot" aria-hidden="true" for="feedback-website">Leave blank</label><input id="feedback-website" name="website" tabindex="-1" autocomplete="off" aria-label="Leave blank"><button type="submit" data-component="dynamic-button">Send report</button><p id="feedback-status" aria-live="polite"></p></form></section>
-      </div>
-      <section id="portal-about"><h3>About this portal</h3><p>Each dashboard is independently hosted. Use the row menu to open, pin, copy, or preview a destination.</p></section>
-    </section>
-
     <footer class="footer">
       <div class="footer-inner">
         <span>Built for personal use</span>
@@ -285,9 +149,5 @@
 
     <script src="data/dashboards.js"></script>
     <script src="icons.js"></script>
-    <script src="hairline/kernel.js"></script>
-    <script src="hairline/mount.js"></script>
-    <script src="hairline/launchpad.js"></script>
-    <script src="portal-enhancements.js" defer></script>
     <script src="app.js" defer></script></body>
 </html>

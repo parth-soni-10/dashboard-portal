@@ -29,7 +29,6 @@ window.DASHBOARDS = [
   {
     id: 'content-tracker',
     name: 'Content Tracker',
-    category: 'Media',
     tone: 'forest',
     /* {placeholders} are filled with the live figures from `count` below.
        Never write one of these numbers into the text by hand: a literal is
@@ -57,7 +56,6 @@ window.DASHBOARDS = [
   {
     id: 'irish-visa-tracker',
     name: 'Irish Visa Tracker',
-    category: 'Visa',
     tone: 'emerald',
     description:
       'Daily Embassy of Ireland decision and approval counts, plus the community wait times still being reported.',
@@ -73,7 +71,6 @@ window.DASHBOARDS = [
   {
     id: 'rbi-weekly',
     name: 'RBI Weekly Dashboard',
-    category: 'RBI',
     tone: 'amber',
     description:
       'Weekly Statistical Supplement figures with crude estimates, FII flows and external-debt rankings.',
@@ -83,31 +80,8 @@ window.DASHBOARDS = [
     tags: ['Scrapers', 'World Bank', 'Functions']
   },
   {
-    id: 'f1-session-analyzer',
-    name: 'F1 Session Analyzer',
-    category: 'Motorsport',
-    description:
-      'Analyze Formula 1 practice sessions with turn-by-turn driver and team comparisons.',
-    url: 'https://f1-practice-session-analysis.pages.dev/',
-    repo: 'https://github.com/Aarson13/F1-Practice-session-analysis',
-    tags: ['Formula 1', 'Motorsport', 'Telemetry'],
-    embed: false
-  },
-  {
-    id: 'cents-app',
-    name: 'cents. Expense Tracker',
-    category: 'Finance',
-    description:
-      'A private personal-finance tracker for budgets, spending, balances, and recurring bills.',
-    url: 'https://cents-app.pages.dev/',
-    repo: 'https://github.com/parth-soni-10/Expense-Tracker',
-    tags: ['Personal finance', 'Budget', 'PWA'],
-    embed: false
-  },
-  {
     id: 'csnl-module-picker',
     name: 'CSNL Module Picker',
-    category: 'UCD',
     tone: 'cobalt',
     description:
       "Builds a clash-free timetable from UCD's live module data, with assessment weights and exam options.",

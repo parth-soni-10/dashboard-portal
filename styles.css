@@ -121,19 +121,8 @@
   --r-control: 6px;
   --r-frame: 4px;
 
-  /* Shared motion tokens, same names and values as the design system, so the
-     site's timings are one edit away from every other site's. --dur/--ease stay
-     the local aliases the rules below already read. */
-  --motion-duration-micro: 100ms;
-  --motion-duration-standard: 200ms;
-  --motion-duration-complex: 400ms;
-  --motion-duration-page: 600ms;
-  --motion-ease-enter: cubic-bezier(.16, 1, .3, 1);
-  --motion-ease-exit: cubic-bezier(.7, 0, .84, 0);
-  --motion-ease-transform: cubic-bezier(.4, 0, .2, 1);
-
-  --ease: var(--motion-ease-transform);
-  --dur: var(--motion-duration-standard);
+  --ease: var(--ease-3);
+  --dur: 150ms;
 
   --maxw: 1080px;
   --bar-h: 52px;
@@ -969,7 +958,7 @@ input,
    flickered while filtering. */
 @media (prefers-reduced-motion: no-preference) {
   .is-intro .row {
-    animation: row-in var(--motion-duration-standard) var(--motion-ease-enter) both;
+    animation: row-in 260ms var(--ease) both;
   }
 
   /* A short stagger down the index, capped so a long list never crawls. */
@@ -1052,17 +1041,12 @@ input,
     border-top: 1px solid var(--line);
   }
 
-  /* The title gets the full width and the controls move to their own band.
-     Keeping five 44px controls beside the title cost it so much room that
-     `overflow-wrap: anywhere` broke "Dashboard" in half — a proper noun split
-     mid-word is worse than one more line of height. */
   .row {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'num     title  title'
-      'desc    desc   desc'
-      'tags    tags   host'
-      'actions actions actions';
+      'num    title  actions'
+      'desc   desc   desc'
+      'tags   tags   host';
     column-gap: var(--size-3);
     row-gap: var(--size-2);
     padding-block: var(--size-4);
@@ -1097,7 +1081,6 @@ input,
 
   .row-actions {
     grid-area: actions;
-    justify-content: flex-end;
   }
 
   /* Redundant with the row being a link in the first place — but only then. A
@@ -1118,94 +1101,4 @@ input,
   .preview-cap {
     max-width: none;
   }
-}
-
-/* The shared 44px touch-target utility, from the brief's accessibility
-   contract. One rule, on coarse pointers only, applied to every interactive
-   component rather than re-sized per component: a link that happens to be a
-   whole row already clears 44px, but a chip, a close button or the honeypot's
-   neighbouring field does not.
-
-   The class is the contract other sites reuse (`.touch-target`); the element
-   list is here because this site's markup is hand-written and has no component
-   layer to put the class on every control. */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-@media (pointer: coarse) {
-  a[href],
-  button,
-  summary,
-  [role='button'],
-  [role='tab'],
-  [role='switch'],
-  input:not([type='hidden']),
-  select,
-  textarea,
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
-    box-sizing: border-box;
-  }
-
-  /* Inline text links inside a sentence are not targets on their own; making
-     them 44px tall would break the line rhythm and the sentence's wrapping. */
-  .lede a,
-  .sr-only a,
-  p a:not(.touch-target) {
-    min-height: 0;
-    min-width: 0;
-  }
-}
-
-/* ------------------------------------------------------ hairline figures -- */
-/* The engine's palette mapped onto this site's tokens. inject() is never
- * called, so these rules stand in for its stylesheet under style-src 'self'. */
-.hairline-figure {
-  --hairline-plate: var(--bg);
-  --hairline-hi: var(--ink);
-  --hairline-edge: var(--ink-mid);
-  --hairline-mid: var(--line-strong);
-  --hairline-lo: var(--line);
-  --hairline-stroke: 1;
-  position: relative;
-  display: block;
-  width: min(100%, 400px);
-  aspect-ratio: 5 / 4;
-  touch-action: pan-y;
-  -webkit-user-select: none;
-  user-select: none;
-}
-.hairline-figure > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.hairline-figure > svg :where(path, polygon, ellipse, line) {
-  fill: var(--hairline-plate);
-  stroke: var(--hairline-mid);
-  stroke-width: var(--hairline-stroke);
-  vector-effect: non-scaling-stroke;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  transition: stroke var(--motion-duration-micro) var(--motion-ease-transform);
-}
-.hairline-figure > svg :where(.nf) { fill: none; }
-.hairline-figure > svg :where(.fo) { stroke: none; }
-.hairline-figure > svg :where(.sil) { stroke: var(--hairline-edge); }
-.hairline-figure > svg :where(.hi) { stroke: var(--hairline-hi); }
-.hairline-figure > svg :where(.lo) { stroke: var(--hairline-lo); }
-.hairline-figure > svg :where(.dash) { stroke-dasharray: 1 3; }
-.hairline-figure > svg :where(.dot) { stroke: none; fill: var(--hairline-hi); }
-.hairline-figure > svg :where(.dot.m) { fill: var(--hairline-edge); }
-.hairline-figure > svg :where(.dot.off) { fill: var(--hairline-lo); }
-.hairline-card { display: grid; gap: 8px; }
-.hairline-read {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-@media (prefers-reduced-motion: reduce) {
-  .hairline-figure > svg :where(path, polygon, ellipse, line) { transition: none; }
 }
