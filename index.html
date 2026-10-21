@@ -39,6 +39,7 @@
          Order matters: normalize, then tokens, then this project's rules. -->
     <link rel="stylesheet" href="vendor/modern-normalize.css" />
     <link rel="stylesheet" href="vendor/open-props.min.css" />
+    <link rel="stylesheet" href="glide-select.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <!-- iOS ignores SVG favicons and the manifest entirely, so without this it
@@ -71,6 +72,13 @@
             />
             <kbd class="field-hint" aria-hidden="true">/</kbd>
           </div>
+
+          <label class="sr-only" for="sort">Sort dashboards</label>
+          <select id="sort" class="sort-select" data-glide data-glide-size="sm" data-glide-menu-width="180">
+            <option value="curated">Curated</option>
+            <option value="name">A–Z</option>
+            <option value="host">By host</option>
+          </select>
 
           <button
             id="theme-toggle"
@@ -149,5 +157,6 @@
 
     <script src="data/dashboards.js"></script>
     <script src="icons.js"></script>
+    <script src="glide-select.js"></script>
     <script src="app.js" defer></script></body>
 </html>

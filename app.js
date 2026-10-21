@@ -31,6 +31,7 @@
     emptyTitle: document.getElementById('empty-title'),
     emptyBody: document.getElementById('empty-body'),
     meta: document.getElementById('meta'),
+    sort: document.getElementById('sort'),
     themeToggle: document.getElementById('theme-toggle')
   };
 
@@ -788,6 +789,28 @@
   // write, or the queued keystroke lands afterwards and re-applies a query the
   // input no longer shows.
   var filterTimer = null;
+
+  /* --------------------------------------------------------------- ordering --
+   * A reading order, not a filter: the manifest's own order is the curated one
+   * (it is the order the dashboards shipped in), and the other two are for
+   * finding a known name or a known host in a list this long. */
+  function applyOrder(mode) {
+    var source = Array.isArray(window.DASHBOARDS) ? window.DASHBOARDS : [];
+    var rows = source.slice();
+    if (mode === 'name') {
+      rows.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
+    } else if (mode === 'host') {
+      rows.sort(function (a, b) {
+        return hostOf(a.url).localeCompare(hostOf(b.url)) || String(a.name).localeCompare(String(b.name));
+      });
+    }
+    dashboards = rows;
+    render();
+  }
+
+  if (el.sort) {
+    el.sort.addEventListener('change', function () { applyOrder(el.sort.value); });
+  }
 
   function cancelPendingFilter() {
     clearTimeout(filterTimer);

@@ -1102,3 +1102,45 @@ input,
     max-width: none;
   }
 }
+
+/* --- GlideSelect ----------------------------------------------------------
+   The new Sort control: a small chip in the bar that opens a gliding list.
+   It reads the same manifest and calls the same render() as a filter change. */
+.glide-select {
+  --gs-surface: var(--bg);
+  --gs-highlight: color-mix(in srgb, var(--ink) 7%, var(--bg));
+  --gs-text: var(--ink);
+  --gs-accent: var(--ink);
+  --gs-radius: 8px;
+  --gs-inner-radius: var(--r-control);
+  --gs-menu-w: 180px;
+}
+
+.bar-tools > .glide-select {
+  flex: none;
+}
+
+.glide-select .glide-select__trigger {
+  height: 28px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-mid);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.glide-select .glide-select__trigger:hover {
+  border-color: var(--line-strong);
+  background: var(--bg-sunken);
+}
+
+.glide-select__menu {
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 28px rgba(14, 14, 17, 0.14);
+}
+
+.glide-select__option {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+}
