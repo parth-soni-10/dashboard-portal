@@ -473,6 +473,23 @@ body {
   color: var(--bg);
 }
 
+/* Theme: two visible states on the same track the sort row uses, so the bar
+ * reads as one control strip. On a phone there is no room for the labels and
+ * the icon button below takes over (see the 760px query). */
+.theme-seg[data-rs-track] {
+  --rs-track: var(--bg);
+  --rs-thumb: var(--ink);
+  --rs-text: var(--ink-soft);
+  --rs-active-text: var(--bg);
+  --rs-focus: var(--ink);
+  flex: none;
+  border: 1px solid var(--line-strong);
+}
+
+.theme-icon {
+  display: none;
+}
+
 /* The key hint, set like a key: hairline, mono, small. It fades out on focus
    because at that point the shortcut is already known. */
 .field-hint {
@@ -1079,6 +1096,17 @@ input,
   /* No columns to label once the row re-flows, so the band would be lying. */
   .index-head {
     display: none;
+  }
+
+  /* The bar has no room for two more labels at this width; the icon button is
+     the same setting in one control. The attribute selector is needed because
+     the track's own display rule is more specific than a bare class. */
+  .theme-seg[data-rs-track] {
+    display: none;
+  }
+
+  .theme-icon {
+    display: grid;
   }
 
   .registry {

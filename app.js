@@ -32,7 +32,8 @@
     emptyBody: document.getElementById('empty-body'),
     meta: document.getElementById('meta'),
     sortJelly: document.getElementById('sortJelly'),
-    themeToggle: document.getElementById('theme-toggle')
+    themeToggle: document.getElementById('theme-toggle'),
+    themeSeg: document.getElementById('themeSeg')
   };
 
   /* ------------------------------------------------------------- helpers -- */
@@ -937,6 +938,18 @@
     el.themeToggle.title = 'Switch to ' + goingTo + ' mode';
     el.themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
 
+    // The segmented control is the desktop face of the same setting. Rubber
+    // Segment reads aria-pressed, so writing it here is what moves the thumb
+    // when the icon button (a phone-only face) flips the theme.
+    if (el.themeSeg) {
+      var chips = el.themeSeg.querySelectorAll('[data-theme-value]');
+      for (var i = 0; i < chips.length; i++) {
+        var on = chips[i].getAttribute('data-theme-value') === theme;
+        chips[i].classList.toggle('on', on);
+        chips[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+    }
+
     // Read the token rather than hardcoding the value here: a literal in JS
     // silently drifts out of step with styles.css and the browser chrome ends
     // up the wrong colour. This runs after the stylesheets are applied, which
@@ -951,6 +964,14 @@
   el.themeToggle.addEventListener('click', function () {
     applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark', true);
   });
+
+  if (el.themeSeg) {
+    el.themeSeg.addEventListener('click', function (event) {
+      var chip = event.target.closest('[data-theme-value]');
+      if (!chip) return;
+      applyTheme(chip.getAttribute('data-theme-value'), true);
+    });
+  }
 
   /* ----------------------------------------------------------------- boot -- */
 

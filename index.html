@@ -41,6 +41,7 @@
     <link rel="stylesheet" href="vendor/open-props.min.css" />
     <link rel="stylesheet" href="glide-select.css" />
     <link rel="stylesheet" href="jelly-radio.css" />
+    <link rel="stylesheet" href="rubber-segment.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <!-- iOS ignores SVG favicons and the manifest entirely, so without this it
@@ -92,9 +93,32 @@
             <button type="button" class="sort-chip" data-order="host" aria-pressed="false">By host</button>
           </div>
 
+          <!-- Theme is a two-state choice, so it is a segmented track rather than
+               a toggle: the chosen state is visible instead of remembered. On a
+               phone the bar has no room for the labels, so the icon button below
+               takes over (see the 760px query in styles.css); both write the same
+               stored theme and both are kept in sync by applyTheme(). -->
+          <div
+            id="themeSeg"
+            class="theme-seg"
+            role="group"
+            aria-label="Theme"
+            data-rubber-segment
+            data-rs-track
+            data-rs-key="portal-theme"
+            data-rs-size="sm"
+            data-rs-inset="2"
+            data-rs-radius="8"
+            data-rs-stretch="70"
+            data-rs-squash="2"
+          >
+            <button type="button" class="theme-chip on" data-theme-value="light" aria-pressed="true">Light</button>
+            <button type="button" class="theme-chip" data-theme-value="dark" aria-pressed="false">Dark</button>
+          </div>
+
           <button
             id="theme-toggle"
-            class="icon-btn"
+            class="icon-btn theme-icon"
             type="button"
             title="Switch to light mode"
             aria-label="Switch to light mode"
@@ -171,5 +195,6 @@
     <script src="icons.js"></script>
     <script src="glide-select.js"></script>
     <script src="jelly-radio.js" defer></script>
+    <script src="rubber-segment.js" defer></script>
     <script src="app.js" defer></script></body>
 </html>
