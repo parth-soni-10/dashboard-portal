@@ -53,3 +53,20 @@
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src https://contenttrackerdashboard.pages.dev https://rbiweeklydashboard.pages.dev https://ucdcsnlmodulepicker.pages.dev; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'
+
+# Self-hosted webfonts. These are the files a returning visitor otherwise
+# re-requests on every visit: unversioned names, a few hundred KB together, and
+# content that changes only when the typeface does. A week plus
+# stale-while-revalidate trades that round trip for a copy that can still be
+# replaced within a week — deliberately not `immutable`, because a promise made
+# on a stable URL cannot be revoked. The catch-all above sets no Cache-Control on
+# purpose: Cloudflare joins the Cache-Control of every matching rule, so a
+# `no-store` there would silently cancel this one. Same rule RBI and the Content
+# Tracker already carry.
+/fonts/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# The two vendored stylesheets (normalize + Open Props). Same reasoning as the
+# fonts above: stable content behind stable names.
+/vendor/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400

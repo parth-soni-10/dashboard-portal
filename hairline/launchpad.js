@@ -87,7 +87,9 @@ function mount({ stage, svg, read }, value) {
 
     // Painter's order for the static pad and tiles; the lift only changes z,
     // never which tile is in front, so this order can be fixed once.
-    const order = [{ key: 0, g: pad.g }, ...tiles.map((t) => ({ key: t.cx + t.cy, g: t.sil.parentNode }))];
+    // The pad sorts before every tile: a tile's key is cx + cy, and the back
+    // row is negative, so a pad key of 0 would be painted over those tiles.
+    const order = [{ key: -100, g: pad.g }, ...tiles.map((t) => ({ key: t.cx + t.cy, g: t.sil.parentNode }))];
     order.sort((a, b) => a.key - b.key).forEach((o) => root.appendChild(o.g));
 
     board = register(stage, (dt) => {

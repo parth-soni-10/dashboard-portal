@@ -60,6 +60,8 @@
   var today=new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'short',year:'numeric'}); $('#sticky-date').textContent='Date · '+today.format(new Date())+' · deploy time unavailable';
   function openUpdates(){var heading=$('#updates-title');if(!heading)return;heading.focus({preventScroll:true});heading.scrollIntoView({block:'center'});}
   $('#sticky-date').addEventListener('click',openUpdates);
+  // The button prints the date, so the date is part of its name - WCAG 2.5.3.
+  $('#sticky-date').setAttribute('aria-label',$('#sticky-date').textContent+' - open recent updates');
   $('#activity-open').addEventListener('click',openUpdates);
   $('#recent-updates').innerHTML=data.slice(0,5).map(function(x){return '<li><a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.name)+'</a> · sample update</li>';}).join('');
   var heatClass=['heat-0','heat-1','heat-2','heat-3','heat-4']; $('#activity-heatmap').innerHTML=Array.from({length:90},function(_,i){return '<i class="'+heatClass[(i*7)%5]+'" title="Sample activity day '+(i+1)+'"></i>';}).join('');
