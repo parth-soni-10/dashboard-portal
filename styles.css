@@ -374,16 +374,6 @@ body {
   background: var(--bg-sunken);
 }
 
-.theme-glyph {
-  display: none;
-}
-
-:root[data-theme='dark'] .theme-glyph-moon,
-:root[data-theme='light'] .theme-glyph-sun {
-  display: grid;
-  place-items: center;
-}
-
 /* --------------------------------------------------------------- search -- */
 
 /* Shrinks before anything else does: it is the one control whose contents
@@ -486,8 +476,16 @@ body {
   border: 1px solid var(--line-strong);
 }
 
+/* The phone face of the theme. A bare Squish Switch, so the icon button's
+   glyph, border and 28px box are deliberately not inherited: the track is the
+   whole control, skinned from the same ink/line pair every control uses. */
 .theme-icon {
   display: none;
+  flex: none;
+  --ss-track: var(--line-strong);
+  --ss-track-on: var(--ink);
+  --ss-thumb-color: var(--bg);
+  --ss-focus: var(--ink);
 }
 
 /* The key hint, set like a key: hairline, mono, small. It fades out on focus
@@ -1098,15 +1096,18 @@ input,
     display: none;
   }
 
-  /* The bar has no room for two more labels at this width; the icon button is
-     the same setting in one control. The attribute selector is needed because
-     the track's own display rule is more specific than a bare class. */
-  .theme-seg[data-rs-track] {
-    display: none;
+  /* inline-flex rather than the icon button's grid: the track is a fixed-size
+     child and the surface belongs to the switch. */
+  .theme-icon {
+    display: inline-flex;
+    align-items: center;
   }
 
-  .theme-icon {
-    display: grid;
+  /* The bar has no room for two more labels at this width; the switch is the
+     same setting in one control. The attribute selector is needed because the
+     track's own display rule is more specific than a bare class. */
+  .theme-seg[data-rs-track] {
+    display: none;
   }
 
   .registry {
@@ -1172,6 +1173,35 @@ input,
   .preview-viewport,
   .preview-cap {
     max-width: none;
+  }
+}
+
+/* A phone cannot hold the wordmark, the filter, the sort strip and the theme
+ * switch on one line — and the switch is the one that must stay reachable. The
+ * bar wraps instead of scrolling the page sideways: the switch keeps the
+ * wordmark's line, and the filter and sort take a full-width second one. The
+ * switch sits outside .bar-tools for exactly this; above 760px it is
+ * display:none, so the faces that show the segmented track never see it. */
+@media (max-width: 520px) {
+  .bar-inner {
+    flex-wrap: wrap;
+    padding-block: var(--size-2);
+    row-gap: var(--size-2);
+  }
+
+  .theme-icon {
+    order: 1;
+    margin-left: auto;
+  }
+
+  .bar-tools {
+    order: 2;
+    flex: 1 0 100%;
+    margin-left: 0;
+  }
+
+  .bar-tools .field {
+    flex: 1 1 auto;
   }
 }
 

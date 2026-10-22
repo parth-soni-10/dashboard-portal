@@ -42,6 +42,7 @@
     <link rel="stylesheet" href="glide-select.css" />
     <link rel="stylesheet" href="jelly-radio.css" />
     <link rel="stylesheet" href="rubber-segment.css" />
+    <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <!-- iOS ignores SVG favicons and the manifest entirely, so without this it
@@ -116,18 +117,31 @@
             <button type="button" class="theme-chip" data-theme-value="dark" aria-pressed="false">Dark</button>
           </div>
 
-          <button
-            id="theme-toggle"
-            class="icon-btn theme-icon"
-            type="button"
-            title="Switch to light mode"
-            aria-label="Switch to light mode"
-            aria-pressed="false"
-          >
-            <span class="theme-glyph theme-glyph-sun" aria-hidden="true"></span>
-            <span class="theme-glyph theme-glyph-moon" aria-hidden="true"></span>
-          </button>
         </div>
+
+        <!-- The same setting's second control: the segmented track is the face
+             the bar shows when the labels fit, and this is the face a phone
+             gets. It is a bare Squish Switch — the sun/moon glyphs are gone and
+             the thumb is the state — and it still writes the one stored theme
+             through applyTheme().
+
+             It sits BESIDE .bar-tools rather than inside it because of the
+             520px query in styles.css: when the bar wraps, this is the control
+             that keeps the wordmark's line instead of being pushed off the
+             screen. Above 760px it is display:none, so its position here
+             changes nothing on the faces that show the segmented track. -->
+        <button
+          id="theme-toggle"
+          class="theme-icon"
+          type="button"
+          role="switch"
+          aria-checked="false"
+          aria-label="Dark mode"
+          title="Dark mode"
+          data-squish-switch
+          data-ss-bare
+          data-ss-size="sm"
+        ></button>
       </div>
     </header>
 
@@ -196,5 +210,9 @@
     <script src="glide-select.js"></script>
     <script src="jelly-radio.js" defer></script>
     <script src="rubber-segment.js" defer></script>
-    <script src="app.js" defer></script></body>
+    <script src="app.js" defer></script>
+    <!-- After app.js, deliberately: applyTheme() has written aria-checked by the
+         time the component reads it, so a dark-mode load starts with the thumb
+         in its seat instead of animating there. -->
+    <script src="squish-switch.js" defer></script></body>
 </html>

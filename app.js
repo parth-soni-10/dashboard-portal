@@ -264,13 +264,6 @@
     }
   }
 
-  function fillThemeGlyphs() {
-    var sun = document.querySelector('.theme-glyph-sun');
-    var moon = document.querySelector('.theme-glyph-moon');
-    if (sun) sun.innerHTML = icon('sun', 16);
-    if (moon) moon.innerHTML = icon('moon', 16);
-  }
-
   /* -- dates ------------------------------------------------------------- */
 
   /** 2026-09-14 -> "14 Sept 2026", so the recorded figure's provenance reads. */
@@ -933,14 +926,15 @@
       }
     }
 
-    var goingTo = theme === 'dark' ? 'light' : 'dark';
-    el.themeToggle.setAttribute('aria-label', 'Switch to ' + goingTo + ' mode');
-    el.themeToggle.title = 'Switch to ' + goingTo + ' mode';
-    el.themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+    // The phone face is a switch, so it carries a state rather than an action:
+    // the label names the setting and aria-checked says which way it is. The
+    // component reads that attribute itself (squish-switch.js), so writing it
+    // here is the whole of the wiring.
+    el.themeToggle.setAttribute('aria-checked', theme === 'dark' ? 'true' : 'false');
 
     // The segmented control is the desktop face of the same setting. Rubber
     // Segment reads aria-pressed, so writing it here is what moves the thumb
-    // when the icon button (a phone-only face) flips the theme.
+    // when the phone-only switch flips the theme.
     if (el.themeSeg) {
       var chips = el.themeSeg.querySelectorAll('[data-theme-value]');
       for (var i = 0; i < chips.length; i++) {
@@ -976,7 +970,6 @@
   /* ----------------------------------------------------------------- boot -- */
 
   hydrateIcons(document);
-  fillThemeGlyphs();
   applyTheme(root.dataset.theme === 'light' ? 'light' : 'dark', false);
 
   // A deep link decides the opening state, so it is read before the first paint
