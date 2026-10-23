@@ -66,7 +66,28 @@ function count(rows) {
     if (type.toLowerCase() === 'movie') movies++;
   }
 
-  return { titles: kept.length, shows, movies };
+  return { titles: kept.length, shows, movies, months: watchMonths(kept) };
+}
+
+/* Titles logged per month, from the same rows. Additive: the endpoint's shape
+   only grows, so a page that knew three fields still reads three fields. */
+const MONTH_ORDER = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function watchMonths(rows) {
+  const byKey = new Map();
+  for (const row of rows) {
+    const month = String(row.Month || row.month || '').trim();
+    const year = parseInt(row.Year || row.year, 10) || 0;
+    if (!year || MONTH_ORDER.indexOf(month) === -1) continue;
+    const key = year * 12 + MONTH_ORDER.indexOf(month);
+    byKey.set(key, (byKey.get(key) || 0) + 1);
+  }
+  return [...byKey.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .slice(-12)
+    .map(([key, value]) => ({
+      label: MONTH_ORDER[key % 12].slice(0, 3) + ' ' + String(Math.floor(key / 12)).slice(2),
+      value
+    }));
 }
 
 async function watchlist(request, env) {

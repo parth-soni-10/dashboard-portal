@@ -1246,3 +1246,35 @@ input,
   font-family: var(--font-sans);
   font-size: 12.5px;
 }
+
+
+/* ── Watchlist trend ──────────────────────────────────────────────────────
+   The analytics-chart kit, under the masthead. One series, one tooltip; the
+   card names the paper, the height and the monochrome ink. */
+.trend-card {
+  margin: 0 0 30px;
+  padding: 16px 18px 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.trend-card[hidden] { display: none; }
+.trend-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+  margin: 0 0 10px;
+}
+.trend-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+.trend-sub { font-size: 12px; color: var(--ink-soft); }
+.watch-trend {
+  --ac-height: 148px;
+  --ac-accent: var(--ink);
+  --ac-area: color-mix(in srgb, var(--ink) 8%, transparent);
+  --ac-grid: var(--line);
+  --ac-ink: var(--ink-soft);
+  --ac-tip-bg: var(--bg);
+  --ac-tip-ink: var(--ink);
+  --ac-font: var(--font-sans);
+}

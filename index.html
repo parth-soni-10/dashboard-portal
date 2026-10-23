@@ -44,6 +44,7 @@
     <link rel="stylesheet" href="rubber-segment.css" />
     <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="analytics-chart.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <!-- iOS ignores SVG favicons and the manifest entirely, so without this it
          substitutes a screenshot of the page for the home-screen icon. The
@@ -155,6 +156,14 @@
         <p id="meta" class="lede" aria-live="polite"></p>
       </div>
 
+      <!-- Live from the watchlist's own read endpoint, through this site's
+           proxy. Hidden until the answer arrives: an empty frame that fills in
+           later is worse than no frame. -->
+      <div class="trend-card" id="watchTrendCard" hidden>
+        <p class="trend-head"><span class="trend-title">Titles logged per month</span><span class="trend-sub">the watchlist database &middot; last 12 months</span></p>
+        <div id="watchTrend" class="watch-trend" data-ac-label="titles logged"></div>
+      </div>
+
       <!-- Column labels for the index below. They are the same grid as a row,
            so each label sits over the column it names: this is what makes the
            list read as a specification rather than a stack of cards. -->
@@ -210,6 +219,7 @@
     <script src="glide-select.js"></script>
     <script src="jelly-radio.js" defer></script>
     <script src="rubber-segment.js" defer></script>
+    <script src="analytics-chart.js" defer></script>
     <script src="app.js" defer></script>
     <!-- After app.js, deliberately: applyTheme() has written aria-checked by the
          time the component reads it, so a dark-mode load starts with the thumb

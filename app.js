@@ -225,6 +225,9 @@
         // Take only the fields the description prints, and only when the answer
         // really carried a number: an error page or a changed upstream shape
         // must not reach the page dressed as a figure.
+        // The proxy also aggregates the same rows into months; a page that
+        // only wants the three figures ignores it.
+        if (Array.isArray(data.months) && window.AnalyticsChart) renderWatchTrend(data.months);
         var values = {};
         Object.keys(cfg.fallback || {}).forEach(function (key) {
           var value = data ? data[key] : null;
@@ -241,6 +244,17 @@
       .then(function () {
         clearTimeout(timer);
       });
+  }
+
+  /** The watchlist's month series, in the analytics-chart kit. */
+  function renderWatchTrend(months) {
+    var card = document.getElementById('watchTrendCard');
+    var host = document.getElementById('watchTrend');
+    if (!card || !host || !months.length) return;
+    card.hidden = false;
+    AnalyticsChart.render(host, months.map(function (m) {
+      return { label: m.label, value: m.value };
+    }), { label: 'titles logged' });
   }
 
   /** Repaint only the descriptions, leaving the rows (and any open preview) alone. */
