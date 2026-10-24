@@ -914,6 +914,35 @@
     el.filter.focus();
   });
 
+  /* The bar's Clear filter keeps its own window. Like the empty-state button,
+     Escape and the field's own reset, it clears the query and cancels a
+     debounced keystroke; unlike them it is still on screen afterwards, so the
+     click that threw the query away is also the click that brings it back. */
+  var clearFilter = document.getElementById('reset-filter');
+  var clearedBefore = null;
+  if (clearFilter && window.TimeUndo) {
+    TimeUndo.mount(clearFilter, {
+      seconds: 6,
+      onStart: function () {
+        if (!query && !el.filter.value) return false;
+        cancelPendingFilter();
+        clearedBefore = { query: query, field: el.filter.value };
+        query = '';
+        el.filter.value = '';
+        render();
+        return true;
+      },
+      onCancel: function () {
+        if (!clearedBefore) return;
+        query = clearedBefore.query;
+        el.filter.value = clearedBefore.field;
+        clearedBefore = null;
+        render();
+      },
+      onCommit: function () { clearedBefore = null; }
+    });
+  }
+
   // "/" focuses the filter from anywhere, unless the user is already typing.
   document.addEventListener('keydown', function (event) {
     if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;

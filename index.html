@@ -43,6 +43,7 @@
     <link rel="stylesheet" href="jelly-radio.css" />
     <link rel="stylesheet" href="rubber-segment.css" />
     <link rel="stylesheet" href="squish-switch.css" />
+    <link rel="stylesheet" href="time-undo.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="analytics-chart.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -94,6 +95,12 @@
             <button type="button" class="sort-chip" data-order="name" aria-pressed="false">A–Z</button>
             <button type="button" class="sort-chip" data-order="host" aria-pressed="false">By host</button>
           </div>
+
+          <!-- Clear filter is always available: the empty-state reset vanishes
+               with the results it restores, and the field's own Escape only
+               works while the field holds focus. This one keeps the six-second
+               undo window on the bar. -->
+          <button id="reset-filter" class="reset-filter tu-btn" type="button">Clear filter</button>
 
           <!-- Theme is a two-state choice, so it is a segmented track rather than
                a toggle: the chosen state is visible instead of remembered. On a
@@ -220,6 +227,7 @@
     <script src="jelly-radio.js" defer></script>
     <script src="rubber-segment.js" defer></script>
     <script src="analytics-chart.js" defer></script>
+    <script src="time-undo.js" defer></script>
     <script src="app.js" defer></script>
     <!-- After app.js, deliberately: applyTheme() has written aria-checked by the
          time the component reads it, so a dark-mode load starts with the thumb

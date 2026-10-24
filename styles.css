@@ -1278,3 +1278,23 @@ input,
   --ac-tip-ink: var(--ink);
   --ac-font: var(--font-sans);
 }
+
+/* The bar's own clear control. It stays put while the rows it filters are
+ * rebuilt, which is what lets Time Undo keep its countdown on the control that
+ * emptied the field. */
+.reset-filter {
+  flex: none;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--ink-soft);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.reset-filter:hover { color: var(--ink); border-color: var(--ink-soft); }
+.reset-filter[data-tu-state="counting"] { color: var(--ink); }
