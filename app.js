@@ -247,14 +247,51 @@
   }
 
   /** The watchlist's month series, in the analytics-chart kit. */
-  function renderWatchTrend(months) {
-    var card = document.getElementById('watchTrendCard');
+  var trendMonths = [];
+
+  /** How many months the trend shows: a number the reader owns, 3–12. */
+  function storedTrendMonths() {
+    try {
+      var n = parseInt(localStorage.getItem('portal-trend-months'), 10);
+      return isFinite(n) ? Math.max(3, Math.min(12, n)) : 12;
+    } catch (e) { return 12; }
+  }
+
+  function paintWatchTrend() {
     var host = document.getElementById('watchTrend');
-    if (!card || !host || !months.length) return;
-    card.hidden = false;
-    AnalyticsChart.render(host, months.map(function (m) {
+    if (!host || !trendMonths.length) return;
+    var shown = trendMonths.slice(-storedTrendMonths());
+    var sub = document.getElementById('watchTrendSub');
+    if (sub) {
+      sub.textContent = 'the watchlist database \u00b7 last ' + shown.length +
+        ' month' + (shown.length === 1 ? '' : 's');
+    }
+    AnalyticsChart.render(host, shown.map(function (m) {
       return { label: m.label, value: m.value };
     }), { label: 'titles logged' });
+  }
+
+  /** The length control sits in the card's head; it re-slices, never refetches. */
+  function mountWatchTrendLength() {
+    var host = document.getElementById('watchTrendLen');
+    if (!host || !window.Stepper || Stepper.get(host) !== null) return;
+    Stepper.mount(host, {
+      value: storedTrendMonths(), min: 3, max: 12, step: 1,
+      label: 'Months shown', unit: 'month', size: 'sm',
+      onChange: function (n) {
+        try { localStorage.setItem('portal-trend-months', String(n)); } catch (e) { /* private mode */ }
+        paintWatchTrend();
+      }
+    });
+  }
+
+  function renderWatchTrend(months) {
+    var card = document.getElementById('watchTrendCard');
+    if (!card || !months.length) return;
+    trendMonths = months;
+    card.hidden = false;
+    mountWatchTrendLength();
+    paintWatchTrend();
   }
 
   /** Repaint only the descriptions, leaving the rows (and any open preview) alone. */

@@ -44,6 +44,7 @@
     <link rel="stylesheet" href="rubber-segment.css" />
     <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="time-undo.css" />
+    <link rel="stylesheet" href="stepper.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="analytics-chart.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -167,7 +168,7 @@
            proxy. Hidden until the answer arrives: an empty frame that fills in
            later is worse than no frame. -->
       <div class="trend-card" id="watchTrendCard" hidden>
-        <p class="trend-head"><span class="trend-title">Titles logged per month</span><span class="trend-sub">the watchlist database &middot; last 12 months</span></p>
+        <div class="trend-head"><span class="trend-title">Titles logged per month</span><span class="trend-sub" id="watchTrendSub">the watchlist database &middot; last 12 months</span><span class="trend-len" id="watchTrendLen"></span></div>
         <div id="watchTrend" class="watch-trend" data-ac-label="titles logged"></div>
       </div>
 
@@ -228,6 +229,7 @@
     <script src="rubber-segment.js" defer></script>
     <script src="analytics-chart.js" defer></script>
     <script src="time-undo.js" defer></script>
+    <script src="stepper.js" defer></script>
     <script src="app.js" defer></script>
     <!-- After app.js, deliberately: applyTheme() has written aria-checked by the
          time the component reads it, so a dark-mode load starts with the thumb
