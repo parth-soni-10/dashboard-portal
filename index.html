@@ -10,6 +10,7 @@
     />
     <meta name="theme-color" content="#0e0e11" />
     <meta name="color-scheme" content="dark light" />
+    <link rel="canonical" href="https://dashboards-home-portal.pages.dev/" />
 
     <!-- Link previews, so pasting this into a chat renders something rather
          than a naked URL. og:url and og:image are deliberately absent rather
@@ -52,6 +53,46 @@
          substitutes a screenshot of the page for the home-screen icon. The
          raster is favicon.svg's "01" mark, full-bleed. -->
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+    <!-- Structured data: Organization + WebApplication so agents and crawlers
+         can resolve what this portal is and who runs it. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://dashboards-home-portal.pages.dev/#organization",
+            "name": "Parth Soni",
+            "url": "https://dashboards-home-portal.pages.dev/",
+            "email": "soni.soni.parth@gmail.com",
+            "sameAs": [
+              "https://www.linkedin.com/in/parth-soni-1a6025191/",
+              "https://github.com/parth-soni-10",
+              "https://public.tableau.com/app/profile/parth.soni7469",
+              "https://medium.com/@soni.soni.parth"
+            ],
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Dublin",
+              "addressCountry": "Ireland"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://dashboards-home-portal.pages.dev/#app",
+            "name": "Dashboard Portal",
+            "url": "https://dashboards-home-portal.pages.dev/",
+            "applicationCategory": "ReferenceApplication",
+            "operatingSystem": "Any (web browser)",
+            "isAccessibleForFree": true,
+            "description": "Curated A–Z index of Parth Soni's deployed dashboards and data tools: Content Tracker, RBI Weekly Dashboard, UCD CSNL Module Picker, Irish Visa Decision Tracker and Cents App.",
+            "author": { "@type": "Person", "name": "Parth Soni" },
+            "publisher": { "@id": "https://dashboards-home-portal.pages.dev/#organization" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#index">Skip to the index</a>
