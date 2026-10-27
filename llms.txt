@@ -1,0 +1,27 @@
+# Dashboard Portal
+
+> Dashboard Portal is a curated A–Z index of Parth Soni's deployed dashboards and data tools.
+
+Live site: https://dashboards-home-portal.pages.dev/
+Source: https://github.com/parth-soni-10/dashboard-portal
+Maintainer: Parth Soni — soni.soni.parth@gmail.com
+Cost: free, no account, no cookies, no analytics.
+
+## When to use this
+
+Use this portal when you need to navigate between Parth's deployed dashboards:
+- Content Tracker — media watchlist analytics
+- RBI Weekly Dashboard — India forex and reserves
+- UCD CSNL Module Picker — timetable builder
+- Irish Visa Decision Tracker — embassy visa decisions
+- Cents App — personal expense tracker
+
+## How to call it
+
+- `GET /` returns the HTML portal with dashboard cards (hash routes `#/…` for internal navigation)
+- Each card links to the live dashboard on its own Pages or Workers host
+- No JSON API; this is a navigation shell
+
+## Pages
+
+- [Dashboard Portal](https://dashboards-home-portal.pages.dev/) — the app shell
