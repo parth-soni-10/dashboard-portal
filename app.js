@@ -439,6 +439,14 @@
     return null;
   }
 
+  /* icon() hands back markup, and the kit wants a node, so the glyph the button
+     is about to say is built the same way it was built the first time. */
+  function previewGlyph(open) {
+    var t = document.createElement('template');
+    t.innerHTML = icon(open ? 'x' : 'eye', 15);
+    return t.content.firstElementChild;
+  }
+
   function setPreviewButton(id, open) {
     var button = previewButtonOf(id);
     if (!button) return;
@@ -448,6 +456,14 @@
     button.classList.toggle('is-open', open);
     button.title = label;
     button.setAttribute('aria-label', label);
+    // The button's own size is a floor, not a target: the kit cross-fades the
+    // close glyph in over the eye and leaves the 34px square exactly where it
+    // was, because the two glyphs are the same size. Named by the host as
+    // above; only the picture changes. (Rows are rebuilt on every render, so a
+    // button that has just been replaced mounts itself here.)
+    if (!window.DynamicButton) return;
+    if (open) window.DynamicButton.say(button, previewGlyph(true));
+    else window.DynamicButton.restore(button);
   }
 
   function closePreview(refocus) {

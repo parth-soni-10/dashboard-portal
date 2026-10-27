@@ -46,6 +46,7 @@
     <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="time-undo.css" />
     <link rel="stylesheet" href="stepper.css" />
+    <link rel="stylesheet" href="dynamic-button.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="analytics-chart.css" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -271,6 +272,10 @@
     <script src="analytics-chart.js" defer></script>
     <script src="time-undo.js" defer></script>
     <script src="stepper.js" defer></script>
+    <!-- A row's preview button swaps eye for x while its panel is open: the kit
+         cross-fades the two glyphs, and app.js flips aria-expanded and the
+         label itself either way. -->
+    <script src="dynamic-button.js" defer></script>
     <script src="app.js" defer></script>
     <!-- After app.js, deliberately: applyTheme() has written aria-checked by the
          time the component reads it, so a dark-mode load starts with the thumb
