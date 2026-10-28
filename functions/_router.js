@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------------
- * Dashboard portal — the routing half of this site's function.
+ * Dashboard portal - the routing half of this site's function.
  *
  * Pages compiles this repository's `functions/` directory, and its entry -
- * `functions/[[path]].js` — hands every request here, so the paths this file
+ * `functions/[[path]].js` - hands every request here, so the paths this file
  * does not answer fall through to `env.ASSETS` below. It used to run as a
  * Worker with `run_worker_first = ["/api/*"]`, which is why the fall-through is
  * spelled out rather than assumed: the same handler now sees the whole site.
@@ -21,17 +21,17 @@
  * Why a server-side read exists: the dashboard's endpoint sends no
  * Access-Control-Allow-Origin and answers OPTIONS with 405, so a browser
  * sitting on this origin can only fail. A server-side fetch has no such
- * restriction. The document never leaves this function — the page wants three
+ * restriction. The document never leaves this function - the page wants three
  * integers out of an 84 KB payload.
  *
  * Response headers keep the original caching promise: visitors are served
  * instantly, and the sheet is read at most once every fifteen minutes.
- * Failures are never cached — a transient upstream failure would otherwise
+ * Failures are never cached - a transient upstream failure would otherwise
  * pin a wrong answer at the edge for the whole TTL.
  * ------------------------------------------------------------------------ */
 
 /* Nine seconds. The ceiling used to be Netlify's ten-second synchronous
-   function limit; it is kept because the floor is measured, not guessed — the
+   function limit; it is kept because the floor is measured, not guessed - the
    dashboard's own endpoint has been seen taking 8.0s just to connect during a
    cold spell, so anything tighter would abort a request that was about to
    succeed. On timeout the reading is reported as unavailable and the page
@@ -121,7 +121,7 @@ async function watchlist(request, env) {
     // upstream's status and host into a public JSON body, which tells a visitor
     // about infrastructure they have no reason to see and does not help the
     // page: it only ever renders its own recorded figures.
-    console.error('watchlist-count: read failed —', (error && error.message) || error);
+    console.error('watchlist-count: read failed -', (error && error.message) || error);
     return reply(502, { error: 'Unable to read the watchlist' }, 'no-store');
   } finally {
     clearTimeout(timer);

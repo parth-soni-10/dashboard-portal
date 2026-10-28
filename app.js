@@ -65,7 +65,7 @@
   /** Every dashboard here is served from the account's Cloudflare Pages
    *  subdomain, so the host and `pages.dev` are noise in a 10px mono column.
    *  Stripping them is display-only: the link and the tooltip both keep the
-   *  real host. The workers.dev form is stripped too — none of these sites
+   *  real host. The workers.dev form is stripped too - none of these sites
    *  answers on one any more, but the manifest is edited by hand and a link to
    *  somebody else's Worker is a perfectly good entry. */
   function shortHost(host) {
@@ -79,7 +79,7 @@
    *
    * This is not defensive padding. The manifest is edited by hand, and a typo
    * like `example.com` is a *relative* URL: rendered as-is it becomes a link to
-   * nowhere — to this page's own origin, in fact, so it looks like it works.
+   * nowhere - to this page's own origin, in fact, so it looks like it works.
    * An unusable URL is refused up front and the raw value is shown instead, so
    * the typo is visible rather than dressed up as a working link.
    */
@@ -108,7 +108,7 @@
   /* -- live figures -------------------------------------------------------
    * A description may contain {placeholders} drawn from its own `count` block.
    * The figures come from that dashboard's data, read by a function on our own
-   * origin — that dashboard's endpoint sends no CORS headers, so a browser here
+   * origin - that dashboard's endpoint sends no CORS headers, so a browser here
    * is not allowed to read it directly.
    *
    * The manifest therefore also carries the last figures known by hand. They
@@ -334,7 +334,7 @@
    * in a floating overlay: it can never cover the other rows, it needs no
    * scroll or resize anchoring, and it behaves identically for a mouse, a
    * keyboard and a thumb. Only one is ever open, and closing it empties the
-   * box — which is what actually unloads the frame. Leaving four detached
+   * box - which is what actually unloads the frame. Leaving four detached
    * iframes behind would keep four dashboards running.
    */
 
@@ -519,7 +519,7 @@
     previewTimer = setTimeout(function () {
       if (settled) return;
       settled = true;
-      // Covers the frame that never settles at all — a host that accepts the
+      // Covers the frame that never settles at all - a host that accepts the
       // connection and then stops answering. It cannot cover the other
       // failure: a dashboard that is down renders the browser's own error page
       // inside the frame, and from out here that is indistinguishable from a
@@ -537,7 +537,7 @@
       settled = true;
       clearTimeout(previewTimer);
       // `load` fires when the document and its subresources are done, but every
-      // dashboard here paints its figures *after* it has fetched its own data —
+      // dashboard here paints its figures *after* it has fetched its own data -
       // RBI's banner and cards arrive a second or two later. Dropping the cover
       // on `load` therefore revealed a blank box for exactly that gap. Holding
       // it for one more beat covers the gap instead, and after that the frame
@@ -699,11 +699,11 @@
   /* ---------------------------------------------------------------- the lede
    * The line under the title: the search count while a query is active, and
    * otherwise how many there are and that each is its own deployment. It used
-   * to carry a health summary — how many links answered, and when — which was
+   * to carry a health summary - how many links answered, and when - which was
    * the reachability badge again in sentence form, and went with it. Kept to
    * one line at every width, which is why the wording is this short. */
   /* ---------------------------------------------------------- in the url --
-   * Both pieces of state this page has — the filter and the open preview — live
+   * Both pieces of state this page has - the filter and the open preview - live
    * in the URL: `?q=` and `#preview-<id>`. Two reasons. A row becomes something
    * that can be sent to someone, so "look at the RBI one" is a link instead of
    * instructions; and the browser's Back button starts doing something sensible
@@ -713,7 +713,7 @@
    * should not leave six entries in the history. The URL always matches what is
    * on screen without a trail of dead ends behind it. The cost is that Back
    * leaves the page rather than walking the state back, so both events are
-   * still handled — a link followed from elsewhere, or a reload, arrives as a
+   * still handled - a link followed from elsewhere, or a reload, arrives as a
    * popstate or hashchange and has to be applied.
    *
    * The query read back out of the URL is untrusted: anyone can hand someone a
@@ -785,7 +785,7 @@
       query = next.q;
       el.filter.value = next.q;
       // render() closes any open preview and syncs the URL, so the preview is
-      // reconciled *after* it, not instead of it — both can change in one step.
+      // reconciled *after* it, not instead of it - both can change in one step.
       render();
     }
 
@@ -902,13 +902,13 @@
   /* Escape undoes one thing per press, and the preview goes first.
 
      The ordering is not a preference. Clearing the field calls render(), which
-     rebuilds the rows — and the open preview lives *inside* a row, so render()
+     rebuilds the rows - and the open preview lives *inside* a row, so render()
      closes it. Clearing the search while a preview is open therefore closed
      both at once, which is what the page did before this: one press, two
      unrelated-looking things happen.
 
      So an open preview is left to the document listener below, and this handler
-     stands aside — meaning the search text survives. The next press clears the
+     stands aside - meaning the search text survives. The next press clears the
      field. Largest transient change first, and both are reachable without
      reaching for the mouse. */
   el.filter.addEventListener('keydown', function (event) {
@@ -942,7 +942,7 @@
     if (event.key !== 'Escape' || !previewOpenId) return;
     event.preventDefault();
     // Focus goes back to the button that opened the preview, so a keyboard
-    // visitor is not dropped at the top of the document — but not when they were
+    // visitor is not dropped at the top of the document - but not when they were
     // typing, where the preview closing is no reason to take the caret away from
     // the field they are using.
     closePreview(document.activeElement !== el.filter);
@@ -1069,7 +1069,7 @@
   applyTheme(root.dataset.theme === 'light' ? 'light' : 'dark', false);
 
   // A deep link decides the opening state, so it is read before the first paint
-  // of the list — otherwise a shared link flashes the unfiltered index and then
+  // of the list - otherwise a shared link flashes the unfiltered index and then
   // rearranges itself.
   var opening = urlState();
   if (opening.q) {

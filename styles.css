@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------------
  * Dashboard Portal
  *
- * Precision-instrument aesthetic, following CSNL Module Picker — the most
+ * Precision-instrument aesthetic, following CSNL Module Picker - the most
  * disciplined piece in the family. Its own header comment set the terms:
  * "neutral zinc, one disciplined blue accent, Geist Sans + Geist Mono,
  * restrained motion." This page takes the neutrality and the restraint, and
@@ -11,8 +11,8 @@
  *
  *   Ink is the only interface colour. The four row tones are the only colour on
  *   the page, and they appear in exactly two places: the index numeral, and the
- *   icon on a preview that cannot be framed. Everything interactive — links,
- *   focus rings, selection, the "preview is open" state — is ink on ground.
+ *   icon on a preview that cannot be framed. Everything interactive - links,
+ *   focus rings, selection, the "preview is open" state - is ink on ground.
  *
  *   A coloured accent was tried and removed. Every candidate collided with a
  *   row's own identity colour (the house green reads as Irish Visa, a blue
@@ -50,7 +50,7 @@
  *            shadow, no gradient ambience, no backdrop blur. A large radius on
  *            a soft-shadowed panel is the single most recognisable template
  *            shape there is, and it was carrying no meaning.
- *   Type     Mono for every piece of metadata — numerals, column labels, hosts,
+ *   Type     Mono for every piece of metadata - numerals, column labels, hosts,
  *            stacks, the bar's wordmark. The display face carries the title and
  *            the row names, which is the only place type raises its voice.
  *   Theme    Both first class, driven by [data-theme].
@@ -109,7 +109,7 @@
   /* Ink. One ramp, three steps, contrast measured on --bg and --bg-sunken. */
   --ink: #0e0e11; /* 19.0:1 */
   --ink-mid: #55565e; /* 7.6:1 */
-  --ink-soft: #6b6c75; /* 5.2:1 — the worst case, on 10px mono labels */
+  --ink-soft: #6b6c75; /* 5.2:1 - the worst case, on 10px mono labels */
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-display: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -138,7 +138,7 @@
 /* `color-scheme` follows the *chosen* theme, not the operating system's. The
    meta tag alone (`dark light`) only declares that both are supported, so a
    visitor who picks the theme opposite to their OS setting gets scrollbars,
-   form controls and the caret drawn for the other one — a white scrollbar down
+   form controls and the caret drawn for the other one - a white scrollbar down
    the side of a black page. Declaring it here ties all of that to what the page
    is actually rendering. */
 :root[data-theme='light'] {
@@ -166,7 +166,7 @@
  * pair: the previous pair existed because a tone had to work both as a fill and
  * as small text, and the values diverged. Colour is now used on exactly one
  * small text element (the numeral) and one glyph, so only the text-safe variant
- * is ever needed — which removes the whole class of bug where the fill leaks
+ * is ever needed - which removes the whole class of bug where the fill leaks
  * into text.
  *
  *   forest   Content Tracker      --green       #245c42 / #7cc4a0
@@ -254,7 +254,7 @@ body {
 }
 
 /* One focus treatment for the entire page: 2px of ink, offset so it reads as a
-   ring around the control rather than a border on it. Nothing overrides it —
+   ring around the control rather than a border on it. Nothing overrides it -
    the search field used to replace it with a tinted glow, which made the one
    control you type into the only control that looked different when focused. */
 :focus-visible {
@@ -528,7 +528,7 @@ body {
 /* A document opening: eyebrow, title, lede. Three sizes doing three jobs, which
    is the whole reason the index below can stay as quiet as it is. The padding
    is deliberately tighter than the rhythm below it: a masthead that breathes
-   pushes the first entry — the thing you came for — down the page. */
+   pushes the first entry - the thing you came for - down the page. */
 .masthead {
   padding: var(--size-6) 0 var(--size-4);
 }
@@ -656,7 +656,7 @@ input,
 }
 
 /* The numeral is the only colour in the index. It carries the row's identity,
-   which is what the four tones were always for — and at 11px it reads as a tab
+   which is what the four tones were always for - and at 11px it reads as a tab
    number rather than a status light. */
 .row-index {
   padding-top: 2px;
@@ -674,7 +674,7 @@ input,
 
 /* `overflow-wrap: anywhere` on both text blocks, because the manifest is
    hand-written and a description can contain a long unbroken token (a URL, a
-   hash). Without it the token exceeded the row and was silently clipped — no
+   hash). Without it the token exceeded the row and was silently clipped - no
    scrollbar, no ellipsis, content simply gone. `anywhere` rather than
    `break-word` so it also reduces the grid track's min-content size, which is
    what lets the column actually shrink. */
@@ -731,7 +731,7 @@ input,
 
 /* A figure read from the dashboard's own data. Tabular figures stop the
    sentence reflowing when the number changes, and the dotted rule on a recorded
-   one is the whole signal that it is not the live value — the hover text says
+   one is the whole signal that it is not the live value - the hover text says
    the rest. Mono rather than the display face: these are readings. */
 .fig {
   color: var(--ink);
@@ -1126,7 +1126,7 @@ input,
   }
 
   /* The numeral stays. It is the only colour on the page, and it is what makes
-     four rows scannable — dropping it here would leave the whole mobile layout
+     four rows scannable - dropping it here would leave the whole mobile layout
      monochrome for no gain, since it costs one 11px column. */
   .row-index {
     grid-area: num;
@@ -1156,7 +1156,7 @@ input,
     grid-area: actions;
   }
 
-  /* Redundant with the row being a link in the first place — but only then. A
+  /* Redundant with the row being a link in the first place - but only then. A
      row with no URL is not a link, so its host line is the one thing saying why
      ("No deploy URL recorded", or the offending value of a url that was
      refused), and hiding it left the dimmed row with no explanation at all. */
@@ -1177,7 +1177,7 @@ input,
 }
 
 /* A phone cannot hold the wordmark, the filter, the sort strip and the theme
- * switch on one line — and the switch is the one that must stay reachable. The
+ * switch on one line - and the switch is the one that must stay reachable. The
  * bar wraps instead of scrolling the page sideways: the switch keeps the
  * wordmark's line, and the filter and sort take a full-width second one. The
  * switch sits outside .bar-tools for exactly this; above 760px it is

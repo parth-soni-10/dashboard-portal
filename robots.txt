@@ -3,7 +3,7 @@
 # The Sitemap line names the deployed host, which is no longer a guess: it is the
 # project name in wrangler.toml, the address the footer links to, and the
 # origin this deploy's own _headers allow framing from. It used to be left out on
-# the grounds that the URL was recorded nowhere in the repository — and the only
+# the grounds that the URL was recorded nowhere in the repository - and the only
 # cost of that was this path 404ing for every crawler that asked for it.
 User-agent: *
 Allow: /

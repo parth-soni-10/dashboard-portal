@@ -7,7 +7,7 @@
  * generated module instead of shipping the whole thing.
  *
  * Do not hand-draw replacements. To add a glyph, pull the real Lucide path and
- * add it below — an unused entry is dead weight, so keep this list to what the
+ * add it below - an unused entry is dead weight, so keep this list to what the
  * page actually renders.
  * ------------------------------------------------------------------------ */
 

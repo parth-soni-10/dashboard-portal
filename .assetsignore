@@ -8,7 +8,7 @@
 #
 # `tools/audit.mjs` (check 16) asserts the pair stays complete: every tracked
 # file is either intentionally public or listed here, and every pattern here
-# matches something real — an ignore rule that matches nothing is a rule that
+# matches something real - an ignore rule that matches nothing is a rule that
 # would have silently stopped being true the day the file it was meant for
 # returned. That second half exempts two kinds of pattern that a fresh clone
 # cannot be expected to contain: local tool state (`.wrangler/`) and this
@@ -21,7 +21,7 @@
 .assetsignore
 .gitignore
 
-# Local tool state and OS noise — may not exist on a fresh clone; listed so
+# Local tool state and OS noise - may not exist on a fresh clone; listed so
 # that when they do exist they are never uploaded.
 .wrangler/
 .netlify/
@@ -36,8 +36,8 @@ tools/
 README.md
 _headers
 wrangler.toml
-# The function half of the site. Pages compiles this directory at deploy time —
-# a file here is a route, not an asset — and the upload is a staged copy of the
+# The function half of the site. Pages compiles this directory at deploy time -
+# a file here is a route, not an asset - and the upload is a staged copy of the
 # repository, so without this rule the source of every function would also be
 # published as a static file under /functions/.
 functions/

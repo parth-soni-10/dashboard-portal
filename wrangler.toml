@@ -6,8 +6,8 @@
 # There is no Worker config and no Worker. `wrangler pages deploy` run from this
 # directory takes the project name, its vars and its bindings from here, and
 # `pages_build_output_dir` names the upload that tools/deploy-pages.mjs stages
-# from this repository. The function half of the site is a Pages Function —
-# `functions/[[path]].js`, which hands every request to `functions/_router.js` —
+# from this repository. The function half of the site is a Pages Function -
+# `functions/[[path]].js`, which hands every request to `functions/_router.js` -
 # and Pages compiles those files as part of the deploy, so nothing is bundled
 # here and `wrangler deploy` is not a command this repository has any use for.
 

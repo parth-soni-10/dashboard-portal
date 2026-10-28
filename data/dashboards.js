@@ -9,7 +9,7 @@
  *               One of: forest, emerald, amber, cobalt (see styles.css).
  *               Optional; omit it and the numeral falls back to ink.
  *               The numeral is the only colour on the page, so this is the
- *               whole of a row's identity — not a status, and not decoration.
+ *               whole of a row's identity - not a status, and not decoration.
  *   description one sentence, plain language. Aim for under 130 characters:
  *               it is clamped to two lines in the row.
  *   url         live URL, or null when it has not been deployed yet
@@ -35,11 +35,11 @@ window.DASHBOARDS = [
        what silently went stale before, and the whole point of this row is that
        it tracks the database. */
     description:
-      '{titles} titles logged — {shows} shows and {movies} movies — turned into yearly comparisons, genre breakdowns and recommendations.',
+      '{titles} titles logged - {shows} shows and {movies} movies - turned into yearly comparisons, genre breakdowns and recommendations.',
     /* Read server-side by this site's Pages Function, because that dashboard's
        endpoint sends no CORS headers. `fallback` is what the row
        shows until the live answer arrives, and what it keeps showing if the
-       check never completes — so it must stay plausible, and `recorded` says
+       check never completes - so it must stay plausible, and `recorded` says
        when it was true. Both are reported in the figures' own hover text, so a
        visitor is never told a recorded number is a live one. */
     count: {
